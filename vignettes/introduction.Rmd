@@ -99,7 +99,7 @@ library(future)
 library(progressr)
 
 # Check how many cores are available
-future::availableCores()
+parallelly::availableCores()
 
 # Plan powRICLPM analysis to run on 1 core less than number of available cores
 plan(multisession, workers = 7) # For the case of 8 available cores
