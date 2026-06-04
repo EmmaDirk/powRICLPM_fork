@@ -2,7 +2,7 @@ if (FALSE) {
   test_that("Validation of results using Mplus", {
 
     # Create valid powRICLPM() input
-    Phi <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+    lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
     # Single experimental condition
     out1 <- powRICLPM(
@@ -11,7 +11,7 @@ if (FALSE) {
       time_points = 3,
       ICC = 0.5,
       RI_cor = 0.3,
-      Phi = Phi,
+      lagged_effects = lagged_effects,
       within_cor = 0.3,
       reps = 1000,
       seed = 123456,

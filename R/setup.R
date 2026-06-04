@@ -9,9 +9,9 @@ create_conditions <- function(
   target_power,
   sample_size,
   time_points,
-  ICC,
+  intraclass_correlation,
   RI_cor,
-  Phi,
+  lagged_effects,
   within_cor,
   Psi,
   reliability,
@@ -29,6 +29,8 @@ create_conditions <- function(
   software
 ) {
 
+  ICC <- intraclass_correlation
+
   # Create data.frame with rows as experimental conditions
   conditions <- expand.grid(
     sample_size = sample_size,
@@ -45,7 +47,7 @@ create_conditions <- function(
   )
 
   # Add matrix input to conditions
-  conditions$Phi <- replicate(nrow(conditions), Phi, simplify = FALSE)
+  conditions$lagged_effects <- replicate(nrow(conditions), lagged_effects, simplify = FALSE)
   conditions$Psi <- replicate(nrow(conditions), Psi, simplify = FALSE)
 
   # Compute and add additional parameters per condition

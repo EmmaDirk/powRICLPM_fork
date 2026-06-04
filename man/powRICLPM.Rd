@@ -11,9 +11,9 @@ powRICLPM(
   search_step = 20,
   sample_size = NULL,
   time_points,
-  ICC,
+  intraclass_correlation = NULL,
   RI_cor,
-  Phi,
+  lagged_effects = NULL,
   within_cor,
   reliability = 1,
   skewness = 0,
@@ -28,7 +28,9 @@ powRICLPM(
   bounds = FALSE,
   estimator = "ML",
   save_path = NULL,
-  software = "lavaan"
+  software = "lavaan",
+  ICC = NULL,
+  Phi = NULL
 )
 }
 \arguments{
@@ -44,11 +46,11 @@ powRICLPM(
 
 \item{time_points}{An \code{integer} (vector) with elements at least larger than 3, indicating number of time points.}
 
-\item{ICC}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of (true score) variance at the between-unit level. When measurement error is included in the data generating model, ICC is computed as the variance of the random intercept factor divided by the true score variance (i.e., controlled for measurement error).}
+\item{intraclass_correlation}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of (true score) variance at the between-unit level. When measurement error is included in the data generating model, the intraclass correlation is computed as the variance of the random intercept factor divided by the true score variance (i.e., controlled for measurement error).}
 
 \item{RI_cor}{A \code{double} between 0 and 1, denoting the correlation between random intercepts.}
 
-\item{Phi}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+\item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
 
 \item{within_cor}{A \code{double} between 0 and 1, denoting the correlation between the within-unit components.}
 
@@ -79,6 +81,10 @@ powRICLPM(
 \item{save_path}{A \code{character} string of length 1, naming the directory to save (data) files to (used for validation purposes of this package). Variables are saved in alphabetical and numerical order.}
 
 \item{software}{A \code{character} string of length, naming which software to use for simulations; either "lavaan" or "Mplus" (see "Details").}
+
+\item{ICC}{Deprecated. Use \code{intraclass_correlation} instead.}
+
+\item{Phi}{Deprecated. Use \code{lagged_effects} instead.}
 }
 \value{
 An object of class \code{powRICLPM}, upon which \code{summary()}, \code{print()}, and \code{plot()} can be used. The returned object is a \code{list} with a \code{conditions} and \code{session} element. \code{condition} itself is a \code{list} of experimental conditions, where each element is again a \code{list} containing the input and output of the power analysis for that particular experimental condition. \code{session} is a \code{list} containing information common to all experimental conditions.
@@ -89,7 +95,7 @@ Perform a Monte Carlo power analysis for the random intercept cross-lagged panel
 \details{
 A rationale for the power analysis strategy implemented in this package can be found in Mulder (2023).
 
-\subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{Phi} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{Phi} can be interpreted as standardized effects.}
+\subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects.}
 
 \subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. The default estimator is maximum likelihood (\code{ML}). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. When skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments), the estimator defaults to robust maximum likelihood \code{MLR}. The population parameter values are used as starting values.
 
@@ -105,7 +111,7 @@ Parameters are denoted using \pkg{lavaan} model syntax (see \href{https://lavaan
 
 A progress bar displaying the status of the power analysis has been implemented using \pkg{progressr}. By default, a simple progress bar will be shown. For more information on how to control this progress bar and several other notification options (e.g., auditory notifications), see \url{https://progressr.futureverse.org}.}
 
-\subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{ICC} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
+\subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
 
 \subsection{Extension: Imposing Constraints}{The following constraints can be imposed on the estimation model using the \code{constraints = "..."} argument:
 
@@ -122,7 +128,7 @@ A progress bar displaying the status of the power analysis has been implemented 
 }
 \examples{
 # Define population parameters for lagged effects
-Phi <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
+lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 
 # (optional) Set up parallel computing (i.e., multicore, speeding up the analysis)
 library(future)
@@ -138,10 +144,10 @@ with_progress({
     search_upper = 700,
     search_step = 100,
     time_points = c(3, 4),
-    ICC = c(0.4, 0.6),
+    intraclass_correlation = c(0.4, 0.6),
     reliability = c(1, 0.8),
     RI_cor = 0.3,
-    Phi = Phi,
+    lagged_effects = lagged_effects,
     within_cor = 0.3,
     reps = 100,
     seed = 1234

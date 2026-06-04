@@ -203,7 +203,7 @@ pop_lagged <- function(condition, name_within) {
   lhs <- rep(c(t(name_within))[-(1:2)], each = 2)
   op <- "~"
   con <- "*"
-  pv <- c(t(condition[["Phi"]][[1]]))
+  pv <- c(t(condition[["lagged_effects"]][[1]]))
   free <- FALSE
   rhs <- c(apply(name_within[-condition[["time_points"]], ], 1, rep, times = 2))
   return(cbind.data.frame(lhs, op, pv, con, rhs, free,
@@ -220,7 +220,7 @@ est_lagged <- function(condition, name_within) {
     lhs <- rep(rep(c(t(name_within))[-(1:2)], each = 2), times = 2)
     pv <- c(
       rep(c("a", "b", "c", "d"), times = condition[["time_points"]] - 1), # Labels for constraints
-      rep(c(paste0("start(", t(condition[["Phi"]][[1]]), ")")), times = condition[["time_points"]] - 1) # Starting values
+      rep(c(paste0("start(", t(condition[["lagged_effects"]][[1]]), ")")), times = condition[["time_points"]] - 1) # Starting values
     )
     rhs <- rep(
       c(apply(name_within[-condition[["time_points"]], ], 1, rep, times = 2)),
@@ -228,7 +228,7 @@ est_lagged <- function(condition, name_within) {
     )
   } else {
     lhs <- rep(c(t(name_within))[-(1:2)], each = 2)
-    pv <- paste0("start(", c(t(condition[["Phi"]][[1]])), ")")
+    pv <- paste0("start(", c(t(condition[["lagged_effects"]][[1]])), ")")
     rhs <- c(apply(name_within[-condition[["time_points"]], ], 1, rep, times = 2))
   }
   free <- TRUE

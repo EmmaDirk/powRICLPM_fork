@@ -243,14 +243,14 @@ Mplus_lagged <- function(condition, estimation = FALSE, name_within) {
       condition$constraints == "residuals" ||
       condition$constraints == "ME"
     ) { # Freely estimate
-      con <- paste0("*", rep(unlist(condition$Phi), times = (condition$time_points - 1)))
+      con <- paste0("*", rep(unlist(condition$lagged_effects), times = (condition$time_points - 1)))
     } else if (condition$constraints == "lagged" ||
       condition$constraints == "within" ||
       condition$constraints == "stationarity") { # Constrain over time
       con <- c("(alpha)", "(beta)", "(delta)", "(gamma)")
     }
   } else {
-    con <- paste0("@", rep(unlist(condition$Phi), times = (condition$time_points - 1)))
+    con <- paste0("@", rep(unlist(condition$lagged_effects), times = (condition$time_points - 1)))
   }
 
   # Create vector with predictors

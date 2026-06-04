@@ -1,6 +1,6 @@
 test_that("constraints in powRICLPM() work", {
 
-  Phi <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
   out_lagged <- powRICLPM(
     target_power = 0.8,
@@ -8,7 +8,7 @@ test_that("constraints in powRICLPM() work", {
     time_points = 3,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = Phi,
+    lagged_effects = lagged_effects,
     within_cor = 0.3,
     reps = 2,
     seed = 123456,
@@ -33,7 +33,7 @@ test_that("constraints in powRICLPM() work", {
     time_points = 3,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = Phi,
+    lagged_effects = lagged_effects,
     within_cor = 0.3,
     reps = 2,
     seed = 123456,
@@ -51,7 +51,7 @@ test_that("constraints in powRICLPM() work", {
     time_points = 3,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = Phi,
+    lagged_effects = lagged_effects,
     within_cor = 0.3,
     reps = 2,
     seed = 123456,
@@ -82,7 +82,7 @@ test_that("constraints in powRICLPM() work", {
     time_points = 3,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = Phi,
+    lagged_effects = lagged_effects,
     within_cor = 0.3,
     reps = 2,
     seed = 123456,
@@ -109,7 +109,7 @@ test_that("constraints in powRICLPM() work", {
     time_points = 4,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = Phi,
+    lagged_effects = lagged_effects,
     within_cor = 0.3,
     reps = 2,
     seed = 123456,

@@ -1,6 +1,7 @@
 # powRICLPM 0.2.1
 
 ## Minor improvements and fixes
+* Added clearer argument names `intraclass_correlation` and `lagged_effects` to `powRICLPM()`, `summary.powRICLPM()`, and `check_Phi()`, while keeping the legacy `ICC` and `Phi` argument names available for backwards compatibility. Internally, lagged effects are now carried forward as `lagged_effects`; `Phi` is only handled as a legacy input alias.
 * Fixed a bug in version 0.2.0, in which some of the column names of the summary tables from `summary.powRICLPM.parameter()` and `summary.powRICLM.condition()` were misaligned due to a missing column name. 
 * Fixed a bug in version 0.2.0, in which population values were not correctly parsed when setting the `constraints = ...` argument of `powRICLPM()` to anything other than `constraints = "none"` (the default). This resulted in incorrect estimates of bias, mean square error (`MSE`), and coverage (`Cover`). Estimates of power, minimum estimate (`Min`), empirical standard deviation (`SD`), average standard error (`SE Avg`) and accuracy were unaffected and thus remained valid.
 * Added additional documentation to `summary.powRICLPM()` about the interpretation of information in the summary table. 

@@ -17,9 +17,9 @@ Let us use the same illustrating example as explained in the Vignette [Get start
 For our example, we will investigate the power to detect a small standardized cross-lagged effect of $0.2$ for sample sizes from 100 to 1000 (with incremental steps of 50) for an RI-CLPM with 3, 4 and 5 repeated measures. In total, this results in $19 \times 3 = 57$ experimental conditions. Moreover, following the example in the [Get started](https://jeroendmulder.github.io/powRICLPM/articles/start.html) Vignette, our population parameter values are:
 
 ```{r preparation, eval = FALSE}
-Phi <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = T) 
+lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = T) 
 # The .2 refers to our standardized cross-lagged effect of interest
-ICC <- 0.5
+intraclass_correlation <- 0.5
 RI_cor <- 0.3
 ```
 
@@ -28,7 +28,7 @@ To create Mplus model syntax, use the `powRICLPM()` function, and set `software 
 
 - the range of sample sizes to simulate the power for using the `search_lower`, `search_upper`, and `search_step` arguments,
 - the number of repeated measures using the `time_points` argument, 
-- the population values `Phi`, `wSigma`, `ICC`, and `RI_cor`,
+- the population values `lagged_effects`, `within_cor`, `intraclass_correlation`, and `RI_cor`,
 - the number of MCMC replications you want to perform per condition in the `reps` argument,
 - a `seed` to control the starting point of the random number generator, and
 - a `save_path`, denoting the directory to which to save the Mplus input file to. 
@@ -41,9 +41,9 @@ powRICLPM(
   search_upper = 1000,
   search_step = 50,
   time_points = c(3, 4, 5),
-  ICC = 0.5,
+  intraclass_correlation = 0.5,
   RI_cor = 0.3,
-  Phi = Phi,
+  lagged_effects = lagged_effects,
   within_cor = 0.3,
   reps = 10000,
   seed = 123456,

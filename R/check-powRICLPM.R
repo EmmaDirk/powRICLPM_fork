@@ -137,12 +137,12 @@ icheck_cor <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
   }
 }
 
-#' Check \code{Phi} Argument
+#' Check \code{lagged_effects} Argument
 #'
-#' \code{icheck_Phi()} tests if \code{Phi} represents a valid regression matrix for the within-components of the RI-CLPM.
+#' \code{icheck_lagged_effects()} tests if \code{lagged_effects} represents a valid regression matrix for the within-components of the RI-CLPM.
 #'
 #' @noRd
-icheck_Phi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+icheck_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
   if (!is.matrix(x)) {
     cli::cli_abort(
       c(
@@ -434,8 +434,8 @@ icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
     cli::cli_abort(
       c(
         "The residual variance-covariance matrix for within-components (Psi) must be positive definite:",
-        i = "It is computed from the specified `Phi` and `within_cor` arguments.",
-        x = "Psi is not positive definite. Try smaller values for `Phi` and `within_cor`?"
+        i = "It is computed from the specified `lagged_effects` and `within_cor` arguments.",
+        x = "Psi is not positive definite. Try smaller values for `lagged_effects` and `within_cor`?"
       )
     )
   }

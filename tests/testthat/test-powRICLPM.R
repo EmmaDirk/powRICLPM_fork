@@ -3,9 +3,9 @@ test_that("basic power analysis using lavaan runs", {
     target_power = 0.8,
     sample_size = 1000,
     time_points = 3,
-    ICC = 0.5,
+    intraclass_correlation = 0.5,
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reps = 2,
     seed = 123456
@@ -27,11 +27,62 @@ test_that("basic power analysis using lavaan runs", {
   expect_type(out1$conditions[[1]]$MCSEs, "list")
   expect_type(out1$conditions[[1]]$estimation_information, "list")
 
-  test_summary_condition <- summary(out1, sample_size = 1000, time_points = 3, ICC = 0.5, reliability = 1)
+  test_summary_condition <- summary(out1, sample_size = 1000, time_points = 3, intraclass_correlation = 0.5, reliability = 1)
 
   expect_equal(
     test_summary_condition$Population,
     c(1.000, 1.000, 0.300, 0.400, 0.150, 0.200, 0.300, 0.400, 0.150, 0.200, 0.300, 1.000, 1.000, 0.300, 0.781, 0.781, 0.834, 0.834, 0.130, 0.130)
+  )
+})
+
+test_that("legacy ICC and Phi argument names remain supported", {
+  out <- powRICLPM(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    ICC = 0.5,
+    RI_cor = 0.3,
+    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reps = 1,
+    seed = 123456
+  )
+
+  expect_equal(out$conditions[[1]]$ICC, 0.5)
+  expect_equal(out$conditions[[1]]$estimates$population_value[out$conditions[[1]]$estimates$parameter == "wB2~wA1"], 0.2)
+})
+
+test_that("conflicting new and legacy argument names error", {
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    ),
+    "intraclass_correlation"
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    ),
+    "lagged_effects"
   )
 })
 
@@ -42,7 +93,7 @@ test_that("basic power analysis with multiple experimental conditions works", {
     time_points = c(3, 4),
     ICC = c(0.4, 0.6),
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reps = 2,
     seed = 123456
@@ -70,7 +121,7 @@ test_that("power analysis with constraints works", {
     time_points = 3,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reps = 2,
     seed = 123456,
@@ -89,7 +140,7 @@ test_that("power analysis with constraints works", {
     time_points = 3,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reps = 2,
     seed = 123456,
@@ -114,7 +165,7 @@ test_that("power analysis for the STARTS model works", {
       time_points = 4,
       ICC = .5,
       RI_cor = 0.3,
-      Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
       within_cor = 0.3,
       reliability = .85,
       estimate_ME = TRUE,
@@ -139,7 +190,7 @@ test_that("bounded estimation for STARTS model in powRICLPM() works", {
       time_points = 4,
       ICC = .5,
       RI_cor = 0.3,
-      Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
       within_cor = 0.3,
       reliability = .85,
       estimate_ME = TRUE,
@@ -158,7 +209,7 @@ test_that("power analysis using Mplus works", {
     time_points = 4,
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = matrix(c(.5, .1, .4, .5), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(.5, .1, .4, .5), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reps = 1000,
     seed = 123456,
@@ -182,7 +233,7 @@ test_that("power analysis for the STARTS model using Mplus works", {
     time_points = 8,
     ICC = .5,
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reliability = .85,
     estimate_ME = TRUE,
@@ -198,7 +249,7 @@ test_that("power analysis for the STARTS model using Mplus works", {
     time_points = 8,
     ICC = .5,
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reliability = .85,
     estimate_ME = TRUE,
@@ -216,7 +267,7 @@ test_that("power analysis for the STARTS model using Mplus works", {
       time_points = 10,
       ICC = .5,
       RI_cor = 0.3,
-      Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
       within_cor = 0.3,
       reliability = .85,
       estimate_ME = TRUE,

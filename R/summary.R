@@ -8,15 +8,16 @@
 #' @param parameter Character string of length 1 denoting the parameter to visualize the results for.
 #' @param sample_size (optional) An \code{integer}, denoting the sample size of the experimental condition of interest.
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
-#' @param ICC (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
+#' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
 #' @param reliability (optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.
+#' @param ICC Deprecated. Use \code{intraclass_correlation} instead.
 #'
 #' @return No return value, called for side effects.
 #'
 #' @details
 #' \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 #' \itemize{
-#'   \item When \code{sample_size = ...}, \code{time_points = ...}, \code{ICC = ...}, and \code{reliability} are set: Estimation information and results for all parameters across experimental conditions.
+#'   \item When \code{sample_size = ...}, \code{time_points = ...}, \code{intraclass_correlation = ...}, and \code{reliability} are set: Estimation information and results for all parameters across experimental conditions.
 #'   \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 #'   \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 #' }
@@ -48,7 +49,7 @@
 #' summary(out_preliminary, parameter = "wB2~wA1")
 #'
 #' # Performance measures for all parameters, for specific experimental condition
-#' summary(out_preliminary, sample_size = 700, time_points = 4, ICC = .3, reliability = 1)
+#' summary(out_preliminary, sample_size = 700, time_points = 4, intraclass_correlation = .3, reliability = 1)
 #'
 #' @method summary powRICLPM
 #' @export
@@ -58,9 +59,18 @@ summary.powRICLPM <- function(
     parameter = NULL,
     sample_size = NULL,
     time_points = NULL,
-    ICC = NULL,
-    reliability = NULL
+    intraclass_correlation = NULL,
+    reliability = NULL,
+    ICC = NULL
   ) {
+
+  if (!is.null(ICC) && !is.null(intraclass_correlation)) {
+    cli::cli_abort("Please use only one of {.arg intraclass_correlation} and {.arg ICC}.")
+  }
+  if (!is.null(ICC)) {
+    intraclass_correlation <- ICC
+  }
+  ICC <- intraclass_correlation
 
   # Argument validation
   icheck_object_summary(object)

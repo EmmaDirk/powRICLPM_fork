@@ -25,13 +25,21 @@ test_that("icheck_cor() works", {
   expect_error(icheck_cor(c(0.3, 0.4)))
 })
 
-test_that("icheck_Phi() works", {
+test_that("icheck_lagged_effects() works", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
   m2 <- matrix(c(.8, .5, .4, .9), ncol = 2, byrow = TRUE)
 
-  expect_null(icheck_Phi(m1))
-  expect_error(icheck_Phi("m1"))
-  expect_error(icheck_Phi(m2))
+  expect_null(icheck_lagged_effects(m1))
+  expect_error(icheck_lagged_effects("m1"))
+  expect_error(icheck_lagged_effects(m2))
+})
+
+test_that("check_Phi() supports lagged_effects and legacy Phi argument names", {
+  m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
+
+  expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`")
+  expect_output(check_Phi(Phi = m1), "According to `lagged_effects`")
+  expect_error(check_Phi(lagged_effects = m1, Phi = m1), "lagged_effects")
 })
 
 test_that("icheck_reliability() works", {

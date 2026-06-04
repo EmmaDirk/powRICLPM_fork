@@ -6,7 +6,7 @@ test_that("icheck_plot_parameter() works", {
     time_points = c(3, 4),
     ICC = 0.5,
     RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
     within_cor = 0.3,
     reps = 2,
     seed = 123456

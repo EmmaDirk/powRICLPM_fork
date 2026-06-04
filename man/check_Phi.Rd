@@ -2,25 +2,27 @@
 % Please edit documentation in R/user-help.R
 \name{check_Phi}
 \alias{check_Phi}
-\title{Check Interpretation \code{Phi} Argument}
+\title{Check Interpretation of Lagged Effects}
 \usage{
-check_Phi(Phi)
+check_Phi(lagged_effects = NULL, Phi = NULL)
 }
 \arguments{
-\item{Phi}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+\item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+
+\item{Phi}{Deprecated. Use \code{lagged_effects} instead.}
 }
 \value{
 No return value, called for side effects.
 }
 \description{
-Write a textual interpretation of the values in \code{Phi}. This can be used to check if \code{Phi} has been correctly specified.
+Write a textual interpretation of the values in \code{lagged_effects}. This can be used to check if \code{lagged_effects} has been correctly specified.
 }
 \examples{
-# Correctly specified `Phi`
-Phi1 <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
-check_Phi(Phi1)
+# Correctly specified lagged effects
+lagged_effects1 <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
+check_Phi(lagged_effects1)
 
-# `Phi` with too large standardized effects
-Phi2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
-Phi2 <- check_Phi(Phi2)
+# Lagged effects with too large standardized effects
+lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
+lagged_effects2 <- check_Phi(lagged_effects2)
 }
