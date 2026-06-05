@@ -152,10 +152,10 @@ powRICLPM <- function(
   call_powRICLPM <- match.call()
 
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
-    cli::cli_abort("Please use only one of {.arg intraclass_correlation} and {.arg ICC}.")
+    iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
   if (!is.null(Phi) && !is.null(lagged_effects)) {
-    cli::cli_abort("Please use only one of {.arg lagged_effects} and {.arg Phi}.")
+    iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
   if (!is.null(ICC)) {
     intraclass_correlation <- ICC

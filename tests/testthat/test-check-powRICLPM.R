@@ -46,7 +46,10 @@ test_that("check_Phi() calls check_lagged_effects() for backwards compatibility"
 
   expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`")
   expect_output(check_Phi(Phi = m1), "According to `lagged_effects`")
-  expect_error(check_Phi(lagged_effects = m1, Phi = m1), "lagged_effects")
+  expect_error(
+    check_Phi(lagged_effects = m1, Phi = m1),
+    "renamed to.*lagged_effects"
+  )
 })
 
 test_that("icheck_reliability() works", {

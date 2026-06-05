@@ -554,5 +554,17 @@ icheck_alpha <- function(x) {
 }
 
 
+iabort_renamed_argument_conflict <- function(new, old, call = rlang::caller_env()) {
+  cli::cli_abort(
+    c(
+      "The {.arg {old}} argument has been renamed to {.arg {new}}.",
+      i = "{.arg {old}} is still accepted for backwards compatibility.",
+      x = "Use only one of {.arg {new}} and {.arg {old}} in the same call."
+    ),
+    call = call
+  )
+}
+
+
 
 

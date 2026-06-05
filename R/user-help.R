@@ -61,7 +61,7 @@ check_lagged_effects <- function(lagged_effects) {
 #' check_Phi(lagged_effects)
 check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
   if (!is.null(Phi) && !is.null(lagged_effects)) {
-    cli::cli_abort("Please use only one of {.arg lagged_effects} and {.arg Phi}.")
+    iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
   if (!is.null(Phi)) {
     lagged_effects <- Phi

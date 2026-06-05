@@ -65,7 +65,7 @@ summary.powRICLPM <- function(
   ) {
 
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
-    cli::cli_abort("Please use only one of {.arg intraclass_correlation} and {.arg ICC}.")
+    iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
   if (!is.null(ICC)) {
     intraclass_correlation <- ICC
