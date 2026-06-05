@@ -10,20 +10,12 @@
 #' @examples
 #' # Correctly specified lagged effects
 #' lagged_effects1 <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
-#' check_Phi(lagged_effects1)
+#' check_lagged_effects(lagged_effects1)
 #'
 #' # Lagged effects with too large standardized effects
 #' lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
-#' lagged_effects2 <- check_Phi(lagged_effects2)
-check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
-
-  if (!is.null(Phi) && !is.null(lagged_effects)) {
-    cli::cli_abort("Please use only one of {.arg lagged_effects} and {.arg Phi}.")
-  }
-  if (!is.null(Phi)) {
-    lagged_effects <- Phi
-  }
-
+#' lagged_effects2 <- check_lagged_effects(lagged_effects2)
+check_lagged_effects <- function(lagged_effects) {
   # Check argument type
   if (!is.matrix(lagged_effects)) {
     stop(rlang::format_error_bullets(c(
@@ -53,4 +45,27 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
       ))
     )
   }
+}
+
+#' @rdname check_lagged_effects
+#'
+#' @inheritParams powRICLPM
+#' @param Phi Deprecated. Use \code{lagged_effects} instead.
+#'
+#' @details `check_Phi()` is deprecated. Use [check_lagged_effects()] instead.
+#' @export
+#'
+#' @examples
+#' # Deprecated; use check_lagged_effects() instead.
+#' lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
+#' check_Phi(lagged_effects)
+check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
+  if (!is.null(Phi) && !is.null(lagged_effects)) {
+    cli::cli_abort("Please use only one of {.arg lagged_effects} and {.arg Phi}.")
+  }
+  if (!is.null(Phi)) {
+    lagged_effects <- Phi
+  }
+
+  check_lagged_effects(lagged_effects)
 }

@@ -33,7 +33,7 @@ intraclass_correlation <- 0.5
 RI_cor <- 0.3
 ```
 
-If you are unsure if you have specified the `lagged_effects` matrix as intended, you can use the `check_Phi()` function to give you a summary of how the lagged effects are interpreted. 
+If you are unsure if you have specified the `lagged_effects` matrix as intended, you can use the `check_lagged_effects()` function to give you a summary of how the lagged effects are interpreted.
 
 ```{r setup, message=FALSE}
 library(powRICLPM)
@@ -41,7 +41,7 @@ library(powRICLPM)
 
 ```{r step2-check}
 # Check `lagged_effects` argument
-check_Phi(lagged_effects)
+check_lagged_effects(lagged_effects)
 ```
 
 # Steps 3-5: Perform the power analysis

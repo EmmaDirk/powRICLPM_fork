@@ -34,7 +34,14 @@ test_that("icheck_lagged_effects() works", {
   expect_error(icheck_lagged_effects(m2))
 })
 
-test_that("check_Phi() supports lagged_effects and legacy Phi argument names", {
+test_that("check_lagged_effects() writes lagged effect interpretation", {
+  m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
+
+  expect_output(check_lagged_effects(m1), "According to `lagged_effects`")
+  expect_error(check_lagged_effects("m1"), "lagged_effects")
+})
+
+test_that("check_Phi() calls check_lagged_effects() for backwards compatibility", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
 
   expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`")
