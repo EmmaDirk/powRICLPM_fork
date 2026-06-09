@@ -196,6 +196,7 @@ powRICLPM <- function(
   icheck_estimator(estimator, skewness, kurtosis)
   save_path <- icheck_path(save_path, software)
   icheck_software(software, skewness, kurtosis)
+  icheck_constraints_software(constraints, software)
 
   # powRICLPM updates
   if (!is.null(bootstrap_reps)) {

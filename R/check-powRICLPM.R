@@ -340,23 +340,55 @@ icheck_seed <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
 #'
 #' @noRd
 icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (length(x) > 1) {
+  if (!is.character(x)) {
     cli::cli_abort(
       c(
-        "You can only specify a single set of constraints at the time:",
-        x = paste0("You specified ", length(x), " constraints.")
+        "{.arg {arg}} must be a character vector:",
+        x = paste0("Your {.arg {arg}} is ", typeof(x), ".")
       )
     )
   }
-  if (!any(x == c("none", "lagged", "residuals", "within", "stationarity", "ME"))) {
+  if (length(x) == 0) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'none', 'lagged', 'residuals', 'within', 'stationarity', or 'ME':",
-        x = paste0("Your {.arg {arg}} is ", x, ".")
+        "{.arg {arg}} must contain at least one constraint option:",
+        i = "Use 'none' when no constraints should be imposed."
       )
     )
   }
-  if (x == "ME" & !ME) {
+
+  valid_constraints <- c(
+    "none", "lagged", "residuals", "within", "stationarity", "ME",
+    "RI_loadings_free"
+  )
+  if (!all(x %in% valid_constraints)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} contains invalid constraints:",
+        i = paste0("Valid constraints are: ", paste(valid_constraints, collapse = ", "), "."),
+        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+      )
+    )
+  }
+  if (has_constraint(x, "none") && length(x) > 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only include 'none' by itself:",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+      )
+    )
+  }
+  if (has_constraint(x, "stationarity") &&
+      any(normalize_constraints(x) %in% c("lagged", "residuals", "within"))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} cannot combine 'stationarity' with lagged or residual constraints:",
+        i = "'stationarity' already imposes its own lagged-effect and residual-variance constraints.",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+      )
+    )
+  }
+  if (has_constraint(x, "ME") && !ME) {
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be set to 'ME' when `estimate_ME = TRUE`:",
@@ -500,11 +532,11 @@ icheck_bounds <- function(bounds, constraints, software,
       )
     )
   }
-  if (bounds && constraints != "none") {
+  if (bounds && !has_constraint(constraints, "none")) {
     cli::cli_abort(
       c(
         "Bounded estimation can only be used without constraints on the estimation model:",
-        x = "You've placed the following constraints on the estimation model: {.value {con}}"
+        x = paste0("You've placed the following constraints on the estimation model: ", format_constraints(constraints), ".")
       )
     )
   }
@@ -516,6 +548,55 @@ icheck_bounds <- function(bounds, constraints, software,
       )
     )
   }
+}
+
+icheck_constraints_software <- function(constraints, software) {
+  constraints <- normalize_constraints(constraints)
+  if (software == "Mplus" && length(constraints) > 1) {
+    cli::cli_abort(
+      c(
+        "Vector-valued constraints are only supported for lavaan in this prototype:",
+        x = paste0("Your `constraints` argument is ", format_constraints(constraints), ".")
+      )
+    )
+  }
+  if (software == "Mplus" && has_constraint(constraints, "RI_loadings_free")) {
+    cli::cli_abort(
+      c(
+        "Free random-intercept loadings are only supported for lavaan in this prototype:",
+        x = "`constraints = 'RI_loadings_free'` cannot currently be used with `software = 'Mplus'`."
+      )
+    )
+  }
+}
+
+
+normalize_constraints <- function(x) {
+  if (is.list(x) && length(x) == 1) {
+    x <- x[[1]]
+  }
+  unique(x)
+}
+
+
+has_constraint <- function(constraints, constraint) {
+  constraints <- normalize_constraints(constraints)
+  if (constraint == "lagged") {
+    return(any(constraints %in% c("lagged", "within", "stationarity")))
+  }
+  if (constraint == "residuals") {
+    return(any(constraints %in% c("residuals", "within")))
+  }
+  any(constraints == constraint)
+}
+
+
+format_constraints <- function(constraints) {
+  constraints <- normalize_constraints(constraints)
+  if (length(constraints) == 1) {
+    return(constraints)
+  }
+  paste0("c(", paste0("'", constraints, "'", collapse = ", "), ")")
 }
 
 

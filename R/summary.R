@@ -112,7 +112,7 @@ summary.powRICLPM <- function(
     summary_condition <- matrix(c(
       condition$skewness,
       condition$kurtosis,
-      object$session$constraints,
+      format_constraints(object$session$constraints),
       object$session$bounds,
       object$session$estimate_ME,
       condition$significance_criterion
