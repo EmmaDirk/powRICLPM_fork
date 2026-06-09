@@ -370,25 +370,46 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
       )
     )
   }
-  if (has_constraint(x, "none") && length(x) > 1) {
+  constraints <- normalize_constraints(x)
+  if (has_constraint(constraints, "none") && length(constraints) > 1) {
     cli::cli_abort(
       c(
         "{.arg {arg}} can only include 'none' by itself:",
-        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
       )
     )
   }
-  if (has_constraint(x, "stationarity") &&
-      any(normalize_constraints(x) %in% c("lagged", "residuals", "within"))) {
+  if ("within" %in% constraints && any(constraints %in% c("lagged", "residuals"))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} cannot combine 'within' with 'lagged' or 'residuals':",
+        i = "'within' already constrains both lagged effects and residual variances.",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
+      )
+    )
+  }
+  if ("within" %in% constraints) {
+    preferred_constraints <- c("lagged", "residuals", setdiff(constraints, "within"))
+    cli::cli_alert_info(
+      paste0(
+        "`within` is shorthand for `lagged` and `residuals`; ",
+        "for clearer new scripts, prefer `constraints = ",
+        format_constraints(preferred_constraints),
+        "`."
+      )
+    )
+  }
+  if (has_constraint(constraints, "stationarity") &&
+      any(constraints %in% c("lagged", "residuals", "within"))) {
     cli::cli_abort(
       c(
         "{.arg {arg}} cannot combine 'stationarity' with lagged or residual constraints:",
         i = "'stationarity' already imposes its own lagged-effect and residual-variance constraints.",
-        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
       )
     )
   }
-  if (has_constraint(x, "ME") && !ME) {
+  if (has_constraint(constraints, "ME") && !ME) {
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be set to 'ME' when `estimate_ME = TRUE`:",
