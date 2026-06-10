@@ -5,12 +5,14 @@
 \alias{check_Phi}
 \title{Check Interpretation of Lagged Effects}
 \usage{
-check_lagged_effects(lagged_effects)
+check_lagged_effects(lagged_effects, ...)
 
 check_Phi(lagged_effects = NULL, Phi = NULL)
 }
 \arguments{
 \item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+
+\item{...}{Not used. Included only to provide clear errors for legacy argument names.}
 
 \item{Phi}{Deprecated. Use \code{lagged_effects} instead.}
 }

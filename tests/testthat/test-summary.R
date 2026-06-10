@@ -19,7 +19,10 @@ test_that("all columns from summary.powRICLMP(...) are named", {
   table_condition <- summary(out, sample_size = 500, intraclass_correlation = 0.4, time_points = 3, reliability = 1)
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power"))
 
-  table_condition_legacy <- summary(out, sample_size = 500, ICC = 0.4, time_points = 3, reliability = 1)
+  expect_message(
+    table_condition_legacy <- summary(out, sample_size = 500, ICC = 0.4, time_points = 3, reliability = 1),
+    "intraclass_correlation"
+  )
   expect_equal(table_condition_legacy, table_condition)
 
   expect_error(

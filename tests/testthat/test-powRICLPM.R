@@ -36,20 +36,39 @@ test_that("basic power analysis using lavaan runs", {
 })
 
 test_that("legacy ICC and Phi argument names remain supported", {
-  out <- powRICLPM(
-    target_power = 0.8,
-    sample_size = 1000,
-    time_points = 3,
-    ICC = 0.5,
-    RI_cor = 0.3,
-    Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
-    within_cor = 0.3,
-    reps = 1,
-    seed = 123456
+  expect_message(
+    out <- powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    ),
+    "intraclass_correlation"
+  )
+
+  expect_message(
+    out_phi <- powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      Phi = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    ),
+    "lagged_effects"
   )
 
   expect_equal(out$conditions[[1]]$ICC, 0.5)
-  expect_equal(out$conditions[[1]]$estimates$population_value[out$conditions[[1]]$estimates$parameter == "wB2~wA1"], 0.2)
+  expect_equal(out_phi$conditions[[1]]$ICC, 0.5)
+  expect_equal(out_phi$conditions[[1]]$estimates$population_value[out_phi$conditions[[1]]$estimates$parameter == "wB2~wA1"], 0.2)
 })
 
 test_that("conflicting new and legacy argument names error", {

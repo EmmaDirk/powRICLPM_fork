@@ -68,6 +68,7 @@ summary.powRICLPM <- function(
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
   if (!is.null(ICC)) {
+    iinform_renamed_argument("intraclass_correlation", "ICC")
     intraclass_correlation <- ICC
   }
   ICC <- intraclass_correlation

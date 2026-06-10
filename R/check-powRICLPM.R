@@ -686,5 +686,19 @@ iabort_renamed_argument_conflict <- function(new, old, call = rlang::caller_env(
 }
 
 
+iinform_renamed_argument <- function(new, old) {
+  cli::cli_alert_info(
+    "The {.arg {old}} argument has been renamed to {.arg {new}}; please consider switching to {.arg {new}} in new code."
+  )
+}
+
+
+iinform_renamed_function <- function(new, old) {
+  cli::cli_alert_info(
+    "The {.fn {old}} helper has been renamed to {.fn {new}}; please consider switching to {.fn {new}} in new code."
+  )
+}
+
+
 
 

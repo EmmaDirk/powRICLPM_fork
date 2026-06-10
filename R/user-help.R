@@ -3,6 +3,7 @@
 #' Write a textual interpretation of the values in `lagged_effects`. This can be used to check if `lagged_effects` has been correctly specified.
 #'
 #' @inheritParams powRICLPM
+#' @param ... Not used. Included only to provide clear errors for legacy argument names.
 #'
 #' @return No return value, called for side effects.
 #' @export
@@ -15,7 +16,22 @@
 #' # Lagged effects with too large standardized effects
 #' lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
 #' lagged_effects2 <- check_lagged_effects(lagged_effects2)
-check_lagged_effects <- function(lagged_effects) {
+check_lagged_effects <- function(lagged_effects, ...) {
+  dots <- list(...)
+  if ("Phi" %in% names(dots)) {
+    iabort_renamed_argument_conflict("lagged_effects", "Phi")
+  }
+  if (length(dots) > 0) {
+    dot_names <- names(dots)
+    dot_names[dot_names == ""] <- "<unnamed>"
+    cli::cli_abort(
+      c(
+        "Unexpected argument in {.fn check_lagged_effects}:",
+        x = paste0("Unknown argument(s): ", paste0(dot_names, collapse = ", "), ".")
+      )
+    )
+  }
+
   # Check argument type
   if (!is.matrix(lagged_effects)) {
     stop(rlang::format_error_bullets(c(
@@ -63,6 +79,7 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
   if (!is.null(Phi) && !is.null(lagged_effects)) {
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
+  iinform_renamed_function("check_lagged_effects", "check_Phi")
   if (!is.null(Phi)) {
     lagged_effects <- Phi
   }
