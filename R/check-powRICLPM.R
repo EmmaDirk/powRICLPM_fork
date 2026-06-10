@@ -392,8 +392,8 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
     preferred_constraints <- c("lagged", "residuals", setdiff(constraints, "within"))
     cli::cli_alert_info(
       paste0(
-        "`within` is shorthand for `lagged` and `residuals`; ",
-        "for clearer new scripts, prefer `constraints = ",
+        "`within` is retained as shorthand for `lagged` and `residuals`. ",
+        "The current explicit form is `constraints = ",
         format_constraints(preferred_constraints),
         "`."
       )
@@ -573,19 +573,22 @@ icheck_bounds <- function(bounds, constraints, software,
 
 icheck_constraints_software <- function(constraints, software) {
   constraints <- normalize_constraints(constraints)
-  if (software == "Mplus" && length(constraints) > 1) {
-    cli::cli_abort(
-      c(
-        "Vector-valued constraints are only supported for lavaan in this prototype:",
-        x = paste0("Your `constraints` argument is ", format_constraints(constraints), ".")
-      )
-    )
-  }
   if (software == "Mplus" && has_constraint(constraints, "RI_loadings_free")) {
     cli::cli_abort(
       c(
         "Free random-intercept loadings are only supported for lavaan in this prototype:",
         x = "`constraints = 'RI_loadings_free'` cannot currently be used with `software = 'Mplus'`."
+      )
+    )
+  }
+  if (software == "Mplus" &&
+      length(constraints) > 1 &&
+      !is_lagged_residuals_constraint(constraints)) {
+    cli::cli_abort(
+      c(
+        "This vector-valued constraint combination is not supported for Mplus:",
+        i = "`constraints = c('lagged', 'residuals')` is the only vector-valued combination currently supported for Mplus, where it is treated as `constraints = 'within'`.",
+        x = paste0("Your `constraints` argument is ", format_constraints(constraints), ".")
       )
     )
   }
@@ -597,6 +600,21 @@ normalize_constraints <- function(x) {
     x <- x[[1]]
   }
   unique(x)
+}
+
+
+is_lagged_residuals_constraint <- function(constraints) {
+  constraints <- normalize_constraints(constraints)
+  length(constraints) == 2 && setequal(constraints, c("lagged", "residuals"))
+}
+
+
+normalize_constraints_for_software <- function(constraints, software) {
+  constraints <- normalize_constraints(constraints)
+  if (software == "Mplus" && is_lagged_residuals_constraint(constraints)) {
+    return("within")
+  }
+  constraints
 }
 
 

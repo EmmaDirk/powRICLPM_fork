@@ -30,7 +30,7 @@ create_conditions <- function(
 ) {
 
   ICC <- intraclass_correlation
-  constraints <- normalize_constraints(constraints)
+  constraints <- normalize_constraints_for_software(constraints, software)
 
   # Create data.frame with rows as experimental conditions
   conditions <- expand.grid(

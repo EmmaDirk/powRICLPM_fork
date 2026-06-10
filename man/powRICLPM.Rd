@@ -72,7 +72,7 @@ powRICLPM(
 
 \item{seed}{An \code{integer} of length 1. If multiple cores are used, a seed will be used to generate a full L'Ecuyer-CMRG seed for all cores.}
 
-\item{constraints}{(optional) A \code{character} string, specifying the type of constraints that should be imposed on the estimation model (see "Details").}
+\item{constraints}{(optional) A \code{character} vector, specifying the type of constraints that should be imposed on the estimation model (see "Details").}
 
 \item{bounds}{(optional) A \code{logical}, denoting if bounded estimation should be used for the latent variable variances in the model (see "Details").}
 
@@ -113,15 +113,20 @@ A progress bar displaying the status of the power analysis has been implemented 
 
 \subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
 
-\subsection{Extension: Imposing Constraints}{The following constraints can be imposed on the estimation model using the \code{constraints = "..."} argument:
+\subsection{Extension: Imposing Constraints}{The following constraints can be imposed on the estimation model using the \code{constraints} argument. By default, \code{constraints = "none"}, and no constraints are imposed.
 
 \itemize{
-\item \code{lagged}: Time-invariant autoregressive and cross-lagged effects.
-\item \code{residuals}: Time-invariant residual variances.
-\item \code{within}: Time-invariant lagged effects and residual variances.
-\item \code{stationarity}: Constraints such that at the within-unit level a stationary process is estimated. This included time-invariant lagged effects, and constraints on the residual variances.
-\item \code{ME}: Time-invariant measurement error variances. Only possible when \code{estimate_ME = TRUE}.
+\item \code{"lagged"}: Time-invariant autoregressive and cross-lagged effects.
+\item \code{"residuals"}: Time-invariant within-unit residual variances and covariances.
+\item \code{c("lagged", "residuals")}: Time-invariant lagged effects and within-unit residual variances and covariances.
+\item \code{"stationarity"}: Constraints such that at the within-unit level a stationary process is estimated. This includes time-invariant lagged effects and constraints on the residual variances. It cannot be combined with \code{"lagged"} or \code{"residuals"}.
+\item \code{"ME"}: Time-invariant measurement error variances. Only possible when \code{estimate_ME = TRUE}.
+\item \code{"RI_loadings_free"}: Freely estimated random-intercept factor loadings from the second wave onward. This changes the estimation model only; the population model used for data generation keeps the random-intercept loadings fixed to 1.
 }
+
+The previous option \code{constraints = "within"} is retained as shorthand for \code{constraints = c("lagged", "residuals")}. When it is used, an informational message describes the current explicit form.
+
+With \code{software = "Mplus"}, the vector-valued \code{constraints = c("lagged", "residuals")} form is accepted and treated as \code{constraints = "within"}. Other vector-valued constraint combinations and \code{"RI_loadings_free"} are currently supported for \code{software = "lavaan"} only.
 }
 
 \subsection{Extension: Bounded Estimation}{Bounded estimation is useful to avoid nonconvergence in small samples. Here, automatic wide bounds are used as advised by De Jonckere and Rosseel (2022), see \code{optim.bounds} in \code{\link[lavaan]{lavOptions}}. This option can only be used when no constraints are imposed on the estimation model.}
