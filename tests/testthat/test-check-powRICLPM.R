@@ -48,11 +48,11 @@ test_that("check_Phi() calls check_lagged_effects() for backwards compatibility"
 
   expect_message(
     expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`"),
-    "check_lagged_effects"
+    "Please consider using.*check_lagged_effects.*instead of.*check_Phi"
   )
   expect_message(
     expect_output(check_Phi(Phi = m1), "According to `lagged_effects`"),
-    "check_lagged_effects"
+    "Please consider using.*check_lagged_effects.*instead of.*check_Phi"
   )
   expect_error(
     check_Phi(lagged_effects = m1, Phi = m1),

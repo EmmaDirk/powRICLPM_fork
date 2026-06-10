@@ -713,7 +713,7 @@ iinform_renamed_arguments <- function(renames) {
 
 iinform_renamed_function <- function(new, old) {
   cli::cli_alert_info(
-    "Note: {.fn {old}} worked, but it is a legacy helper. For new code, consider using {.fn {new}}."
+    "Note: legacy functions were used. Please consider using {.fn {new}} instead of {.fn {old}}."
   )
 }
 
