@@ -691,16 +691,20 @@ iinform_renamed_arguments <- function(renames) {
     return(invisible())
   }
   renames <- renames[!duplicated(names(renames))]
-  formatted_renames <- paste0(
-    "`", names(renames), "` -> `", unname(renames), "`",
-    collapse = "; "
-  )
+  formatted_renames <- paste0("`", unname(renames), "` instead of `", names(renames), "`")
+  if (length(formatted_renames) == 1) {
+    replacement_text <- formatted_renames
+  } else {
+    replacement_text <- paste0(
+      paste(formatted_renames[-length(formatted_renames)], collapse = ", "),
+      ", and ",
+      formatted_renames[length(formatted_renames)]
+    )
+  }
   cli::cli_alert_info(
     paste0(
-      "Note: legacy argument name",
-      if (length(renames) == 1) " was" else "s were",
-      " used. The call worked, but for new code consider switching: ",
-      formatted_renames,
+      "Note: legacy arguments were used. Please consider using ",
+      replacement_text,
       "."
     )
   )
