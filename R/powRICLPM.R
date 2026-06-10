@@ -155,6 +155,7 @@ powRICLPM <- function(
 
   # Get call
   call_powRICLPM <- match.call()
+  legacy_renames <- character()
 
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
@@ -163,11 +164,11 @@ powRICLPM <- function(
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
   if (!is.null(ICC)) {
-    iinform_renamed_argument("intraclass_correlation", "ICC")
+    legacy_renames["ICC"] <- "intraclass_correlation"
     intraclass_correlation <- ICC
   }
   if (!is.null(Phi)) {
-    iinform_renamed_argument("lagged_effects", "Phi")
+    legacy_renames["Phi"] <- "lagged_effects"
     lagged_effects <- Phi
   }
 
@@ -298,6 +299,8 @@ powRICLPM <- function(
 
     class(out) <- c("powRICLPM", class(out))
 
+    iinform_renamed_arguments(legacy_renames)
+
     return(out)
   } else if (software == "Mplus") {
     # Inform user that simulations in Mplus have started
@@ -305,6 +308,7 @@ powRICLPM <- function(
 
     # Inform user of results
     print.powRICLPM.Mplus(conditions, save_path = save_path)
+    iinform_renamed_arguments(legacy_renames)
 
     invisible()
   }

@@ -64,11 +64,12 @@ summary.powRICLPM <- function(
     ICC = NULL
   ) {
 
+  legacy_renames <- character()
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
   if (!is.null(ICC)) {
-    iinform_renamed_argument("intraclass_correlation", "ICC")
+    legacy_renames["ICC"] <- "intraclass_correlation"
     intraclass_correlation <- ICC
   }
   ICC <- intraclass_correlation
@@ -128,6 +129,7 @@ summary.powRICLPM <- function(
     )
 
     print.summary.powRICLPM.condition(summary_list)
+    iinform_renamed_arguments(legacy_renames)
     invisible(results)
 
   } else if (!is.null(parameter)) {
@@ -138,6 +140,7 @@ summary.powRICLPM <- function(
     parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
     colnames(parameter_summary) <- c("Sample size", "Time points", "ICC", "Reliability", "Population", "Avg","Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter)
+    iinform_renamed_arguments(legacy_renames)
     invisible(parameter_summary)
 
   } else {
@@ -148,6 +151,7 @@ summary.powRICLPM <- function(
     colnames(replications_df) <- c("Sample size", "Time points", "ICC", "Reliability", "Error", "Not converged", "Inadmissible")
     version <- utils::packageVersion("powRICLPM")
     print.summary.powRICLPM(replications_df, powRICLPM_version = version)
+    iinform_renamed_arguments(legacy_renames)
   }
 }
 

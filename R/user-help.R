@@ -79,10 +79,10 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
   if (!is.null(Phi) && !is.null(lagged_effects)) {
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
-  iinform_renamed_function("check_lagged_effects", "check_Phi")
   if (!is.null(Phi)) {
     lagged_effects <- Phi
   }
 
   check_lagged_effects(lagged_effects)
+  iinform_renamed_function("check_lagged_effects", "check_Phi")
 }

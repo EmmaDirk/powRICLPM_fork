@@ -686,16 +686,30 @@ iabort_renamed_argument_conflict <- function(new, old, call = rlang::caller_env(
 }
 
 
-iinform_renamed_argument <- function(new, old) {
+iinform_renamed_arguments <- function(renames) {
+  if (length(renames) == 0) {
+    return(invisible())
+  }
+  renames <- renames[!duplicated(names(renames))]
+  formatted_renames <- paste0(
+    "`", names(renames), "` -> `", unname(renames), "`",
+    collapse = "; "
+  )
   cli::cli_alert_info(
-    "The {.arg {old}} argument has been renamed to {.arg {new}}; please consider switching to {.arg {new}} in new code."
+    paste0(
+      "Note: legacy argument name",
+      if (length(renames) == 1) " was" else "s were",
+      " used. The call worked, but for new code consider switching: ",
+      formatted_renames,
+      "."
+    )
   )
 }
 
 
 iinform_renamed_function <- function(new, old) {
   cli::cli_alert_info(
-    "The {.fn {old}} helper has been renamed to {.fn {new}}; please consider switching to {.fn {new}} in new code."
+    "Note: {.fn {old}} worked, but it is a legacy helper. For new code, consider using {.fn {new}}."
   )
 }
 
