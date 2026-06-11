@@ -19,7 +19,7 @@
 check_lagged_effects <- function(lagged_effects, ...) {
   dots <- list(...)
   if ("Phi" %in% names(dots)) {
-    iabort_renamed_argument_conflict("lagged_effects", "Phi")
+    iabort_unsupported_legacy_argument("lagged_effects", "Phi", "check_lagged_effects")
   }
   if (length(dots) > 0) {
     dot_names <- names(dots)

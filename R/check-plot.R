@@ -78,6 +78,16 @@ icheck_y <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) 
 
 
 icheck_plot_options <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (!is.character(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a character string:",
+        x = "Your {.arg {arg}} is a {.cls {typeof(x)}}."
+      ),
+      call = call
+    )
+  }
+
   if (length(x) > 1) {
     cli::cli_abort(
       c(
@@ -86,11 +96,12 @@ icheck_plot_options <- function(x, arg = rlang::caller_arg(x), call = rlang::cal
       )
     )
   }
-  if (!any(x == c("time_points", "ICC", "reliability"))) {
+  x <- normalize_intraclass_correlation_value(x)
+  if (!any(x == c("time_points", "intraclass_correlation", "reliability"))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'time_points', 'ICC', or 'reliability':",
-        x = paste0("Your {.arg {arg}} is", x, ".")
+        "{.arg {arg}} must be 'time_points', 'intraclass_correlation', or 'reliability':",
+        x = "Your {.arg {arg}} is {.val {x}}."
       )
     )
   }

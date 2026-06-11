@@ -677,9 +677,20 @@ icheck_alpha <- function(x) {
 iabort_renamed_argument_conflict <- function(new, old, call = rlang::caller_env()) {
   cli::cli_abort(
     c(
-      "The {.arg {old}} argument has been renamed to {.arg {new}}.",
-      i = "{.arg {old}} is still accepted for backwards compatibility.",
-      x = "Use only one of {.arg {new}} and {.arg {old}} in the same call."
+      "Both {.arg {new}} and legacy {.arg {old}} were supplied.",
+      i = "{.arg {old}} is an alias kept for backwards compatibility.",
+      x = "Please use only {.arg {new}} in this call."
+    ),
+    call = call
+  )
+}
+
+
+iabort_unsupported_legacy_argument <- function(new, old, fun, call = rlang::caller_env()) {
+  cli::cli_abort(
+    c(
+      "{.arg {old}} is not supported in {.fn {fun}}.",
+      i = "Please use {.arg {new}} instead."
     ),
     call = call
   )
@@ -691,23 +702,42 @@ iinform_renamed_arguments <- function(renames) {
     return(invisible())
   }
   renames <- renames[!duplicated(names(renames))]
-  formatted_renames <- paste0("`", unname(renames), "` instead of `", names(renames), "`")
-  if (length(formatted_renames) == 1) {
-    replacement_text <- formatted_renames
-  } else {
-    replacement_text <- paste0(
-      paste(formatted_renames[-length(formatted_renames)], collapse = ", "),
-      ", and ",
-      formatted_renames[length(formatted_renames)]
-    )
-  }
   cli::cli_alert_info(
     paste0(
       "Note: legacy arguments were used. Please consider using ",
-      replacement_text,
+      iformat_renames(renames),
       "."
     )
   )
+}
+
+
+iinform_renamed_values <- function(renames) {
+  if (length(renames) == 0) {
+    return(invisible())
+  }
+  renames <- renames[!duplicated(names(renames))]
+  cli::cli_alert_info(
+    paste0(
+      "Note: legacy values were used. Please consider using ",
+      iformat_renames(renames),
+      "."
+    )
+  )
+}
+
+
+iformat_renames <- function(renames) {
+  formatted_renames <- paste0("`", unname(renames), "` instead of `", names(renames), "`")
+  if (length(formatted_renames) == 1) {
+    return(formatted_renames)
+  } else {
+    return(paste0(
+      paste(formatted_renames[-length(formatted_renames)], collapse = ", "),
+      ", and ",
+      formatted_renames[length(formatted_renames)]
+    ))
+  }
 }
 
 
@@ -715,6 +745,14 @@ iinform_renamed_function <- function(new, old) {
   cli::cli_alert_info(
     "Note: legacy functions were used. Please consider using {.fn {new}} instead of {.fn {old}}."
   )
+}
+
+
+normalize_intraclass_correlation_value <- function(x) {
+  if (identical(x, "ICC")) {
+    return("intraclass_correlation")
+  }
+  x
 }
 
 

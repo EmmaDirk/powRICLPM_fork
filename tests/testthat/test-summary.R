@@ -27,6 +27,6 @@ test_that("all columns from summary.powRICLMP(...) are named", {
 
   expect_error(
     summary(out, sample_size = 500, intraclass_correlation = 0.4, ICC = 0.4, time_points = 3, reliability = 1),
-    "renamed to.*intraclass_correlation"
+    "Both.*intraclass_correlation.*legacy.*ICC"
   )
 })

@@ -10,7 +10,7 @@ icheck_what_give <- function(x, arg = rlang::caller_arg(x), call = rlang::caller
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character string:",
-        "x" = "Your {.arg {arg}} is a {typeof(arg)}."
+        "x" = "Your {.arg {arg}} is a {.cls {typeof(x)}}."
       ),
       call = call
     )
@@ -20,16 +20,21 @@ icheck_what_give <- function(x, arg = rlang::caller_arg(x), call = rlang::caller
     cli::cli_abort(
       c(
         "{.arg {arg}} must be of length 1:",
-        "x" = "Your {.arg {arg}} is of length {.value length(arg)}."
+        "x" = "Your {.arg {arg}} is of length {length(x)}."
       )
     )
   }
 
-  if (!any(x == c("conditions", "estimation_problems", "results", "names"))) {
+  x <- normalize_intraclass_correlation_value(x)
+  if (!any(x == c(
+    "conditions", "estimation_problems", "results", "names",
+    "sample_size", "time_points", "intraclass_correlation",
+    "reliability", "uncertainty"
+  ))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} is not an accepted input. Please change it to `conditions`, `estimation_problems`, `results`, or `names`.",
-        "x" = "Your {.arg {arg}} is {print(arg)}."
+        "{.arg {arg}} is not an accepted input. Please change it to `conditions`, `estimation_problems`, `results`, `names`, `sample_size`, `time_points`, `intraclass_correlation`, `reliability`, or `uncertainty`.",
+        "x" = "Your {.arg {arg}} is {.val {x}}."
       ),
       call = call
     )

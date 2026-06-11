@@ -85,7 +85,7 @@ test_that("conflicting new and legacy argument names error", {
       reps = 1,
       seed = 123456
     ),
-    "renamed to.*intraclass_correlation"
+    "Both.*intraclass_correlation.*legacy.*ICC"
   )
 
   expect_error(
@@ -101,7 +101,7 @@ test_that("conflicting new and legacy argument names error", {
       reps = 1,
       seed = 123456
     ),
-    "renamed to.*lagged_effects"
+    "Both.*lagged_effects.*legacy.*Phi"
   )
 })
 

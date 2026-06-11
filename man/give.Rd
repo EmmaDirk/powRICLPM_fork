@@ -9,7 +9,7 @@ give(from, what, parameter = NULL)
 \arguments{
 \item{from}{A \code{powRICLPM} object}
 
-\item{what}{A character string, denoting the information to extract, either "conditions", "estimation_problems", "results", or "names".}
+\item{what}{A character string, denoting the information to extract, such as "conditions", "estimation_problems", "results", or "names" (see "Details").}
 
 \item{parameter}{(optional) When \code{what = "results"}, a character string denoting the parameter to extract the results for.}
 }
@@ -24,9 +24,11 @@ The following information can be extracted from the \code{powRICLPM} object:
 
 \itemize{
 \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points and ICC.
+\item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, or \code{reliability}: The same conditions \code{data.frame}. \code{ICC} is accepted as a legacy value for \code{intraclass_correlation}.
 \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
 \item \code{results}: The average estimate (\code{average}), minimum estimate (\code{minimum}), standard deviation of parameter estimates (\code{SD}), the average standard error (\code{SEavg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 \item \code{names}: The parameter names in the condition with the least parameters (i.e., parameter names that apply to each experimental condition).
+\item \code{uncertainty}: Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
 }
 }
 \examples{

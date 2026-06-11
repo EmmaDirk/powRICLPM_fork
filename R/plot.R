@@ -29,7 +29,7 @@
 #' \itemize{
 #'    \item \code{sample_size}: Sample size.
 #'    \item \code{time_points}: Time points.
-#'    \item \code{ICC}: Intraclass correlation (ICC).
+#'    \item \code{intraclass_correlation}: Intraclass correlation.
 #'    \item \code{reliability}: Item-reliablity.
 #' }
 #' }
@@ -69,12 +69,23 @@ plot.powRICLPM <- function(
     parameter = NULL,
     color_by = "time_points",
     shape_by = "reliability",
-    facet_by = "ICC"
+    facet_by = "intraclass_correlation"
 ) {
+
+  legacy_value_renames <- character()
+  plot_options <- list(color_by = color_by, shape_by = shape_by, facet_by = facet_by)
+  if (any(unlist(plot_options, use.names = FALSE) == "ICC")) {
+    legacy_value_renames["ICC"] <- "intraclass_correlation"
+  }
+  color_by <- normalize_intraclass_correlation_value(color_by)
+  shape_by <- normalize_intraclass_correlation_value(shape_by)
+  facet_by <- normalize_intraclass_correlation_value(facet_by)
 
   icheck_plot_parameter(parameter, x)
   icheck_y(y)
-  do.call(icheck_plot_options, list(color_by, shape_by, facet_by))
+  icheck_plot_options(color_by)
+  icheck_plot_options(shape_by)
+  icheck_plot_options(facet_by)
 
   # Get performance table
   d <- merge(
@@ -86,9 +97,10 @@ plot.powRICLPM <- function(
   # Compute upper and lower bound of y-variable
   d$lb <- d[, y] - 1.96 * d[, paste0("MCSE_", y)]
   d$ub <- d[, y] + 1.96 * d[, paste0("MCSE_", y)]
+  d$intraclass_correlation <- d$ICC
 
   # Select relevant columns
-  d <- d[, c(y, "sample_size", color_by, shape_by, facet_by, "lb", "ub")]
+  d <- d[, unique(c(y, "sample_size", color_by, shape_by, facet_by, "lb", "ub"))]
 
   # Ensure inputs are factors for proper handling in ggplot2
   d[[facet_by]] <- as.factor(d[[facet_by]])
@@ -121,5 +133,6 @@ plot.powRICLPM <- function(
 
   # Print plot
   print(p)
+  iinform_renamed_values(legacy_value_renames)
   return(p)
 }

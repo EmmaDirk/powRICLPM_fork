@@ -18,6 +18,14 @@ test_that("icheck_plot_parameter() works", {
   expect_error(icheck_plot_parameter(12, out))
   expect_error(icheck_plot_parameter("wB4~wA3", out))
   expect_error(icheck_plot_parameter("wY2~wX1", out))
+
+  p <- plot(out, parameter = "wB2~wA1")
+  expect_s3_class(p, "ggplot")
+  expect_message(
+    p_legacy <- plot(out, parameter = "wB2~wA1", facet_by = "ICC"),
+    "Please consider using.*intraclass_correlation.*instead of.*ICC"
+  )
+  expect_s3_class(p_legacy, "ggplot")
 })
 
 test_that("icheck_y() works", {
@@ -29,6 +37,8 @@ test_that("icheck_y() works", {
 
 test_that("icheck_plot_options() works", {
   expect_null(icheck_plot_options("time_points"))
+  expect_null(icheck_plot_options("intraclass_correlation"))
+  expect_null(icheck_plot_options("ICC"))
   expect_error(icheck_plot_options("sample_size"))
   expect_error(icheck_plot_options(1))
   expect_error(icheck_plot_options(c("ICC", "time_points")))

@@ -39,7 +39,7 @@ test_that("check_lagged_effects() writes lagged effect interpretation", {
 
   expect_output(check_lagged_effects(m1), "According to `lagged_effects`")
   expect_error(check_lagged_effects("m1"), "lagged_effects")
-  expect_error(check_lagged_effects(Phi = m1), "renamed to.*lagged_effects")
+  expect_error(check_lagged_effects(Phi = m1), "not supported.*lagged_effects")
   expect_error(check_lagged_effects(m1, extra = TRUE), "Unexpected argument")
 })
 
@@ -56,7 +56,7 @@ test_that("check_Phi() calls check_lagged_effects() for backwards compatibility"
   )
   expect_error(
     check_Phi(lagged_effects = m1, Phi = m1),
-    "renamed to.*lagged_effects"
+    "Both.*lagged_effects.*legacy.*Phi"
   )
 })
 

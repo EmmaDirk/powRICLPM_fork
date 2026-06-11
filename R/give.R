@@ -3,7 +3,7 @@
 #' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. The information is presented by condition (i.e., sample size, number of time points, and ICC).
 #'
 #' @param from A \code{powRICLPM} object
-#' @param what A character string, denoting the information to extract, either "conditions", "estimation_problems", "results", or "names".
+#' @param what A character string, denoting the information to extract, such as "conditions", "estimation_problems", "results", or "names" (see "Details").
 #' @param parameter (optional) When \code{what = "results"}, a character string denoting the parameter to extract the results for.
 #'
 #' @details
@@ -11,9 +11,11 @@
 #'
 #' \itemize{
 #'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points and ICC.
+#'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, or \code{reliability}: The same conditions \code{data.frame}. \code{ICC} is accepted as a legacy value for \code{intraclass_correlation}.
 #'   \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
 #'   \item \code{results}: The average estimate (\code{average}), minimum estimate (\code{minimum}), standard deviation of parameter estimates (\code{SD}), the average standard error (\code{SEavg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 #'   \item \code{names}: The parameter names in the condition with the least parameters (i.e., parameter names that apply to each experimental condition).
+#'   \item \code{uncertainty}: Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
 #' }
 #'
 #' @return A \code{data.frame}.
@@ -35,21 +37,29 @@ give <- function(from, what, parameter = NULL) {
 
   # Input checking
   icheck_object_summary(from)
+  legacy_value_renames <- character()
+  if (identical(what, "ICC")) {
+    legacy_value_renames["ICC"] <- "intraclass_correlation"
+  }
+  what <- normalize_intraclass_correlation_value(what)
   icheck_what_give(what)
 
   # Call to relevant give_*() based on `what` argument
   if (what == "conditions" || what == "sample_size" || what == "time_points" ||
-      what == "ICC" || what == "reliability") {
-    give_powRICLPM_conditions(object = from)
+      what == "intraclass_correlation" || what == "reliability") {
+    out <- give_powRICLPM_conditions(object = from)
   } else if (what == "estimation_problems") {
-    give_powRICLPM_estimation_problems(object = from)
+    out <- give_powRICLPM_estimation_problems(object = from)
   } else if (what == "results") {
-      give_powRICLPM_results(object = from, parameter = parameter)
+      out <- give_powRICLPM_results(object = from, parameter = parameter)
   } else if (what == "names") {
-      give_powRICLPM_parameter_names(object = from)
+      out <- give_powRICLPM_parameter_names(object = from)
   } else if (what == "uncertainty") {
-      give_powRICLPM_MCSE_parameter(object = from, parameter = parameter)
+      out <- give_powRICLPM_MCSE_parameter(object = from, parameter = parameter)
   }
+
+  iinform_renamed_values(legacy_value_renames)
+  return(out)
 }
 
 give_powRICLPM_conditions <- function(object) {
