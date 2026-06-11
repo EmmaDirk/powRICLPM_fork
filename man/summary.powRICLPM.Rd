@@ -41,7 +41,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \details{
 \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 \itemize{
-\item When \code{sample_size = ...}, \code{time_points = ...}, \code{intraclass_correlation = ...}, and \code{reliability} are set: Estimation information and results for all parameters across experimental conditions.
+\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
 \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 }

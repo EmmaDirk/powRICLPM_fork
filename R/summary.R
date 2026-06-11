@@ -17,7 +17,7 @@
 #' @details
 #' \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 #' \itemize{
-#'   \item When \code{sample_size = ...}, \code{time_points = ...}, \code{intraclass_correlation = ...}, and \code{reliability} are set: Estimation information and results for all parameters across experimental conditions.
+#'   \item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
 #'   \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 #'   \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 #' }
@@ -87,12 +87,13 @@ summary.powRICLPM <- function(
   if (!is.null(sample_size) && !is.null(time_points) && !is.null(ICC)) {
 
     # Collect information for print.summary.powRICLPM.condition()
-    condition <- Filter(function(x) {
-      x$sample_size == sample_size &&
-        x$time_points == time_points &&
-        x$ICC == ICC &&
-        x$reliability == reliability
-    }, object$conditions)[[1]]
+    condition <- imatch_condition_summary(
+      object = object,
+      sample_size = sample_size,
+      time_points = time_points,
+      ICC = ICC,
+      reliability = reliability
+    )
 
     ## Simulation results
     results <- condition$estimates[, -1]
