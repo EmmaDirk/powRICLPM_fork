@@ -30,7 +30,7 @@
 
 \item{reliability}{(optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.}
 
-\item{ICC}{Deprecated. Use \code{intraclass_correlation} instead.}
+\item{ICC}{Alternative name for \code{intraclass_correlation}.}
 }
 \value{
 No return value, called for side effects.

@@ -39,24 +39,22 @@ test_that("check_lagged_effects() writes lagged effect interpretation", {
 
   expect_output(check_lagged_effects(m1), "According to `lagged_effects`")
   expect_error(check_lagged_effects("m1"), "lagged_effects")
-  expect_error(check_lagged_effects(Phi = m1), "not supported.*lagged_effects")
+  expect_output(check_lagged_effects(Phi = m1), "According to `Phi`")
   expect_error(check_lagged_effects(m1, extra = TRUE), "Unexpected argument")
+  expect_error(
+    check_lagged_effects(lagged_effects = m1, Phi = m1),
+    "Both.*lagged_effects.*Phi"
+  )
 })
 
-test_that("check_Phi() calls check_lagged_effects() for backwards compatibility", {
+test_that("check_Phi() calls check_lagged_effects()", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
 
-  expect_message(
-    expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`"),
-    "Please consider using.*check_lagged_effects.*instead of.*check_Phi"
-  )
-  expect_message(
-    expect_output(check_Phi(Phi = m1), "According to `lagged_effects`"),
-    "Please consider using.*check_lagged_effects.*instead of.*check_Phi"
-  )
+  expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`")
+  expect_output(check_Phi(Phi = m1), "According to `Phi`")
   expect_error(
     check_Phi(lagged_effects = m1, Phi = m1),
-    "Both.*lagged_effects.*legacy.*Phi"
+    "Both.*lagged_effects.*Phi"
   )
 })
 

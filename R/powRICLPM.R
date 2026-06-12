@@ -27,8 +27,8 @@
 #' @param estimator (optional) A \code{character} string of length 1, denoting the estimator to be used (default: \code{ML}, see "Details").
 #' @param save_path A \code{character} string of length 1, naming the directory to save (data) files to (used for validation purposes of this package). Variables are saved in alphabetical and numerical order.
 #' @param software A \code{character} string of length, naming which software to use for simulations; either "lavaan" or "Mplus" (see "Details").
-#' @param ICC Deprecated. Use \code{intraclass_correlation} instead.
-#' @param Phi Deprecated. Use \code{lagged_effects} instead.
+#' @param ICC Alternative name for \code{intraclass_correlation}.
+#' @param Phi Alternative name for \code{lagged_effects}.
 #'
 #' @details A rationale for the power analysis strategy implemented in this package can be found in Mulder (2023).
 #'
@@ -155,7 +155,6 @@ powRICLPM <- function(
 
   # Get call
   call_powRICLPM <- match.call()
-  legacy_renames <- character()
 
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
@@ -163,12 +162,15 @@ powRICLPM <- function(
   if (!is.null(Phi) && !is.null(lagged_effects)) {
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
+
+  argument_names <- list(
+    intraclass_correlation = if (!is.null(ICC)) "ICC" else "intraclass_correlation",
+    lagged_effects = if (!is.null(Phi)) "Phi" else "lagged_effects"
+  )
   if (!is.null(ICC)) {
-    legacy_renames["ICC"] <- "intraclass_correlation"
     intraclass_correlation <- ICC
   }
   if (!is.null(Phi)) {
-    legacy_renames["Phi"] <- "lagged_effects"
     lagged_effects <- Phi
   }
 
@@ -293,13 +295,12 @@ powRICLPM <- function(
         save_path = save_path,
         time_taken = time_taken,
         version = utils::packageVersion("powRICLPM"),
-        call = call_powRICLPM
+        call = call_powRICLPM,
+        argument_names = argument_names
       )
     )
 
     class(out) <- c("powRICLPM", class(out))
-
-    iinform_renamed_arguments(legacy_renames)
 
     return(out)
   } else if (software == "Mplus") {
@@ -307,8 +308,15 @@ powRICLPM <- function(
     cli::cli_h2("\nPerforming Simulations Using Mplus")
 
     # Inform user of results
-    print.powRICLPM.Mplus(conditions, save_path = save_path)
-    iinform_renamed_arguments(legacy_renames)
+    print.powRICLPM.Mplus(
+      conditions,
+      save_path = save_path,
+      icc_label = if (identical(argument_names$intraclass_correlation, "ICC")) {
+        "ICC"
+      } else {
+        "Intraclass correlation"
+      }
+    )
 
     invisible()
   }

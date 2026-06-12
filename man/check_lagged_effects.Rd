@@ -5,16 +5,16 @@
 \alias{check_Phi}
 \title{Check Interpretation of Lagged Effects}
 \usage{
-check_lagged_effects(lagged_effects, ...)
+check_lagged_effects(lagged_effects = NULL, Phi = NULL, ...)
 
 check_Phi(lagged_effects = NULL, Phi = NULL)
 }
 \arguments{
 \item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
 
-\item{...}{Not used. Included only to provide clear errors for legacy argument names.}
+\item{Phi}{Alternative name for \code{lagged_effects}.}
 
-\item{Phi}{Deprecated. Use \code{lagged_effects} instead.}
+\item{...}{Not used.}
 }
 \value{
 No return value, called for side effects.
@@ -23,7 +23,7 @@ No return value, called for side effects.
 Write a textual interpretation of the values in \code{lagged_effects}. This can be used to check if \code{lagged_effects} has been correctly specified.
 }
 \details{
-\code{check_Phi()} is deprecated. Use \code{\link[=check_lagged_effects]{check_lagged_effects()}} instead.
+\code{check_Phi()} is retained for users who prefer the \code{Phi} notation.
 }
 \examples{
 # Correctly specified lagged effects
@@ -33,7 +33,6 @@ check_lagged_effects(lagged_effects1)
 # Lagged effects with too large standardized effects
 lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
 lagged_effects2 <- check_lagged_effects(lagged_effects2)
-# Deprecated; use check_lagged_effects() instead.
 lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 check_Phi(lagged_effects)
 }

@@ -72,14 +72,9 @@ plot.powRICLPM <- function(
     facet_by = "intraclass_correlation"
 ) {
 
-  legacy_value_renames <- character()
-  plot_options <- list(color_by = color_by, shape_by = shape_by, facet_by = facet_by)
-  if (any(unlist(plot_options, use.names = FALSE) == "ICC")) {
-    legacy_value_renames["ICC"] <- "intraclass_correlation"
+  if (missing(facet_by)) {
+    facet_by <- iicc_value_name(object = x)
   }
-  color_by <- normalize_intraclass_correlation_value(color_by)
-  shape_by <- normalize_intraclass_correlation_value(shape_by)
-  facet_by <- normalize_intraclass_correlation_value(facet_by)
 
   icheck_plot_parameter(parameter, x)
   icheck_y(y)
@@ -133,6 +128,5 @@ plot.powRICLPM <- function(
 
   # Print plot
   print(p)
-  iinform_renamed_values(legacy_value_renames)
   return(p)
 }

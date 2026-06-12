@@ -10,7 +10,7 @@
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
 #' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
 #' @param reliability (optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.
-#' @param ICC Deprecated. Use \code{intraclass_correlation} instead.
+#' @param ICC Alternative name for \code{intraclass_correlation}.
 #'
 #' @return No return value, called for side effects.
 #'
@@ -64,15 +64,15 @@ summary.powRICLPM <- function(
     ICC = NULL
   ) {
 
-  legacy_renames <- character()
+  call_summary <- match.call()
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
   if (!is.null(ICC)) {
-    legacy_renames["ICC"] <- "intraclass_correlation"
     intraclass_correlation <- ICC
   }
   ICC <- intraclass_correlation
+  icc_table_label <- iicc_table_name(object = object, call = call_summary)
 
   # Argument validation
   icheck_object_summary(object)
@@ -130,7 +130,6 @@ summary.powRICLPM <- function(
     )
 
     print.summary.powRICLPM.condition(summary_list)
-    iinform_renamed_arguments(legacy_renames)
     invisible(results)
 
   } else if (!is.null(parameter)) {
@@ -139,9 +138,8 @@ summary.powRICLPM <- function(
     parameter_df <- give_powRICLPM_results(object, parameter)
     replications_df <- give_powRICLPM_estimation_problems(object)
     parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
-    colnames(parameter_summary) <- c("Sample size", "Time points", "ICC", "Reliability", "Population", "Avg","Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
+    colnames(parameter_summary) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Population", "Avg","Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter)
-    iinform_renamed_arguments(legacy_renames)
     invisible(parameter_summary)
 
   } else {
@@ -149,10 +147,9 @@ summary.powRICLPM <- function(
     # Collect information for print.summary.powRICLPM()
     ## Summary of analysis
     replications_df <- give_powRICLPM_estimation_problems(object)
-    colnames(replications_df) <- c("Sample size", "Time points", "ICC", "Reliability", "Error", "Not converged", "Inadmissible")
+    colnames(replications_df) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Error", "Not converged", "Inadmissible")
     version <- utils::packageVersion("powRICLPM")
     print.summary.powRICLPM(replications_df, powRICLPM_version = version)
-    iinform_renamed_arguments(legacy_renames)
   }
 }
 

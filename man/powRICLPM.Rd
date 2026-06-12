@@ -82,9 +82,9 @@ powRICLPM(
 
 \item{software}{A \code{character} string of length, naming which software to use for simulations; either "lavaan" or "Mplus" (see "Details").}
 
-\item{ICC}{Deprecated. Use \code{intraclass_correlation} instead.}
+\item{ICC}{Alternative name for \code{intraclass_correlation}.}
 
-\item{Phi}{Deprecated. Use \code{lagged_effects} instead.}
+\item{Phi}{Alternative name for \code{lagged_effects}.}
 }
 \value{
 An object of class \code{powRICLPM}, upon which \code{summary()}, \code{print()}, and \code{plot()} can be used. The returned object is a \code{list} with a \code{conditions} and \code{session} element. \code{condition} itself is a \code{list} of experimental conditions, where each element is again a \code{list} containing the input and output of the power analysis for that particular experimental condition. \code{session} is a \code{list} containing information common to all experimental conditions.

@@ -100,7 +100,7 @@ icheck_plot_options <- function(x, arg = rlang::caller_arg(x), call = rlang::cal
   if (!any(x == c("time_points", "intraclass_correlation", "reliability"))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'time_points', 'intraclass_correlation', or 'reliability':",
+        "{.arg {arg}} must be 'time_points', 'intraclass_correlation', 'ICC', or 'reliability':",
         x = "Your {.arg {arg}} is {.val {x}}."
       )
     )

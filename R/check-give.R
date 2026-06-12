@@ -33,7 +33,7 @@ icheck_what_give <- function(x, arg = rlang::caller_arg(x), call = rlang::caller
   ))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} is not an accepted input. Please change it to `conditions`, `estimation_problems`, `results`, `names`, `sample_size`, `time_points`, `intraclass_correlation`, `reliability`, or `uncertainty`.",
+        "{.arg {arg}} is not an accepted input. Please change it to `conditions`, `estimation_problems`, `results`, `names`, `sample_size`, `time_points`, `intraclass_correlation`, `ICC`, `reliability`, or `uncertainty`.",
         "x" = "Your {.arg {arg}} is {.val {x}}."
       ),
       call = call

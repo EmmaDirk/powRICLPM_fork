@@ -21,11 +21,8 @@ test_that("icheck_plot_parameter() works", {
 
   p <- plot(out, parameter = "wB2~wA1")
   expect_s3_class(p, "ggplot")
-  expect_message(
-    p_legacy <- plot(out, parameter = "wB2~wA1", facet_by = "ICC"),
-    "Please consider using.*intraclass_correlation.*instead of.*ICC"
-  )
-  expect_s3_class(p_legacy, "ggplot")
+  p_icc <- suppressMessages(plot(out, parameter = "wB2~wA1", facet_by = "ICC"))
+  expect_s3_class(p_icc, "ggplot")
 })
 
 test_that("icheck_y() works", {

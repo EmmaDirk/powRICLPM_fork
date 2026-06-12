@@ -677,73 +677,10 @@ icheck_alpha <- function(x) {
 iabort_renamed_argument_conflict <- function(new, old, call = rlang::caller_env()) {
   cli::cli_abort(
     c(
-      "Both {.arg {new}} and legacy {.arg {old}} were supplied.",
-      i = "{.arg {old}} is an alias kept for backwards compatibility.",
-      x = "Please use only {.arg {new}} in this call."
+      "Both {.arg {new}} and {.arg {old}} were supplied.",
+      x = "Use only one of these arguments in the same call."
     ),
     call = call
-  )
-}
-
-
-iabort_unsupported_legacy_argument <- function(new, old, fun, call = rlang::caller_env()) {
-  cli::cli_abort(
-    c(
-      "{.arg {old}} is not supported in {.fn {fun}}.",
-      i = "Please use {.arg {new}} instead."
-    ),
-    call = call
-  )
-}
-
-
-iinform_renamed_arguments <- function(renames) {
-  if (length(renames) == 0) {
-    return(invisible())
-  }
-  renames <- renames[!duplicated(names(renames))]
-  cli::cli_alert_info(
-    paste0(
-      "Note: legacy arguments were used. Please consider using ",
-      iformat_renames(renames),
-      "."
-    )
-  )
-}
-
-
-iinform_renamed_values <- function(renames) {
-  if (length(renames) == 0) {
-    return(invisible())
-  }
-  renames <- renames[!duplicated(names(renames))]
-  cli::cli_alert_info(
-    paste0(
-      "Note: legacy values were used. Please consider using ",
-      iformat_renames(renames),
-      "."
-    )
-  )
-}
-
-
-iformat_renames <- function(renames) {
-  formatted_renames <- paste0("`", unname(renames), "` instead of `", names(renames), "`")
-  if (length(formatted_renames) == 1) {
-    return(formatted_renames)
-  } else {
-    return(paste0(
-      paste(formatted_renames[-length(formatted_renames)], collapse = ", "),
-      ", and ",
-      formatted_renames[length(formatted_renames)]
-    ))
-  }
-}
-
-
-iinform_renamed_function <- function(new, old) {
-  cli::cli_alert_info(
-    "Note: legacy functions were used. Please consider using {.fn {new}} instead of {.fn {old}}."
   )
 }
 
@@ -755,6 +692,62 @@ normalize_intraclass_correlation_value <- function(x) {
   x
 }
 
+
+iargument_display_name <- function(object = NULL, call = NULL, primary, alternate) {
+  call_names <- character()
+  if (!is.null(call)) {
+    call_names <- names(as.list(call))
+  }
+  if (alternate %in% call_names && !(primary %in% call_names)) {
+    return(alternate)
+  }
+  if (primary %in% call_names && !(alternate %in% call_names)) {
+    return(primary)
+  }
+
+  session_argument <- NULL
+  if (!is.null(object) && !is.null(object$session$argument_names[[primary]])) {
+    session_argument <- object$session$argument_names[[primary]]
+  }
+  if (identical(session_argument, alternate)) {
+    return(alternate)
+  }
+
+  if (!is.null(object) && !is.null(object$session$call)) {
+    session_call_names <- names(as.list(object$session$call))
+    if (alternate %in% session_call_names && !(primary %in% session_call_names)) {
+      return(alternate)
+    }
+  }
+
+  primary
+}
+
+
+iicc_value_name <- function(object = NULL, call = NULL) {
+  iargument_display_name(
+    object = object,
+    call = call,
+    primary = "intraclass_correlation",
+    alternate = "ICC"
+  )
+}
+
+
+iicc_table_name <- function(object = NULL, call = NULL) {
+  if (identical(iicc_value_name(object = object, call = call), "ICC")) {
+    return("ICC")
+  }
+  "Intraclass correlation"
+}
+
+
+ilabel_icc_column <- function(x, label) {
+  if (is.data.frame(x) && "ICC" %in% names(x) && !identical(label, "ICC")) {
+    names(x)[names(x) == "ICC"] <- label
+  }
+  x
+}
 
 
 

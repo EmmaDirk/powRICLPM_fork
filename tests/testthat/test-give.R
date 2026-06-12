@@ -18,10 +18,7 @@ test_that("give() works", {
   # Execute give()
   df_conditions <- give(out1, "conditions")
   df_condition_alias <- give(out1, "intraclass_correlation")
-  expect_message(
-    df_condition_legacy <- give(out1, "ICC"),
-    "Please consider using.*intraclass_correlation.*instead of.*ICC"
-  )
+  df_condition_icc <- give(out1, "ICC")
   df_problems <- give(out1, "estimation_problems")
   df_results <- give(out1, what = "results", parameter = "wB2~wA1")
   df_uncertainty <- give(out1, what = "uncertainty", parameter = "wB2~wA1")
@@ -33,8 +30,12 @@ test_that("give() works", {
 
   expect_s3_class(df_conditions, "data.frame")
   expect_equal(dim(df_conditions), c(2, 4))
+  expect_equal(names(df_conditions)[3], "ICC")
+  expect_equal(names(df_condition_alias)[3], "intraclass_correlation")
+  expect_equal(names(df_condition_icc)[3], "ICC")
+  names(df_condition_alias) <- names(df_conditions)
   expect_equal(df_condition_alias, df_conditions)
-  expect_equal(df_condition_legacy, df_conditions)
+  expect_equal(df_condition_icc, df_conditions)
 
   expect_s3_class(df_problems, "data.frame")
   expect_equal(dim(df_problems), c(2, 7))
