@@ -128,10 +128,10 @@ Compatible constraints can be combined in a character vector. For example, \code
 
 The previous option \code{constraints = "within"} is retained as shorthand for \code{constraints = c("lagged", "residuals")}. When it is used, an informational message describes the current explicit form.
 
-With \code{software = "Mplus"}, the vector-valued \code{constraints = c("lagged", "residuals")} form is accepted and treated as \code{constraints = "within"}. Other vector-valued constraint combinations and \code{"RI_loadings_free"} are currently supported for \code{software = "lavaan"} only.
+With \code{software = "Mplus"}, \code{constraints = c("lagged", "residuals")} is accepted and treated as \code{constraints = "within"}. The \code{"ME"} constraint can be combined with other Mplus-supported constraints when \code{estimate_ME = TRUE}. The \code{"RI_loadings_free"} option is only available for \code{software = "lavaan"}.
 }
 
-\subsection{Extension: Bounded Estimation}{Bounded estimation is useful to avoid nonconvergence in small samples. Here, automatic wide bounds are used as advised by De Jonckere and Rosseel (2022), see \code{optim.bounds} in \code{\link[lavaan]{lavOptions}}. This option can only be used when no constraints are imposed on the estimation model.}
+\subsection{Extension: Bounded Estimation}{Bounded estimation is useful to avoid nonconvergence in small samples. Here, automatic wide bounds are used as advised by De Jonckere and Rosseel (2022), see \code{optim.bounds} in \code{\link[lavaan]{lavOptions}}. This option can only be used when no equality or time-invariance constraints are imposed on the estimation model. It can be combined with \code{constraints = "RI_loadings_free"}, because that option frees random-intercept loadings rather than constraining parameters.}
 }
 \examples{
 # Define population parameters for lagged effects

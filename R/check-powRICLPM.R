@@ -538,7 +538,7 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, arg = rlang::caller
 
 #' Check \code{bounds} Argument
 #'
-#' \code{check_bounds()} tests if \code{bounds} is a logical, and whether bounded estimation can be used (i.e., no constraints are imposed).
+#' \code{check_bounds()} tests if \code{bounds} is a logical, and whether bounded estimation can be used.
 #'
 #' @inheritParams powRICLPM
 #'
@@ -553,10 +553,14 @@ icheck_bounds <- function(bounds, constraints, software,
       )
     )
   }
-  if (bounds && !has_constraint(constraints, "none")) {
+  constraints_for_bounds <- setdiff(
+    normalize_constraints(constraints),
+    c("none", "RI_loadings_free")
+  )
+  if (bounds && length(constraints_for_bounds) > 0) {
     cli::cli_abort(
       c(
-        "Bounded estimation can only be used without constraints on the estimation model:",
+        "Bounded estimation can only be used without equality or time-invariance constraints on the estimation model:",
         x = paste0("You've placed the following constraints on the estimation model: ", format_constraints(constraints), ".")
       )
     )
@@ -576,21 +580,22 @@ icheck_constraints_software <- function(constraints, software) {
   if (software == "Mplus" && has_constraint(constraints, "RI_loadings_free")) {
     cli::cli_abort(
       c(
-        "Free random-intercept loadings are only supported for lavaan in this prototype:",
+        "Free random-intercept loadings are not available for Mplus:",
         x = paste0(
           "`constraints = ", format_constraints(constraints),
-          "` cannot currently be used with `software = 'Mplus'`."
+          "` can only be used with `software = 'lavaan'`."
         )
       )
     )
   }
   if (software == "Mplus" &&
       length(constraints) > 1 &&
+      !has_constraint(constraints, "ME") &&
       !is_lagged_residuals_constraint(constraints)) {
     cli::cli_abort(
       c(
         "This vector-valued constraint combination is not supported for Mplus:",
-        i = "`constraints = c('lagged', 'residuals')` is the only vector-valued combination currently supported for Mplus, where it is treated as `constraints = 'within'`.",
+        i = "`constraints = c('lagged', 'residuals')` is supported for Mplus, where it is treated as `constraints = 'within'`. The `ME` constraint can also be combined with other Mplus-supported constraints.",
         x = paste0("Your `constraints` argument is ", format_constraints(constraints), ".")
       )
     )

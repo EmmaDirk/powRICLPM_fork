@@ -148,13 +148,12 @@ test_that("vector constraints validate and preserve within compatibility", {
 
   expect_error(
     icheck_constraints_software("RI_loadings_free", "Mplus"),
-    "only supported for lavaan"
+    "not available for Mplus"
   )
   expect_null(icheck_constraints_software(c("lagged", "residuals"), "Mplus"))
-  expect_error(
-    icheck_constraints_software(c("lagged", "ME"), "Mplus"),
-    "not supported for Mplus"
-  )
+  expect_null(icheck_constraints_software(c("lagged", "ME"), "Mplus"))
+  expect_null(icheck_constraints_software(c("residuals", "ME"), "Mplus"))
+  expect_null(icheck_constraints_software(c("stationarity", "ME"), "Mplus"))
   expect_error(
     icheck_constraints_software(c("lagged", "RI_loadings_free"), "Mplus"),
     "c\\('lagged', 'RI_loadings_free'\\)"
@@ -207,9 +206,10 @@ test_that("icheck_N() works", {
 
 test_that("icheck_bounds() works", {
   expect_null(icheck_bounds(TRUE, "none", "lavaan"))
+  expect_null(icheck_bounds(TRUE, "RI_loadings_free", "lavaan"))
   expect_error(icheck_bounds("TRUE", "none", "Mplus"))
   expect_error(icheck_bounds(TRUE, "lagged", "lavaan"))
-  expect_error(icheck_bounds(TRUE, "RI_loadings_free", "lavaan"))
+  expect_error(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
 })
 
 test_that("icheck_software() works", {
@@ -327,6 +327,60 @@ test_that("vector constraints are one condition and match within shorthand", {
     conditions_mplus_vector[[1]]$Mplus_synt,
     conditions_mplus_within[[1]]$Mplus_synt
   )
+
+  conditions_mplus_ME_lagged <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("ME", "lagged"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_true(grepl("(alpha)", conditions_mplus_ME_lagged[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("(MEvarA)", conditions_mplus_ME_lagged[[1]]$Mplus_synt, fixed = TRUE))
+
+  conditions_mplus_ME_stationarity <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("stationarity", "ME"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_true(grepl("MODEL CONSTRAINT", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("(MEvarA)", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
 })
 
 test_that("RI_loadings_free changes lavaan estimation syntax only", {
@@ -428,10 +482,12 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
       within_cor = 0.3,
       reps = 1,
       seed = 123456,
-      constraints = "RI_loadings_free"
+      constraints = "RI_loadings_free",
+      bounds = TRUE
     )
   )
 
+  expect_true(out$session$bounds)
   expect_true(all(
     c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3") %in%
       out$conditions[[1]]$estimates$parameter
