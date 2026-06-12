@@ -67,6 +67,49 @@ test_that("ICC and Phi argument names remain supported", {
   expect_equal(out_phi$conditions[[1]]$estimates$population_value[out_phi$conditions[[1]]$estimates$parameter == "wB2~wA1"], 0.2)
 })
 
+test_that("powRICLPM validation errors use user-facing alias names", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1
+    ),
+    "intraclass_correlation"
+  )
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = "0.5",
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1
+    ),
+    "ICC"
+  )
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      Phi = "lagged_effects",
+      within_cor = 0.3,
+      reps = 1
+    ),
+    "Phi"
+  )
+})
+
 test_that("conflicting argument aliases error", {
   expect_error(
     powRICLPM(

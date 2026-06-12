@@ -48,11 +48,13 @@ test_that("check_lagged_effects() writes lagged effect interpretation", {
   )
 })
 
-test_that("check_Phi() calls check_lagged_effects()", {
+test_that("check_Phi() writes Phi interpretation", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
 
   expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`")
   expect_output(check_Phi(Phi = m1), "According to `Phi`")
+  expect_error(check_Phi(), "Phi")
+  expect_error(check_Phi(lagged_effects = 1), "lagged_effects")
   expect_error(
     check_Phi(lagged_effects = m1, Phi = m1),
     "Both.*lagged_effects.*Phi"

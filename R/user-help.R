@@ -38,13 +38,19 @@ check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, ...) {
     )
   }
 
+  iwrite_lagged_effects_check(lagged_effects, argument_name = argument_name)
+}
+
+iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
+                                        call = rlang::caller_env()) {
   # Check argument type
   if (!is.matrix(lagged_effects)) {
     cli::cli_abort(
       c(
         paste0("`", argument_name, "` must be a matrix:"),
         x = paste0("Your `", argument_name, "` is a `", typeof(lagged_effects), "`.")
-      )
+      ),
+      call = call
     )
   }
 
@@ -83,12 +89,16 @@ check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, ...) {
 #' lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 #' check_Phi(lagged_effects)
 check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
+  argument_name <- "Phi"
   if (!is.null(Phi) && !is.null(lagged_effects)) {
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
   }
-  if (!is.null(Phi)) {
-    return(check_lagged_effects(Phi = Phi))
+  if (is.null(Phi)) {
+    Phi <- lagged_effects
+    if (!is.null(lagged_effects)) {
+      argument_name <- "lagged_effects"
+    }
   }
 
-  check_lagged_effects(lagged_effects)
+  iwrite_lagged_effects_check(Phi, argument_name = argument_name)
 }

@@ -190,10 +190,10 @@ powRICLPM <- function(
   # Input checkers (icheck) I
   icheck_target(target_power)
   icheck_T(time_points, estimate_ME)
-  icheck_ICC(ICC)
+  icheck_ICC(ICC, arg = argument_names$intraclass_correlation)
   icheck_cor(RI_cor)
   icheck_cor(within_cor)
-  icheck_lagged_effects(lagged_effects)
+  icheck_lagged_effects(lagged_effects, arg = argument_names$lagged_effects)
   icheck_rel(reliability)
   icheck_moment(skewness)
   icheck_moment(kurtosis)
