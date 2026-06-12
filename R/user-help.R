@@ -40,10 +40,12 @@ check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, ...) {
 
   # Check argument type
   if (!is.matrix(lagged_effects)) {
-    stop(rlang::format_error_bullets(c(
-      paste0("`", argument_name, "` must be a matrix:"),
-      x = paste0("Your `", argument_name, "` is a `", typeof(lagged_effects), "`.")
-    )))
+    cli::cli_abort(
+      c(
+        paste0("`", argument_name, "` must be a matrix:"),
+        x = paste0("Your `", argument_name, "` is a `", typeof(lagged_effects), "`.")
+      )
+    )
   }
 
   # Interpretation cross-lagged effects
