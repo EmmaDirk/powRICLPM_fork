@@ -116,6 +116,10 @@ test_that("icheck_constraints() works", {
 test_that("vector constraints validate and preserve within compatibility", {
   expect_null(icheck_constraints(c("lagged", "residuals"), ME = FALSE))
   expect_null(icheck_constraints("RI_loadings_free", ME = FALSE))
+  expect_null(icheck_constraints(c("lagged", "RI_loadings_free"), ME = FALSE))
+  expect_null(icheck_constraints(c("residuals", "RI_loadings_free"), ME = FALSE))
+  expect_null(icheck_constraints(c("stationarity", "RI_loadings_free"), ME = FALSE))
+  expect_null(icheck_constraints(c("ME", "RI_loadings_free"), ME = TRUE))
   expect_message(
     icheck_constraints("within", ME = FALSE),
     "retained as shorthand"
@@ -137,6 +141,10 @@ test_that("vector constraints validate and preserve within compatibility", {
     icheck_constraints(c("stationarity", "residuals"), ME = FALSE),
     "cannot combine 'stationarity'"
   )
+  expect_error(
+    icheck_constraints(c("ME", "RI_loadings_free"), ME = FALSE),
+    "estimate_ME = TRUE"
+  )
 
   expect_error(
     icheck_constraints_software("RI_loadings_free", "Mplus"),
@@ -147,6 +155,10 @@ test_that("vector constraints validate and preserve within compatibility", {
     icheck_constraints_software(c("lagged", "ME"), "Mplus"),
     "not supported for Mplus"
   )
+  expect_error(
+    icheck_constraints_software(c("lagged", "RI_loadings_free"), "Mplus"),
+    "c\\('lagged', 'RI_loadings_free'\\)"
+  )
 })
 
 test_that("constraint helpers interpret legacy within and explicit vectors", {
@@ -155,9 +167,16 @@ test_that("constraint helpers interpret legacy within and explicit vectors", {
   expect_false(has_constraint("within", "stationarity"))
   expect_true(has_constraint(c("lagged", "residuals"), "lagged"))
   expect_true(has_constraint(c("lagged", "residuals"), "residuals"))
+  expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "lagged"))
+  expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "RI_loadings_free"))
+  expect_false(has_constraint(c("lagged", "RI_loadings_free"), "residuals"))
 
   expect_equal(format_constraints("within"), "within")
   expect_equal(format_constraints(c("lagged", "residuals")), "c('lagged', 'residuals')")
+  expect_equal(
+    format_constraints(c("lagged", "RI_loadings_free")),
+    "c('lagged', 'RI_loadings_free')"
+  )
 })
 
 test_that("icheck_estimator() works", {
@@ -190,6 +209,7 @@ test_that("icheck_bounds() works", {
   expect_null(icheck_bounds(TRUE, "none", "lavaan"))
   expect_error(icheck_bounds("TRUE", "none", "Mplus"))
   expect_error(icheck_bounds(TRUE, "lagged", "lavaan"))
+  expect_error(icheck_bounds(TRUE, "RI_loadings_free", "lavaan"))
 })
 
 test_that("icheck_software() works", {
@@ -345,6 +365,48 @@ test_that("RI_loadings_free changes lavaan estimation syntax only", {
   expect_true(grepl("RI_A=~lx3*start(1)*A3", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly2*start(1)*B2", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly3*start(1)*B3", condition$est_synt, fixed = TRUE))
+})
+
+test_that("RI_loadings_free combines with compatible lavaan constraints", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  compatible_constraints <- list(
+    c("lagged", "RI_loadings_free"),
+    c("residuals", "RI_loadings_free"),
+    c("stationarity", "RI_loadings_free"),
+    c("within", "RI_loadings_free"),
+    c("ME", "RI_loadings_free")
+  )
+
+  for (constraints in compatible_constraints) {
+    conditions <- create_conditions(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      Psi = Psi,
+      reliability = 1,
+      skewness = 0,
+      kurtosis = 0,
+      estimate_ME = TRUE,
+      significance_criterion = 0.05,
+      reps = 1,
+      bootstrap_reps = NULL,
+      seed = 123456,
+      constraints = constraints,
+      bounds = FALSE,
+      estimator = "ML",
+      save_path = NULL,
+      software = "lavaan"
+    )
+
+    expect_true(grepl("RI_A=~lx2*start(1)*A2", conditions[[1]]$est_synt, fixed = TRUE))
+    expect_true(grepl("RI_B=~ly2*start(1)*B2", conditions[[1]]$est_synt, fixed = TRUE))
+  }
 })
 
 test_that("RI_loadings_free updates parameter counting and powRICLPM output", {

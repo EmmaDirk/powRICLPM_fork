@@ -61,6 +61,8 @@
 #'   \item \code{"RI_loadings_free"}: Freely estimated random-intercept factor loadings from the second wave onward. This changes the estimation model only; the population model used for data generation keeps the random-intercept loadings fixed to 1.
 #' }
 #'
+#' Compatible constraints can be combined in a character vector. For example, \code{constraints = c("lagged", "RI_loadings_free")} constrains the lagged effects over time and freely estimates the random-intercept factor loadings from the second wave onward.
+#'
 #' The previous option \code{constraints = "within"} is retained as shorthand for \code{constraints = c("lagged", "residuals")}. When it is used, an informational message describes the current explicit form.
 #'
 #' With \code{software = "Mplus"}, the vector-valued \code{constraints = c("lagged", "residuals")} form is accepted and treated as \code{constraints = "within"}. Other vector-valued constraint combinations and \code{"RI_loadings_free"} are currently supported for \code{software = "lavaan"} only.

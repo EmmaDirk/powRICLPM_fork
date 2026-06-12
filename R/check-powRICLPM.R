@@ -577,7 +577,10 @@ icheck_constraints_software <- function(constraints, software) {
     cli::cli_abort(
       c(
         "Free random-intercept loadings are only supported for lavaan in this prototype:",
-        x = "`constraints = 'RI_loadings_free'` cannot currently be used with `software = 'Mplus'`."
+        x = paste0(
+          "`constraints = ", format_constraints(constraints),
+          "` cannot currently be used with `software = 'Mplus'`."
+        )
       )
     )
   }
