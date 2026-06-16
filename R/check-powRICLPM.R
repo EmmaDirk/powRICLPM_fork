@@ -200,9 +200,10 @@ icheck_rel <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
 #' random-intercept loading specification for the lavaan data-generating model.
 #'
 #' @noRd
-icheck_loadings <- function(x, time_points, software,
+icheck_loadings <- function(x, time_points, software, constraints = "none",
                             arg = rlang::caller_arg(x),
                             t_arg = rlang::caller_arg(time_points),
+                            con_arg = rlang::caller_arg(constraints),
                             call = rlang::caller_env()) {
   if (is.null(x)) {
     return(invisible(NULL))
@@ -274,6 +275,16 @@ icheck_loadings <- function(x, time_points, software,
         "The first random-intercept loading must be fixed to 1:",
         i = "{.arg {arg}} is specified relative to the first occasion.",
         x = "Set the first loading to 1 for each variable."
+      ),
+      call = call
+    )
+  }
+  if (any(x != 1) && !has_constraint(constraints, "RI_loadings_free")) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only differ from 1 when random-intercept loadings are freely estimated:",
+        i = "Use `constraints = 'RI_loadings_free'` or include `'RI_loadings_free'` in the constraint vector.",
+        x = paste0("Your {.arg {con_arg}} is ", format_constraints(constraints), ".")
       ),
       call = call
     )

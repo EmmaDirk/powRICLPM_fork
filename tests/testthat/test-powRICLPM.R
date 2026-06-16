@@ -73,11 +73,11 @@ test_that("lavaan loadings preserve default public behavior", {
   expect_equal(out_explicit$conditions[[1]]$estimates$parameter, out_default$conditions[[1]]$estimates$parameter)
 })
 
-test_that("lavaan loadings run through fixed and freed public estimation paths", {
+test_that("lavaan non-default loadings require freed public estimation path", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
 
-  out_fixed <- suppressWarnings(
+  expect_error(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -89,16 +89,9 @@ test_that("lavaan loadings run through fixed and freed public estimation paths",
       loadings = loadings,
       reps = 1,
       seed = 123456
-    )
+    ),
+    "RI_loadings_free"
   )
-
-  expect_true(grepl("RI_A=~0*A2", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("RI_A=~-1.2*A3", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("RI_B=~2.5*B2", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("RI_B=~0.25*B3", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("RI_A=~1*A2", out_fixed$conditions[[1]]$est_synt, fixed = TRUE))
-  expect_false(any(c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3") %in%
-    out_fixed$conditions[[1]]$estimates$parameter))
 
   out_free <- suppressWarnings(
     powRICLPM(
@@ -119,6 +112,10 @@ test_that("lavaan loadings run through fixed and freed public estimation paths",
   RI_loading_parameters <- c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3")
   index <- match(RI_loading_parameters, out_free$conditions[[1]]$estimates$parameter)
 
+  expect_true(grepl("RI_A=~0*A2", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1.2*A3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~2.5*B2", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.25*B3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_false(anyNA(index))
   expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
 })

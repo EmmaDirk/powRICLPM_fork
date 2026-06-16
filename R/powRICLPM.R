@@ -14,7 +14,7 @@
 #' @param lagged_effects A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.
 #' @param within_cor A \code{double} between 0 and 1, denoting the correlation between the within-unit components.
 #' @param reliability (optional) A \code{numeric} vector with elements between 0 and 1, denoting the reliability of the variables (see "Details").
-#' @param loadings (optional) A \code{numeric} vector or matrix specifying random-intercept loadings in the lavaan data-generating model. A vector of length \code{time_points} is applied to both variables. A matrix must have two rows, one for each variable, and one column per time point. The first loading must be 1, so later values are interpreted relative to the first occasion.
+#' @param loadings (optional) A \code{numeric} vector or matrix specifying random-intercept loadings in the lavaan data-generating model. A vector of length \code{time_points} is applied to both variables. A matrix must have two rows, one for each variable, and one column per time point. The first loading must be 1, so later values are interpreted relative to the first occasion. Non-default loadings require \code{constraints = "RI_loadings_free"}.
 #' @param skewness (optional) A \code{numeric}, denoting the skewness values for the observed variables (see \code{\link[lavaan]{simulateData}}).
 #' @param kurtosis (optional) A \code{numeric} value, denoting the excess kurtosis values (i.e., compared to the kurtosis of a normal distribution) for the observed variables (see \code{\link[lavaan]{simulateData}}).
 #' @param estimate_ME (optional) A \code{logical}, denoting if measurement error variance should be estimated in the RI-CLPM (see "Details").
@@ -33,7 +33,7 @@
 #'
 #' @details A rationale for the power analysis strategy implemented in this package can be found in Mulder (2023).
 #'
-#' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion.}
+#' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. Non-default \code{loadings} must be combined with \code{constraints = "RI_loadings_free"} so that the estimation model also frees the corresponding random-intercept loadings.}
 #'
 #' \subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. The default estimator is maximum likelihood (\code{ML}). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. When skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments), the estimator defaults to robust maximum likelihood \code{MLR}. The population parameter values are used as starting values.
 #'
@@ -209,7 +209,7 @@ powRICLPM <- function(
   icheck_estimator(estimator, skewness, kurtosis)
   save_path <- icheck_path(save_path, software)
   icheck_software(software, skewness, kurtosis)
-  icheck_loadings(loadings, time_points, software)
+  icheck_loadings(loadings, time_points, software, constraints)
   icheck_constraints_software(constraints, software)
 
   # powRICLPM updates

@@ -71,8 +71,14 @@ test_that("icheck_reliability() works", {
 
 test_that("icheck_loadings() works", {
   expect_null(icheck_loadings(NULL, 3, "lavaan"))
-  expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan"))
-  expect_null(icheck_loadings(matrix(c(1, 0.5, -1, 1, 2, 0), nrow = 2, byrow = TRUE), 3, "lavaan"))
+  expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan"))
+  expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan", "RI_loadings_free"))
+  expect_null(icheck_loadings(
+    matrix(c(1, 0.5, -1, 1, 2, 0), nrow = 2, byrow = TRUE),
+    3,
+    "lavaan",
+    "RI_loadings_free"
+  ))
 
   expect_error(icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"), "one value")
   expect_error(icheck_loadings(c(1, 2, 3), 3, "Mplus"), "lavaan")
@@ -84,6 +90,10 @@ test_that("icheck_loadings() works", {
   expect_error(
     icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
     "fixed to 1"
+  )
+  expect_error(
+    icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),
+    "RI_loadings_free"
   )
 })
 
