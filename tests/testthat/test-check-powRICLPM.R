@@ -69,6 +69,24 @@ test_that("icheck_reliability() works", {
   expect_error(icheck_rel(-.8))
 })
 
+test_that("icheck_loadings() works", {
+  expect_null(icheck_loadings(NULL, 3, "lavaan"))
+  expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan"))
+  expect_null(icheck_loadings(matrix(c(1, 0.5, -1, 1, 2, 0), nrow = 2, byrow = TRUE), 3, "lavaan"))
+
+  expect_error(icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"), "one value")
+  expect_error(icheck_loadings(c(1, 2, 3), 3, "Mplus"), "lavaan")
+  expect_error(icheck_loadings("loadings", 3, "lavaan"), "numeric")
+  expect_error(icheck_loadings(c(1, 2), 3, "lavaan"), "one value per time point")
+  expect_error(icheck_loadings(matrix(1, nrow = 3, ncol = 3), 3, "lavaan"), "2 rows")
+  expect_error(icheck_loadings(c(1, Inf, 2), 3, "lavaan"), "finite")
+  expect_error(icheck_loadings(c(0.8, 1, 1), 3, "lavaan"), "fixed to 1")
+  expect_error(
+    icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
+    "fixed to 1"
+  )
+})
+
 test_that("icheck_moment() works", {
   expect_null(icheck_moment(0.3))
   expect_error(icheck_moment("a"))
@@ -413,6 +431,81 @@ test_that("RI_loadings_free changes lavaan estimation syntax only", {
   expect_true(grepl("RI_A=~lx3*start(1)*A3", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly2*start(1)*B2", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly3*start(1)*B3", condition$est_synt, fixed = TRUE))
+})
+
+test_that("loadings update lavaan data generation syntax", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  conditions_vector <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    loadings = c(1, 0.5, -1),
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "none",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  condition_vector <- conditions_vector[[1]]
+  expect_true(grepl("RI_A=~0.5*A2", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1*A3", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.5*B2", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~-1*B3", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~1*A2", condition_vector$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~1*B2", condition_vector$est_synt, fixed = TRUE))
+
+  conditions_matrix <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    loadings = matrix(c(1, 0, -1.2, 1, 2, 0.25), nrow = 2, byrow = TRUE),
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "RI_loadings_free",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  condition_matrix <- conditions_matrix[[1]]
+  expect_true(grepl("RI_A=~0*A2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1.2*A3", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~2*B2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.25*B3", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~lx2*start(0)*A2", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~lx3*start(-1.2)*A3", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~ly2*start(2)*B2", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~ly3*start(0.25)*B3", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A~~start(1)*RI_A", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A~~start(0.3)*RI_B", condition_matrix$est_synt, fixed = TRUE))
 })
 
 test_that("RI_loadings_free combines with compatible lavaan constraints", {

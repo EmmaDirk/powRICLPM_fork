@@ -194,6 +194,103 @@ icheck_rel <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
   }
 }
 
+#' Check \code{loadings} Argument
+#'
+#' \code{icheck_loadings()} checks if the \code{loadings} argument is a valid
+#' random-intercept loading specification for the lavaan data-generating model.
+#'
+#' @noRd
+icheck_loadings <- function(x, time_points, software,
+                            arg = rlang::caller_arg(x),
+                            t_arg = rlang::caller_arg(time_points),
+                            call = rlang::caller_env()) {
+  if (is.null(x)) {
+    return(invisible(NULL))
+  }
+  if (software == "Mplus") {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used with `software = 'lavaan'`:",
+        x = "Custom random-intercept loadings are not available for Mplus."
+      ),
+      call = call
+    )
+  }
+  if (length(time_points) != 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used with one value of {.arg {t_arg}}:",
+        i = "This first implementation requires one loading specification for one number of time points.",
+        x = paste0("Your {.arg {t_arg}} has length ", length(time_points), ".")
+      ),
+      call = call
+    )
+  }
+  if (!is.numeric(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a numeric vector or matrix:",
+        x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (is.matrix(x)) {
+    if (!identical(dim(x), c(2L, as.integer(time_points)))) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have 2 rows and one column per time point:",
+          i = "Rows correspond to variables A and B; columns correspond to time points.",
+          x = paste0("Your {.arg {arg}} has dimensions ", paste(dim(x), collapse = " x "), ".")
+        ),
+        call = call
+      )
+    }
+    first_loadings <- x[, 1]
+  } else {
+    if (length(x) != time_points) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one value per time point:",
+          x = paste0("Your {.arg {arg}} has length ", length(x), ".")
+        ),
+        call = call
+      )
+    }
+    first_loadings <- x[1]
+  }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite values:",
+        x = "{.arg {arg}} contains `NA`, `NaN`, `Inf`, or `-Inf`."
+      ),
+      call = call
+    )
+  }
+  if (!all(first_loadings == 1)) {
+    cli::cli_abort(
+      c(
+        "The first random-intercept loading must be fixed to 1:",
+        i = "{.arg {arg}} is specified relative to the first occasion.",
+        x = "Set the first loading to 1 for each variable."
+      ),
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
+inormalize_loadings <- function(loadings, time_points) {
+  if (is.null(loadings)) {
+    return(matrix(1, nrow = 2, ncol = time_points))
+  }
+  if (is.matrix(loadings)) {
+    return(loadings)
+  }
+  rbind(loadings, loadings)
+}
+
 #' Check \code{moment} Arguments
 #'
 #' \code{icheck_moment()} tests if a \code{moment} argument (e.g., skewness, kurtosis) is a numeric value of length 1.

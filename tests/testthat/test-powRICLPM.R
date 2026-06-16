@@ -35,6 +35,94 @@ test_that("basic power analysis using lavaan runs", {
   )
 })
 
+test_that("lavaan loadings preserve default public behavior", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out_default <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  out_explicit <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = c(1, 1, 1),
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out_explicit$conditions[[1]]$pop_synt, out_default$conditions[[1]]$pop_synt)
+  expect_equal(out_explicit$conditions[[1]]$est_synt, out_default$conditions[[1]]$est_synt)
+  expect_equal(names(out_explicit$conditions[[1]]$estimates), names(out_default$conditions[[1]]$estimates))
+  expect_equal(out_explicit$conditions[[1]]$estimates$parameter, out_default$conditions[[1]]$estimates$parameter)
+})
+
+test_that("lavaan loadings run through fixed and freed public estimation paths", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
+
+  out_fixed <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = loadings,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_true(grepl("RI_A=~0*A2", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1.2*A3", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~2.5*B2", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.25*B3", out_fixed$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~1*A2", out_fixed$conditions[[1]]$est_synt, fixed = TRUE))
+  expect_false(any(c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3") %in%
+    out_fixed$conditions[[1]]$estimates$parameter))
+
+  out_free <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = loadings,
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  RI_loading_parameters <- c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3")
+  index <- match(RI_loading_parameters, out_free$conditions[[1]]$estimates$parameter)
+
+  expect_false(anyNA(index))
+  expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
+})
+
 test_that("ICC and Phi argument names remain supported", {
   out <- powRICLPM(
     target_power = 0.8,

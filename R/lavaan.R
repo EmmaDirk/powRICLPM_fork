@@ -92,6 +92,7 @@ create_lavaan <- function(condition) {
     time_points = condition[["time_points"]],
     ICC = condition[["ICC"]],
     reliability = condition[["reliability"]],
+    loadings = condition[["loadings"]],
     RI_var = condition[["RI_var"]],
     RI_cov = condition[["RI_cov"]],
     pop_synt = pop_synt,
@@ -113,7 +114,7 @@ create_lavaan <- function(condition) {
 lav_RI <- function(condition, name_RI, name_obs) {
   lhs <- rep(name_RI, each = condition[["time_points"]])
   op <- rep("=~", times = 2 * condition[["time_points"]])
-  pv <- rep("1", times = 2 * condition[["time_points"]])
+  pv <- c(t(condition[["loadings"]]))
   con <- rep("*", times = 2 * condition[["time_points"]])
   rhs <- c(unlist(name_obs))
   free <- FALSE
@@ -130,8 +131,9 @@ est_RI <- function(condition, name_RI, name_obs) {
 
   if (has_constraint(condition[["constraints"]], "RI_loadings_free")) {
     loading_prefixes <- c("lx", "ly")
-    pv <- unlist(lapply(loading_prefixes, function(prefix) {
-      c("1", paste0(prefix, 2:condition[["time_points"]], "*start(1)"))
+    pv <- unlist(lapply(seq_along(loading_prefixes), function(i) {
+      loadings <- condition[["loadings"]][i, ]
+      c("1", paste0(loading_prefixes[i], 2:condition[["time_points"]], "*start(", loadings[-1], ")"))
     }))
     free <- rep(c(FALSE, rep(TRUE, condition[["time_points"]] - 1)), times = 2)
   } else {
