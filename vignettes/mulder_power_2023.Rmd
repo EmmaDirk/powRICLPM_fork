@@ -22,8 +22,8 @@ First, a Monte Carlo power analysis is performed over all 171 experimental condi
 The R-code for the preliminary analysis can be found below:
 ```{r preliminary-analysis, eval = FALSE}
 # Matrix of standardized lagged effects
-lagged_effects <- matrix(c(0.20, 0.10, 0.15, 0.30), byrow = FALSE, ncol = 2)
-# powRICLPM automatically computes Psi based on lagged_effects and within_cor
+Phi <- matrix(c(0.20, 0.10, 0.15, 0.30), byrow = FALSE, ncol = 2)
+# powRICLPM automatically computes Psi based on Phi and within_cor
 
 # Setup parallel processing to speed up computations
 plan(multisession, workers = 6)
@@ -36,9 +36,9 @@ with_progress({
     search_upper = 2000,
     search_step = 100,
     time_points = c(3, 4, 5),
-    intraclass_correlation = c(0.3, 0.5, 0.7),
+    ICC = c(0.3, 0.5, 0.7),
     RI_cor = 0.35,
-    lagged_effects = lagged_effects,
+    Phi = Phi,
     within_cor = 0.26,
     reps = 5,
     seed = 123456
@@ -47,7 +47,7 @@ with_progress({
 
 # Tabular summary of results
 summary(out_preliminary)
-summary(out_preliminary, sample_size = 200, time_points = 3, intraclass_correlation = 0.3, reliability = 1)
+summary(out_preliminary, sample_size = 200, time_points = 3, ICC = 0.3, reliability = 1)
 res_wB2wA1 <- give(out_preliminary, what = "results", parameter = "wB2~wA1")
 
 # Visualize power
@@ -87,9 +87,9 @@ with_progress({
     search_upper = 1800,
     search_step = 100,
     time_points = c(4, 5),
-    intraclass_correlation = c(0.3, 0.5, 0.7),
+    ICC = c(0.3, 0.5, 0.7),
     RI_cor = 0.35, 
-    lagged_effects = lagged_effects,
+    Phi = Phi,
     within_cor = 0.26,
     reps = 2000, 
     seed = 123456

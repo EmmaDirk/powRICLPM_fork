@@ -128,6 +128,8 @@ Compatible constraints can be combined in a character vector. For example, \code
 
 Some constraints cannot be combined because they impose overlapping or incompatible restrictions. For example, \code{constraints = "stationarity"} already imposes restrictions on the residual variances, so it cannot be combined with \code{constraints = "residuals"}. Similarly, because \code{constraints = "within"} already combines lagged and residual constraints, it cannot be combined with \code{"lagged"} or \code{"residuals"} in the same constraint vector.
 
+The \code{RI_loadings_free} option is available for \code{software = "lavaan"} only. With \code{software = "Mplus"}, \code{constraints = c("lagged", "residuals")} is equivalent to \code{constraints = "within"}. The \code{ME} constraint can also be combined with other constraints that are available for Mplus, for example \code{constraints = c("ME", "lagged")} when \code{estimate_ME = TRUE}.
+
 }
 
 \subsection{Extension: Bounded Estimation}{Bounded estimation is useful to avoid nonconvergence in small samples. Here, automatic wide bounds are used as advised by De Jonckere and Rosseel (2022), see \code{optim.bounds} in \code{\link[lavaan]{lavOptions}}. This option can only be used when no equality or time-invariance constraints are imposed on the estimation model, except for \code{constraints = "RI_loadings_free"} since it frees random-intercept loadings rather than constraining parameters.}
