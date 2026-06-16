@@ -26,7 +26,7 @@ Next, determine population parameter values for generating data from the RI-CLPM
 For our example, the parameter values are set to:
 
 ```{r step2}
-lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = T)
+lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 # The .2 refers to our standardized cross-lagged effect of interest
 within_cor <- 0.3
 intraclass_correlation <- 0.5
@@ -56,13 +56,13 @@ Steps 3 to 5 are automated by the `powRICLPM()` function. As input, you must pro
 You can optionally specify:
 
 - `alpha`: A numeric value denoting the significance criterion (default: 0.05).
-- `seed`: An integer to control the starting point of the random number generator. This is important to use if you want to replicate the results. When no seed it specified, a random seed will be generated and reported back to you. 
+- `seed`: An integer to control the starting point of the random number generator. This is important to use if you want to replicate the results. When no seed is specified, a random seed will be generated and reported back to you.
 
 Options to extend this basic power analysis setup are described in the Vignette [Extensions](https://jeroendmulder.github.io/powRICLPM/articles/extensions.html)
 
 Now, we can perform the power analysis by running:
 
-```{r analysis, eval = F}
+```{r analysis, eval = FALSE}
 # Set number of replications 
 n_reps <- 100
 
@@ -81,7 +81,7 @@ output <- powRICLPM(
 ```
 
 ## Parallel processing using `future`
-Performing a Monte Carlo power analysis with a large number of replications, and across multiple experimental conditions can be time-consuming. To speed up the process, it is recommended to perform the power analysis *across simulation conditions* in parallel (i.e., on multiple cores). To this end, the `powRICLPM()` function has implemented `future`’s parallel processing capabilities. 
+Performing a Monte Carlo power analysis with a large number of replications, and across multiple experimental conditions can be time-consuming. To speed up the process, it is recommended to perform the power analysis *across simulation conditions* in parallel (i.e., on multiple cores). To this end, the `powRICLPM()` function has implemented `future`'s parallel processing capabilities.
 
 Load the `future` package, and use its `plan()` function to change the power analysis execution from *sequential* (i.e., single-core, the default), to *multisession* (i.e., multicore). Use the `workers` argument to specify how many cores you want to use. Next, run the `powRICLPM` analysis, and the power analysis will run on the specified number of cores. This can result in a significant reduction of computing time. For more information on other parallel execution strategies using futures, see `?future::plan()`. 
 
@@ -93,7 +93,7 @@ It can be useful to get an approximation of the progress of the `powRICLPM` anal
 
 Implementing the `with_progress({...})` option, as well as parallel execution of the `powRICLPM` analysis, results in the below code for the example:
 
-```{r future-setup, eval = F}
+```{r future-setup, eval = FALSE}
 # Load `future` and `progressr` packages
 library(future)
 library(progressr)
@@ -131,30 +131,30 @@ The `powRICLPM()` function creates a `powRICLPM` object: A list with results, up
 
 `print()` outputs a textual summary of the power analysis design contained within the object it was called upon. It does not output any performance metrics computed by the power analysis. 
 
-`summary()` can be used in one of four ways. First, summary can be used simply like `print()` to get information about the design of the power analysis (the different experimental conditions), as well as the number of problems the occurred per condition (e.g., non-convergence, fatal estimation errors, or inadmissible results). Second, by specifying the `parameter = "..."` argument in `summary()`, the function will print the results specifically for that parameter across all experimental conditions. Third, if you specify a specific experimental condition using `summary()`'s `sample_size`, `time_points`, `intraclass_correlation` and `reliability` arguments, performance measures are outputted for all parameters in that experimental condition. 
+`summary()` can be used in one of four ways. First, summary can be used simply like `print()` to get information about the design of the power analysis (the different experimental conditions), as well as the number of problems that occurred per condition (e.g., non-convergence, fatal estimation errors, or inadmissible results). Second, by specifying the `parameter = "..."` argument in `summary()`, the function will print the results specifically for that parameter across all experimental conditions. Third, if you specify a specific experimental condition using `summary()`'s `sample_size`, `time_points`, `intraclass_correlation` and `reliability` arguments, performance measures are outputted for all parameters in that experimental condition.
 
 The interpretation of the various performance measures available is explained in the function documentation [`?summary.powRICLPM()`](https://jeroendmulder.github.io/powRICLPM/reference/summary.powRICLPM.html). 
 
-```{r summary, eval = F}
+```{r summary, eval = FALSE}
 # Summary of study design
 summary(output)
 
 # Summary of results for a specific parameter, across simulation conditions
 summary(output, parameter = "wB2~wA1")
 
-# Summary of all parameter for a specific simulation condition
+# Summary of all parameters for a specific simulation condition
 summary(output, sample_size = 500, time_points = 4, intraclass_correlation = 0.5, reliability = 1)
 
 ```
 
 `give()` extracts various bits of information from an `powRICLPM` object. The exact information to be extracted is given by the `what = "..."` argument: 
 
-1. `what = "conditions"` gives the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points and ICC.
+1. `what = "conditions"` gives the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, and intraclass correlation.
 2. `what = "estimation_problems"` gives the proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row). 
 3. `what = "results"` gives the average estimate `average`, minimum estimate `minimum`, standard deviation of parameter estimates `SD`, the average standard error `SEavg`, the mean square error `MSE`, the average width of the confidence interval `accuracy`, the coverage rate `coverage`, and the proportion of times the *p*-value was lower than the significance criterion `power`. It requires setting the `parameter = "..."` argument.
 4. `what = "names"` gives the parameter names contained within the `powRICLPM` object.
 
-```{r give, eval = F}
+```{r give, eval = FALSE}
 # Extract experimental conditions
 give(output, what = "conditions")
 

@@ -388,17 +388,6 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
       )
     )
   }
-  if ("within" %in% constraints) {
-    preferred_constraints <- c("lagged", "residuals", setdiff(constraints, "within"))
-    cli::cli_alert_info(
-      paste0(
-        "`within` is retained as shorthand for `lagged` and `residuals`. ",
-        "The current explicit form is `constraints = ",
-        format_constraints(preferred_constraints),
-        "`."
-      )
-    )
-  }
   if (has_constraint(constraints, "stationarity") &&
       any(constraints %in% c("lagged", "residuals", "within"))) {
     cli::cli_abort(

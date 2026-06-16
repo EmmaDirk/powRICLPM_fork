@@ -120,14 +120,8 @@ test_that("vector constraints validate and preserve within compatibility", {
   expect_null(icheck_constraints(c("residuals", "RI_loadings_free"), ME = FALSE))
   expect_null(icheck_constraints(c("stationarity", "RI_loadings_free"), ME = FALSE))
   expect_null(icheck_constraints(c("ME", "RI_loadings_free"), ME = TRUE))
-  expect_message(
-    icheck_constraints("within", ME = FALSE),
-    "retained as shorthand"
-  )
-  expect_message(
-    icheck_constraints(c("within", "RI_loadings_free"), ME = FALSE),
-    "RI_loadings_free"
-  )
+  expect_silent(icheck_constraints("within", ME = FALSE))
+  expect_silent(icheck_constraints(c("within", "RI_loadings_free"), ME = FALSE))
 
   expect_error(
     icheck_constraints(c("within", "lagged"), ME = FALSE),
