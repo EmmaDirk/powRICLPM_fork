@@ -208,6 +208,7 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
   if (is.null(x)) {
     return(invisible(NULL))
   }
+  t_arg <- format_argument_label(t_arg, "time_points")
   if (software == "Mplus") {
     cli::cli_abort(
       c(
@@ -242,7 +243,8 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
         c(
           "{.arg {arg}} must have 2 rows and one column per time point:",
           i = "Rows correspond to variables A and B; columns correspond to time points.",
-          x = paste0("Your {.arg {arg}} has dimensions ", paste(dim(x), collapse = " x "), ".")
+          x = paste0("Your {.arg {arg}} has dimensions ", paste(dim(x), collapse = " x "),
+                     ", but {.arg {t_arg}} is ", time_points, ".")
         ),
         call = call
       )
@@ -253,7 +255,8 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       cli::cli_abort(
         c(
           "{.arg {arg}} must have one value per time point:",
-          x = paste0("Your {.arg {arg}} has length ", length(x), ".")
+          x = paste0("Your {.arg {arg}} has length ", length(x),
+                     ", but {.arg {t_arg}} is ", time_points, ".")
         ),
         call = call
       )
@@ -264,7 +267,7 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     cli::cli_abort(
       c(
         "{.arg {arg}} must contain only finite values:",
-        x = "{.arg {arg}} contains `NA`, `NaN`, `Inf`, or `-Inf`."
+        x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
       ),
       call = call
     )
@@ -741,6 +744,26 @@ format_constraints <- function(constraints) {
     return(constraints)
   }
   paste0("c(", paste0("'", constraints, "'", collapse = ", "), ")")
+}
+
+
+format_loadings <- function(loadings) {
+  values <- paste(as.character(loadings), collapse = ", ")
+  if (is.matrix(loadings)) {
+    return(paste0(
+      "matrix(c(", values, "), nrow = ", nrow(loadings),
+      ", ncol = ", ncol(loadings), ")"
+    ))
+  }
+  paste0("c(", values, ")")
+}
+
+
+format_argument_label <- function(arg, fallback) {
+  if (grepl("^[.A-Za-z][.A-Za-z0-9_]*$", arg)) {
+    return(arg)
+  }
+  fallback
 }
 
 

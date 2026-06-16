@@ -83,9 +83,18 @@ test_that("icheck_loadings() works", {
   expect_error(icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"), "one value")
   expect_error(icheck_loadings(c(1, 2, 3), 3, "Mplus"), "lavaan")
   expect_error(icheck_loadings("loadings", 3, "lavaan"), "numeric")
-  expect_error(icheck_loadings(c(1, 2), 3, "lavaan"), "one value per time point")
-  expect_error(icheck_loadings(matrix(1, nrow = 3, ncol = 3), 3, "lavaan"), "2 rows")
-  expect_error(icheck_loadings(c(1, Inf, 2), 3, "lavaan"), "finite")
+  expect_error(
+    icheck_loadings(c(1, 2), 3, "lavaan"),
+    "length 2.*time_points.*3"
+  )
+  expect_error(
+    icheck_loadings(matrix(1, nrow = 3, ncol = 3), 3, "lavaan"),
+    "dimensions 3 x 3.*time_points.*3"
+  )
+  expect_error(
+    icheck_loadings(c(1, Inf, 2), 3, "lavaan"),
+    "contains: c\\(1, Inf, 2\\)"
+  )
   expect_error(icheck_loadings(c(0.8, 1, 1), 3, "lavaan"), "fixed to 1")
   expect_error(
     icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
