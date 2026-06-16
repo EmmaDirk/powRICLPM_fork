@@ -137,12 +137,12 @@ icheck_cor <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
   }
 }
 
-#' Check \code{Phi} Argument
+#' Check \code{lagged_effects} Argument
 #'
-#' \code{icheck_Phi()} tests if \code{Phi} represents a valid regression matrix for the within-components of the RI-CLPM.
+#' \code{icheck_lagged_effects()} tests if \code{lagged_effects} represents a valid regression matrix for the within-components of the RI-CLPM.
 #'
 #' @noRd
-icheck_Phi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+icheck_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
   if (!is.matrix(x)) {
     cli::cli_abort(
       c(
@@ -340,23 +340,65 @@ icheck_seed <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
 #'
 #' @noRd
 icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (length(x) > 1) {
+  if (!is.character(x)) {
     cli::cli_abort(
       c(
-        "You can only specify a single set of constraints at the time:",
-        x = paste0("You specified ", length(x), " constraints.")
+        "{.arg {arg}} must be a character vector:",
+        x = paste0("Your {.arg {arg}} is ", typeof(x), ".")
       )
     )
   }
-  if (!any(x == c("none", "lagged", "residuals", "within", "stationarity", "ME"))) {
+  if (length(x) == 0) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'none', 'lagged', 'residuals', 'within', 'stationarity', or 'ME':",
-        x = paste0("Your {.arg {arg}} is ", x, ".")
+        "{.arg {arg}} must contain at least one constraint option:",
+        i = "Use 'none' when no constraints should be imposed."
       )
     )
   }
-  if (x == "ME" & !ME) {
+
+  valid_constraints <- c(
+    "none", "lagged", "residuals", "within", "stationarity", "ME",
+    "RI_loadings_free"
+  )
+  if (!all(x %in% valid_constraints)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} contains invalid constraints:",
+        i = paste0("Valid constraints are: ", paste(valid_constraints, collapse = ", "), "."),
+        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+      )
+    )
+  }
+  constraints <- normalize_constraints(x)
+  if (has_constraint(constraints, "none") && length(constraints) > 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only include 'none' by itself:",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
+      )
+    )
+  }
+  if ("within" %in% constraints && any(constraints %in% c("lagged", "residuals"))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} cannot combine 'within' with 'lagged' or 'residuals':",
+        i = "'within' already constrains both lagged effects and residual variances.",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
+      )
+    )
+  }
+  if (has_constraint(constraints, "stationarity") &&
+      any(constraints %in% c("lagged", "residuals", "within"))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} cannot combine 'stationarity' with lagged or residual constraints:",
+        i = "'stationarity' already imposes its own lagged-effect and residual-variance constraints.",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
+      )
+    )
+  }
+  if (has_constraint(constraints, "ME") && !ME) {
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be set to 'ME' when `estimate_ME = TRUE`:",
@@ -434,8 +476,8 @@ icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
     cli::cli_abort(
       c(
         "The residual variance-covariance matrix for within-components (Psi) must be positive definite:",
-        i = "It is computed from the specified `Phi` and `within_cor` arguments.",
-        x = "Psi is not positive definite. Try smaller values for `Phi` and `within_cor`?"
+        i = "It is computed from the specified `lagged_effects` and `within_cor` arguments.",
+        x = "Psi is not positive definite. Try smaller values for `lagged_effects` and `within_cor`?"
       )
     )
   }
@@ -485,7 +527,7 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, arg = rlang::caller
 
 #' Check \code{bounds} Argument
 #'
-#' \code{check_bounds()} tests if \code{bounds} is a logical, and whether bounded estimation can be used (i.e., no constraints are imposed).
+#' \code{check_bounds()} tests if \code{bounds} is a logical, and whether bounded estimation can be used.
 #'
 #' @inheritParams powRICLPM
 #'
@@ -500,11 +542,15 @@ icheck_bounds <- function(bounds, constraints, software,
       )
     )
   }
-  if (bounds && constraints != "none") {
+  constraints_for_bounds <- setdiff(
+    normalize_constraints(constraints),
+    c("none", "RI_loadings_free")
+  )
+  if (bounds && length(constraints_for_bounds) > 0) {
     cli::cli_abort(
       c(
-        "Bounded estimation can only be used without constraints on the estimation model:",
-        x = "You've placed the following constraints on the estimation model: {.value {con}}"
+        "Bounded estimation can only be used without equality or time-invariance constraints on the estimation model:",
+        x = paste0("You've placed the following constraints on the estimation model: ", format_constraints(constraints), ".")
       )
     )
   }
@@ -516,6 +562,77 @@ icheck_bounds <- function(bounds, constraints, software,
       )
     )
   }
+}
+
+icheck_constraints_software <- function(constraints, software) {
+  constraints <- normalize_constraints(constraints)
+  if (software == "Mplus" && has_constraint(constraints, "RI_loadings_free")) {
+    cli::cli_abort(
+      c(
+        "Free random-intercept loadings are not available for Mplus:",
+        x = paste0(
+          "`constraints = ", format_constraints(constraints),
+          "` can only be used with `software = 'lavaan'`."
+        )
+      )
+    )
+  }
+  if (software == "Mplus" &&
+      length(constraints) > 1 &&
+      !has_constraint(constraints, "ME") &&
+      !is_lagged_residuals_constraint(constraints)) {
+    cli::cli_abort(
+      c(
+        "This vector-valued constraint combination is not supported for Mplus:",
+        i = "`constraints = c('lagged', 'residuals')` is supported for Mplus, where it is treated as `constraints = 'within'`. The `ME` constraint can also be combined with other Mplus-supported constraints.",
+        x = paste0("Your `constraints` argument is ", format_constraints(constraints), ".")
+      )
+    )
+  }
+}
+
+
+normalize_constraints <- function(x) {
+  if (is.list(x) && length(x) == 1) {
+    x <- x[[1]]
+  }
+  unique(x)
+}
+
+
+is_lagged_residuals_constraint <- function(constraints) {
+  constraints <- normalize_constraints(constraints)
+  length(constraints) == 2 && setequal(constraints, c("lagged", "residuals"))
+}
+
+
+normalize_constraints_for_software <- function(constraints, software) {
+  constraints <- normalize_constraints(constraints)
+  if (software == "Mplus" && is_lagged_residuals_constraint(constraints)) {
+    return("within")
+  }
+  constraints
+}
+
+
+has_constraint <- function(constraints, constraint) {
+  constraints <- normalize_constraints(constraints)
+  if (constraint == "lagged") {
+    return(any(constraints %in% c("lagged", "within", "stationarity")))
+  }
+  if (constraint == "residuals") {
+    return(any(constraints %in% c("residuals", "within")))
+  }
+  any(constraints == constraint)
+}
+
+
+format_constraints <- function(constraints) {
+  constraints <- normalize_constraints(constraints)
+  if (length(constraints) == 1) {
+    return(constraints)
+  }
+  paste0("c(", paste0("'", constraints, "'", collapse = ", "), ")")
 }
 
 
@@ -553,6 +670,81 @@ icheck_alpha <- function(x) {
   return(x)
 }
 
+
+iabort_renamed_argument_conflict <- function(new, old, call = rlang::caller_env()) {
+  cli::cli_abort(
+    c(
+      "Both {.arg {new}} and {.arg {old}} were supplied.",
+      x = "Use only one of these arguments in the same call."
+    ),
+    call = call
+  )
+}
+
+
+normalize_intraclass_correlation_value <- function(x) {
+  if (identical(x, "ICC")) {
+    return("intraclass_correlation")
+  }
+  x
+}
+
+
+iargument_display_name <- function(object = NULL, call = NULL, primary, alternate) {
+  call_names <- character()
+  if (!is.null(call)) {
+    call_names <- names(as.list(call))
+  }
+  if (alternate %in% call_names && !(primary %in% call_names)) {
+    return(alternate)
+  }
+  if (primary %in% call_names && !(alternate %in% call_names)) {
+    return(primary)
+  }
+
+  session_argument <- NULL
+  if (!is.null(object) && !is.null(object$session$argument_names[[primary]])) {
+    session_argument <- object$session$argument_names[[primary]]
+  }
+  if (identical(session_argument, alternate)) {
+    return(alternate)
+  }
+
+  if (!is.null(object) && !is.null(object$session$call)) {
+    session_call_names <- names(as.list(object$session$call))
+    if (alternate %in% session_call_names && !(primary %in% session_call_names)) {
+      return(alternate)
+    }
+  }
+
+  primary
+}
+
+
+iicc_value_name <- function(object = NULL, call = NULL) {
+  iargument_display_name(
+    object = object,
+    call = call,
+    primary = "intraclass_correlation",
+    alternate = "ICC"
+  )
+}
+
+
+iicc_table_name <- function(object = NULL, call = NULL) {
+  if (identical(iicc_value_name(object = object, call = call), "ICC")) {
+    return("ICC")
+  }
+  "Intraclass correlation"
+}
+
+
+ilabel_icc_column <- function(x, label) {
+  if (is.data.frame(x) && "ICC" %in% names(x) && !identical(label, "ICC")) {
+    names(x)[names(x) == "ICC"] <- label
+  }
+  x
+}
 
 
 

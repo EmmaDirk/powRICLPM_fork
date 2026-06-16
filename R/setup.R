@@ -9,9 +9,9 @@ create_conditions <- function(
   target_power,
   sample_size,
   time_points,
-  ICC,
+  intraclass_correlation,
   RI_cor,
-  Phi,
+  lagged_effects,
   within_cor,
   Psi,
   reliability,
@@ -29,6 +29,9 @@ create_conditions <- function(
   software
 ) {
 
+  ICC <- intraclass_correlation
+  constraints <- normalize_constraints_for_software(constraints, software)
+
   # Create data.frame with rows as experimental conditions
   conditions <- expand.grid(
     sample_size = sample_size,
@@ -37,7 +40,6 @@ create_conditions <- function(
     RI_cor = RI_cor,
     within_cor = within_cor,
     reliability = reliability,
-    constraints = constraints,
     skewness = skewness,
     kurtosis = kurtosis,
     significance_criterion = significance_criterion,
@@ -45,7 +47,8 @@ create_conditions <- function(
   )
 
   # Add matrix input to conditions
-  conditions$Phi <- replicate(nrow(conditions), Phi, simplify = FALSE)
+  conditions$constraints <- I(replicate(nrow(conditions), constraints, simplify = FALSE))
+  conditions$lagged_effects <- replicate(nrow(conditions), lagged_effects, simplify = FALSE)
   conditions$Psi <- replicate(nrow(conditions), Psi, simplify = FALSE)
 
   # Compute and add additional parameters per condition
@@ -56,6 +59,11 @@ create_conditions <- function(
 
   # Create list of conditions
   conditions <- split(conditions, seq(nrow(conditions)))
+  conditions <- lapply(conditions, function(condition) {
+    condition <- as.list(condition)
+    condition$constraints <- condition$constraints[[1]]
+    condition
+  })
 
   # Create syntax per condition
   if (software == "lavaan") {

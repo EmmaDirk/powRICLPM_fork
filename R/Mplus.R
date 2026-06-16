@@ -92,7 +92,7 @@ create_Mplus <- function(condition, reps, seed) {
   # Delete rownames
   row.names(Mplus_population) <- row.names(Mplus_estimation) <- NULL
 
-  if (condition$constraints == "stationarity") {
+  if (has_constraint(condition$constraints, "stationarity")) {
     # Create MODEL CONSTRAINT:
     Mplus_constraint <- rbind(
       Mplus_new(condition),
@@ -238,19 +238,13 @@ Mplus_lagged <- function(condition, estimation = FALSE, name_within) {
   op <- " ON "
 
   if (estimation) { # Estimation
-    if (
-      condition$constraints == "none" ||
-      condition$constraints == "residuals" ||
-      condition$constraints == "ME"
-    ) { # Freely estimate
-      con <- paste0("*", rep(unlist(condition$Phi), times = (condition$time_points - 1)))
-    } else if (condition$constraints == "lagged" ||
-      condition$constraints == "within" ||
-      condition$constraints == "stationarity") { # Constrain over time
+    if (has_constraint(condition$constraints, "lagged")) { # Constrain over time
       con <- c("(alpha)", "(beta)", "(delta)", "(gamma)")
+    } else { # Freely estimate
+      con <- paste0("*", rep(unlist(condition$lagged_effects), times = (condition$time_points - 1)))
     }
   } else {
-    con <- paste0("@", rep(unlist(condition$Phi), times = (condition$time_points - 1)))
+    con <- paste0("@", rep(unlist(condition$lagged_effects), times = (condition$time_points - 1)))
   }
 
   # Create vector with predictors
@@ -265,15 +259,9 @@ Mplus_within_var1 <- function(condition, estimation = FALSE, name_within) {
   lhs <- name_within[1, ]
   op <- rhs <- ""
   if (estimation) { # Estimation
-    if (condition$constraints == "stationarity") { # Label but freely estimate
+    if (has_constraint(condition$constraints, "stationarity")) { # Label but freely estimate
       con <- c("(varA1)", "(varB1)")
-    } else if (
-      condition$constraints == "none" ||
-      condition$constraints == "lagged" ||
-      condition$constraints == "residuals" ||
-      condition$constraints == "within" ||
-      condition$constraints == "ME"
-    ) {
+    } else {
       con <- rep("*1", times = 2)
     }
   } else { # Data generation
@@ -290,15 +278,9 @@ Mplus_within_cov1 <- function(condition, estimation = FALSE, name_within) {
   op <- " WITH "
 
   if (estimation) {
-    if (condition$constraints == "stationarity") { # Label but freely estimate
+    if (has_constraint(condition$constraints, "stationarity")) { # Label but freely estimate
       con <- "(cor1)"
-    } else if (
-      condition$constraints == "none" ||
-      condition$constraints == "lagged" ||
-      condition$constraints == "residuals" ||
-      condition$constraints == "within" ||
-      condition$constraints == "ME"
-    ) { # Freely estimate
+    } else { # Freely estimate
       con <- paste0("*", condition$within_cor)
     }
   } else { # Data generation
@@ -314,22 +296,15 @@ Mplus_within_var2 <- function(condition, estimation = FALSE, name_within) {
   op <- rhs <- ""
 
   if (estimation) { # Estimation
-    if (
-      condition$constraints == "none" ||
-      condition$constraints == "lagged" ||
-      condition$constraints == "ME"
-    ) { # Freely estimate
-      con <- rep(paste0("*", diag(condition$Psi[[1]])), each = condition$time_points - 1)
-    } else if (
-      condition$constraints == "residuals" ||
-      condition$constraints == "within"
-    ) { # Constrain over time
-      con <- rep(paste0("(rvar", LETTERS[1:2], ")"), each = condition$time_points - 1)
-    } else if (condition$constraints == "stationarity") {
+    if (has_constraint(condition$constraints, "stationarity")) {
       con <- c(
         paste0("(rvarA", 2:condition$time_points, ")"),
         paste0("(rvarB", 2:condition$time_points, ")")
       )
+    } else if (has_constraint(condition$constraints, "residuals")) { # Constrain over time
+      con <- rep(paste0("(rvar", LETTERS[1:2], ")"), each = condition$time_points - 1)
+    } else { # Freely estimate
+      con <- rep(paste0("*", diag(condition$Psi[[1]])), each = condition$time_points - 1)
     }
   } else { # Data generation
     con <- rep(paste0("@", diag(condition$Psi[[1]])), each = condition$time_points - 1)
@@ -353,17 +328,12 @@ Mplus_within_cov2 <- function(condition, estimation = FALSE, name_within) {
 
   # Estimation
   if (estimation) {
-    if (
-      condition$constraints == "none" ||
-      condition$constraints == "lagged" ||
-      condition$constraints == "ME"
-    ) { # Freely estimate
-      con <- paste0("*", resCov)
-    } else if (condition$constraints == "residuals" ||
-      condition$constraints == "within") { # Constrain over time
-      con <- "(rcov)"
-    } else if (condition$constraints == "stationarity") {
+    if (has_constraint(condition$constraints, "stationarity")) {
       con <- paste0("(rcov", 2:condition$time_points, ")")
+    } else if (has_constraint(condition$constraints, "residuals")) { # Constrain over time
+      con <- "(rcov)"
+    } else { # Freely estimate
+      con <- paste0("*", resCov)
     }
 
     # Data generation
@@ -390,8 +360,8 @@ Mplus_estimate_ME <- function(condition, name_obs) {
   if (!condition[["estimate_ME"]]) {
     con <- "@0"
   } else if (
-    condition[["constraints"]] == "stationarity" ||
-    condition[["constraints"]] == "ME"
+    has_constraint(condition[["constraints"]], "stationarity") ||
+    has_constraint(condition[["constraints"]], "ME")
   ) {
     label <- rep(c("MEvarA", "MEvarB"), each = condition[["time_points"]])
     con <- paste0("*", condition[["ME_var"]], " (", label, ")")

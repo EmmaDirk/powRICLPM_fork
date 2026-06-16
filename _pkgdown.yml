@@ -54,6 +54,7 @@ navbar:
 reference:
   - title: "Check `powRICLPM()` Input"
     contents:
+      - check_lagged_effects
       - check_Phi
   - title: "Run Power Analysis"
     contents:

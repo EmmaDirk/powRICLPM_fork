@@ -11,7 +11,7 @@
   parameter = NULL,
   color_by = "time_points",
   shape_by = "reliability",
-  facet_by = "ICC"
+  facet_by = "intraclass_correlation"
 )
 }
 \arguments{
@@ -53,7 +53,7 @@ The following variables can be mapped to color, shape, and facet:
 \itemize{
 \item \code{sample_size}: Sample size.
 \item \code{time_points}: Time points.
-\item \code{ICC}: Intraclass correlation (ICC).
+\item \code{intraclass_correlation} or \code{ICC}: Intraclass correlation.
 \item \code{reliability}: Item-reliablity.
 }
 }

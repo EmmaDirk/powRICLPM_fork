@@ -159,3 +159,52 @@ icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_
 }
 
 
+imatch_condition_summary <- function(object, sample_size, time_points, ICC, reliability = NULL,
+                                     call = rlang::caller_env()) {
+  matches <- Filter(function(x) {
+    x$sample_size == sample_size &&
+      x$time_points == time_points &&
+      x$ICC == ICC &&
+      (is.null(reliability) || x$reliability == reliability)
+  }, object$conditions)
+
+  if (length(matches) == 0) {
+    supplied_reliability <- if (is.null(reliability)) {
+      "not supplied"
+    } else {
+      reliability
+    }
+    cli::cli_abort(
+      c(
+        "No experimental condition matches the supplied condition arguments:",
+        i = "Check the combination of {.arg sample_size}, {.arg time_points}, {.arg intraclass_correlation}, and {.arg reliability}.",
+        x = paste0(
+          "Supplied values: sample_size = ", sample_size,
+          ", time_points = ", time_points,
+          ", intraclass_correlation = ", ICC,
+          ", reliability = ", supplied_reliability, "."
+        )
+      ),
+      call = call
+    )
+  }
+
+  matching_reliabilities <- unique(vapply(matches, function(x) x$reliability, numeric(1)))
+  if (is.null(reliability) && length(matching_reliabilities) > 1) {
+    cli::cli_abort(
+      c(
+        "Multiple experimental conditions match the supplied condition arguments:",
+        i = "{.arg reliability} is needed to select one condition.",
+        x = paste0(
+          "Matching reliabilities are: ",
+          paste(matching_reliabilities, collapse = ", "),
+          "."
+        )
+      ),
+      call = call
+    )
+  }
+
+  matches[[1]]
+}
+

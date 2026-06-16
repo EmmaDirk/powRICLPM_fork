@@ -17,17 +17,20 @@ count_parameters <- function(k, time_points, constraints, est_ME) {
   )
 
   # Influence of constraints
-  if (constraints == "lagged" || constraints == "within" || constraints == "stationarity") {
+  if (has_constraint(constraints, "lagged")) {
     n_parameters <- n_parameters - (k^2 * (time_points_max - 2))
   }
-  if (constraints == "residuals" || constraints == "within") {
+  if (has_constraint(constraints, "residuals")) {
     n_parameters <- n_parameters - ((k + sum((k - 1):1)) * (time_points_max - 2))
   }
-  if (constraints == "stationarity") {
+  if (has_constraint(constraints, "stationarity")) {
     n_parameters <- n_parameters - ((time_points_max - 1) * k)
   }
-  if (constraints == "ME") {
+  if (has_constraint(constraints, "ME")) {
     n_parameters <- n_parameters - ((time_points_max - 1) * k)
+  }
+  if (has_constraint(constraints, "RI_loadings_free")) {
+    n_parameters <- n_parameters + (k * (time_points_max - 1))
   }
   return(n_parameters)
 }

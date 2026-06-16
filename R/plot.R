@@ -29,7 +29,7 @@
 #' \itemize{
 #'    \item \code{sample_size}: Sample size.
 #'    \item \code{time_points}: Time points.
-#'    \item \code{ICC}: Intraclass correlation (ICC).
+#'    \item \code{intraclass_correlation} or \code{ICC}: Intraclass correlation.
 #'    \item \code{reliability}: Item-reliablity.
 #' }
 #' }
@@ -69,12 +69,18 @@ plot.powRICLPM <- function(
     parameter = NULL,
     color_by = "time_points",
     shape_by = "reliability",
-    facet_by = "ICC"
+    facet_by = "intraclass_correlation"
 ) {
+
+  if (missing(facet_by)) {
+    facet_by <- iicc_value_name(object = x)
+  }
 
   icheck_plot_parameter(parameter, x)
   icheck_y(y)
-  do.call(icheck_plot_options, list(color_by, shape_by, facet_by))
+  icheck_plot_options(color_by)
+  icheck_plot_options(shape_by)
+  icheck_plot_options(facet_by)
 
   # Get performance table
   d <- merge(
@@ -86,9 +92,10 @@ plot.powRICLPM <- function(
   # Compute upper and lower bound of y-variable
   d$lb <- d[, y] - 1.96 * d[, paste0("MCSE_", y)]
   d$ub <- d[, y] + 1.96 * d[, paste0("MCSE_", y)]
+  d$intraclass_correlation <- d$ICC
 
   # Select relevant columns
-  d <- d[, c(y, "sample_size", color_by, shape_by, facet_by, "lb", "ub")]
+  d <- d[, unique(c(y, "sample_size", color_by, shape_by, facet_by, "lb", "ub"))]
 
   # Ensure inputs are factors for proper handling in ggplot2
   d[[facet_by]] <- as.factor(d[[facet_by]])

@@ -1,7 +1,7 @@
 #' Compute Residual Variances of Lagged Within-Components
 #'
 #' @description
-#' \code{compute_Psi()} computes the variance-covariance matrix of the within-unit residuals (within a random intercept cross-lagged panel model) from wave 2 and later from specified lagged effects in \code{Phi} and specified correlations between the within-components \code{within_cor}.
+#' \code{compute_Psi()} computes the variance-covariance matrix of the within-unit residuals (within a random intercept cross-lagged panel model) from wave 2 and later from specified \code{lagged_effects} and specified correlations between the within-components \code{within_cor}.
 #'
 #' @inheritParams powRICLPM
 #'
@@ -11,11 +11,11 @@
 #' The function is based on Equation (3.26) in \href{https://doi.org/10.7551/mitpress/6444.001.0001}{Kim and Nelson (1999, p. 27)}.
 #'
 #' @noRd
-compute_Psi <- function(Phi, within_cor) {
+compute_Psi <- function(lagged_effects, within_cor) {
   wSigma <- matrix(c(1, within_cor, within_cor, 1), ncol = 2, byrow = TRUE)
   Psi <- matrix(
-    data = (diag(length(wSigma)) - Phi %x% Phi) %*% c(wSigma),
-    nrow = nrow(Phi)
+    data = (diag(length(wSigma)) - lagged_effects %x% lagged_effects) %*% c(wSigma),
+    nrow = nrow(lagged_effects)
   )
   return(Psi)
 }

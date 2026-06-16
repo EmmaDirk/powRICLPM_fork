@@ -12,6 +12,7 @@
 #' @method print powRICLPM
 #' @export
 print.powRICLPM <- function(x, ...) {
+  icc_table_label <- iicc_table_name(object = x)
 
   # Collect condition table
   df_conditions <- do.call(rbind, lapply(x$conditions, function(condition) {
@@ -34,7 +35,7 @@ print.powRICLPM <- function(x, ...) {
       df_conditions,
       format = "simple",
       align = rep("r", times = length(colnames(df_conditions))),
-      col.names = c("Condition", "Sample size", "Time points", "ICC", "Reliability")
+      col.names = c("Condition", "Sample size", "Time points", icc_table_label, "Reliability")
     )
   )
 }
@@ -108,7 +109,7 @@ print.summary.powRICLPM.parameter <- function(x, ..., parameter) {
 #' Print Mplus Call powRICLPM
 #'
 #' @noRd
-print.powRICLPM.Mplus <- function(x, ..., save_path) {
+print.powRICLPM.Mplus <- function(x, ..., save_path, icc_label = "Intraclass correlation") {
 
   # Collect condition table
   df_conditions <- do.call(rbind, lapply(x, function(condition) {
@@ -131,7 +132,7 @@ print.powRICLPM.Mplus <- function(x, ..., save_path) {
       df_conditions,
       format = "simple",
       align = rep("r", times = length(colnames(df_conditions))),
-      col.names = c("Condition", "Sample size", "Time points", "ICC", "Reliability")
+      col.names = c("Condition", "Sample size", "Time points", icc_label, "Reliability")
     )
   )
 }

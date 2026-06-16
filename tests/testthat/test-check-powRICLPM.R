@@ -25,13 +25,40 @@ test_that("icheck_cor() works", {
   expect_error(icheck_cor(c(0.3, 0.4)))
 })
 
-test_that("icheck_Phi() works", {
+test_that("icheck_lagged_effects() works", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
   m2 <- matrix(c(.8, .5, .4, .9), ncol = 2, byrow = TRUE)
 
-  expect_null(icheck_Phi(m1))
-  expect_error(icheck_Phi("m1"))
-  expect_error(icheck_Phi(m2))
+  expect_null(icheck_lagged_effects(m1))
+  expect_error(icheck_lagged_effects("m1"))
+  expect_error(icheck_lagged_effects(m2))
+})
+
+test_that("check_lagged_effects() writes lagged effect interpretation", {
+  m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
+
+  expect_output(check_lagged_effects(m1), "According to `lagged_effects`")
+  expect_error(check_lagged_effects("m1"), "lagged_effects")
+  expect_output(check_lagged_effects(Phi = m1), "According to `Phi`")
+  expect_error(check_lagged_effects(Phi = 1), "Phi")
+  expect_error(check_lagged_effects(m1, extra = TRUE), "Unexpected argument")
+  expect_error(
+    check_lagged_effects(lagged_effects = m1, Phi = m1),
+    "Both.*lagged_effects.*Phi"
+  )
+})
+
+test_that("check_Phi() writes Phi interpretation", {
+  m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
+
+  expect_output(check_Phi(lagged_effects = m1), "According to `lagged_effects`")
+  expect_output(check_Phi(Phi = m1), "According to `Phi`")
+  expect_error(check_Phi(), "Phi")
+  expect_error(check_Phi(lagged_effects = 1), "lagged_effects")
+  expect_error(
+    check_Phi(lagged_effects = m1, Phi = m1),
+    "Both.*lagged_effects.*Phi"
+  )
 })
 
 test_that("icheck_reliability() works", {
@@ -86,6 +113,65 @@ test_that("icheck_constraints() works", {
   expect_error(icheck_constraints("ME", ME = F))
 })
 
+test_that("vector constraints validate and preserve within compatibility", {
+  expect_null(icheck_constraints(c("lagged", "residuals"), ME = FALSE))
+  expect_null(icheck_constraints("RI_loadings_free", ME = FALSE))
+  expect_null(icheck_constraints(c("lagged", "RI_loadings_free"), ME = FALSE))
+  expect_null(icheck_constraints(c("residuals", "RI_loadings_free"), ME = FALSE))
+  expect_null(icheck_constraints(c("stationarity", "RI_loadings_free"), ME = FALSE))
+  expect_null(icheck_constraints(c("ME", "RI_loadings_free"), ME = TRUE))
+  expect_silent(icheck_constraints("within", ME = FALSE))
+  expect_silent(icheck_constraints(c("within", "RI_loadings_free"), ME = FALSE))
+
+  expect_error(
+    icheck_constraints(c("within", "lagged"), ME = FALSE),
+    "cannot combine 'within'"
+  )
+  expect_error(
+    icheck_constraints(c("within", "residuals"), ME = FALSE),
+    "cannot combine 'within'"
+  )
+  expect_error(
+    icheck_constraints(c("stationarity", "residuals"), ME = FALSE),
+    "cannot combine 'stationarity'"
+  )
+  expect_error(
+    icheck_constraints(c("ME", "RI_loadings_free"), ME = FALSE),
+    "estimate_ME = TRUE"
+  )
+
+  expect_error(
+    icheck_constraints_software("RI_loadings_free", "Mplus"),
+    "not available for Mplus"
+  )
+  expect_null(icheck_constraints_software(c("lagged", "residuals"), "Mplus"))
+  expect_null(icheck_constraints_software(c("lagged", "ME"), "Mplus"))
+  expect_null(icheck_constraints_software(c("residuals", "ME"), "Mplus"))
+  expect_null(icheck_constraints_software(c("stationarity", "ME"), "Mplus"))
+  expect_error(
+    icheck_constraints_software(c("lagged", "RI_loadings_free"), "Mplus"),
+    "c\\('lagged', 'RI_loadings_free'\\)"
+  )
+})
+
+test_that("constraint helpers interpret legacy within and explicit vectors", {
+  expect_true(has_constraint("within", "lagged"))
+  expect_true(has_constraint("within", "residuals"))
+  expect_false(has_constraint("within", "stationarity"))
+  expect_true(has_constraint(c("lagged", "residuals"), "lagged"))
+  expect_true(has_constraint(c("lagged", "residuals"), "residuals"))
+  expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "lagged"))
+  expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "RI_loadings_free"))
+  expect_false(has_constraint(c("lagged", "RI_loadings_free"), "residuals"))
+
+  expect_equal(format_constraints("within"), "within")
+  expect_equal(format_constraints(c("lagged", "residuals")), "c('lagged', 'residuals')")
+  expect_equal(
+    format_constraints(c("lagged", "RI_loadings_free")),
+    "c('lagged', 'RI_loadings_free')"
+  )
+})
+
 test_that("icheck_estimator() works", {
   expect_equal(icheck_estimator(NA, skewness = 0, kurtosis = 1), "MLR")
   expect_equal(icheck_estimator(NA, 0, 0), "ML")
@@ -114,8 +200,10 @@ test_that("icheck_N() works", {
 
 test_that("icheck_bounds() works", {
   expect_null(icheck_bounds(TRUE, "none", "lavaan"))
+  expect_null(icheck_bounds(TRUE, "RI_loadings_free", "lavaan"))
   expect_error(icheck_bounds("TRUE", "none", "Mplus"))
   expect_error(icheck_bounds(TRUE, "lagged", "lavaan"))
+  expect_error(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
 })
 
 test_that("icheck_software() works", {
@@ -124,5 +212,279 @@ test_that("icheck_software() works", {
   expect_error(icheck_software(c("lavaan", "Mplus"), 0, 0))
   expect_error(icheck_software(TRUE))
   expect_error(icheck_software("Mplus", 1, 1))
+})
+
+test_that("vector constraints are one condition and match within shorthand", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  conditions_within <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "within",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  conditions_vector <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("lagged", "residuals"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  expect_length(conditions_vector, 1)
+  expect_equal(conditions_vector[[1]]$est_synt, conditions_within[[1]]$est_synt)
+
+  conditions_mplus_within <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "within",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  conditions_mplus_vector <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("lagged", "residuals"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_equal(
+    conditions_mplus_vector[[1]]$Mplus_synt,
+    conditions_mplus_within[[1]]$Mplus_synt
+  )
+
+  conditions_mplus_ME_lagged <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("ME", "lagged"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_true(grepl("(alpha)", conditions_mplus_ME_lagged[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("(MEvarA)", conditions_mplus_ME_lagged[[1]]$Mplus_synt, fixed = TRUE))
+
+  conditions_mplus_ME_stationarity <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("stationarity", "ME"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_true(grepl("MODEL CONSTRAINT", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("(MEvarA)", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+})
+
+test_that("RI_loadings_free changes lavaan estimation syntax only", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  conditions <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "RI_loadings_free",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  condition <- conditions[[1]]
+
+  expect_true(grepl("RI_A=~1*A2", condition$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~1*B2", condition$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~lx2*start(1)*A2", condition$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~lx3*start(1)*A3", condition$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~ly2*start(1)*B2", condition$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~ly3*start(1)*B3", condition$est_synt, fixed = TRUE))
+})
+
+test_that("RI_loadings_free combines with compatible lavaan constraints", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  compatible_constraints <- list(
+    c("lagged", "RI_loadings_free"),
+    c("residuals", "RI_loadings_free"),
+    c("stationarity", "RI_loadings_free"),
+    c("within", "RI_loadings_free"),
+    c("ME", "RI_loadings_free")
+  )
+
+  for (constraints in compatible_constraints) {
+    conditions <- create_conditions(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      Psi = Psi,
+      reliability = 1,
+      skewness = 0,
+      kurtosis = 0,
+      estimate_ME = TRUE,
+      significance_criterion = 0.05,
+      reps = 1,
+      bootstrap_reps = NULL,
+      seed = 123456,
+      constraints = constraints,
+      bounds = FALSE,
+      estimator = "ML",
+      save_path = NULL,
+      software = "lavaan"
+    )
+
+    expect_true(grepl("RI_A=~lx2*start(1)*A2", conditions[[1]]$est_synt, fixed = TRUE))
+    expect_true(grepl("RI_B=~ly2*start(1)*B2", conditions[[1]]$est_synt, fixed = TRUE))
+  }
+})
+
+test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  expect_equal(
+    count_parameters(2, 3, "RI_loadings_free", FALSE),
+    count_parameters(2, 3, "none", FALSE) + 4
+  )
+
+  out <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456,
+      constraints = "RI_loadings_free",
+      bounds = TRUE
+    )
+  )
+
+  expect_true(out$session$bounds)
+  expect_true(all(
+    c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3") %in%
+      out$conditions[[1]]$estimates$parameter
+  ))
 })
 
