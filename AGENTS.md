@@ -102,6 +102,27 @@ Useful checks:
 
 If a check cannot be run, explain why.
 
+### Pandoc for vignette checks on this machine
+
+For full `devtools::check()` runs that rebuild vignettes, set Pandoc explicitly because non-interactive `Rscript.exe` sessions may not inherit Positron's Pandoc path:
+
+```r
+Sys.setenv(
+  RSTUDIO_PANDOC = "c:/Program Files/Positron/resources/app/quarto/bin/tools"
+)
+```
+
+Then run checks against the package path, for example:
+
+```r
+devtools::check(
+  "C:/Users/Admin/Desktop/UU/powRICLPM/powRICLPM_fork",
+  document = FALSE,
+  manual = FALSE,
+  error_on = "never"
+)
+```
+
 ## Review guidelines
 
 When reviewing changes, check for:
