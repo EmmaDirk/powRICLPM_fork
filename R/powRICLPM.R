@@ -50,7 +50,7 @@
 #'
 #' \subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
 #'
-#' \subsection{Extension: Imposing Constraints}{The following constraints can be imposed on the estimation model using the \code{constraints} argument. By default, \code{constraints = "none"}, and no constraints are imposed.
+#' \subsection{Extension: Imposing Constraints}{The following options can be supplied to the estimation model using the \code{constraints} argument. By default, \code{constraints = "none"}, and no equality or time-invariance constraints are imposed.
 #'
 #' \itemize{
 #'   \item \code{"lagged"}: Time-invariant autoregressive and cross-lagged effects.
@@ -58,14 +58,12 @@
 #'   \item \code{"within"}: Time-invariant lagged effects and within-unit residual variances and covariances. This is equivalent to \code{constraints = c("lagged", "residuals")}.
 #'   \item \code{"stationarity"}: Constraints such that at the within-unit level a stationary process is estimated. This includes time-invariant lagged effects and constraints on the residual variances. It cannot be combined with \code{"lagged"} or \code{"residuals"}.
 #'   \item \code{"ME"}: Time-invariant measurement error variances. Only possible when \code{estimate_ME = TRUE}.
-#'   \item \code{"RI_loadings_free"}: By default, the RI-CLPM estimation model fixes all random-intercept factor loadings to 1, so that each observed variable loads equally on its random intercept. This option relaxes that assumption in the estimation model by freely estimating the random-intercept factor loadings from the second wave onward. The first loading remains fixed to 1 for identification.
+#'   \item \code{"RI_loadings_free"}: Freely estimated random-intercept factor loadings; see details below.
 #' }
 #'
-#' Compatible constraints can be combined in a character vector. For example, \code{constraints = c("lagged", "RI_loadings_free")} constrains the lagged effects over time and freely estimates the random-intercept factor loadings from the second wave onward. Similarly, \code{constraints = c("lagged", "residuals")} imposes the same constraints as \code{constraints = "within"}.
+#' The random-intercept factor loadings are a special case. In the standard RI-CLPM specification, these loadings are fixed to 1 so that each observed variable loads equally on its random intercept. The option \code{constraints = "RI_loadings_free"} relaxes this assumption in the estimation model by freely estimating the random-intercept factor loadings from the second wave onward. The first loading remains fixed to 1 for identification.
 #'
-#' Some constraints cannot be combined because they impose overlapping or incompatible restrictions. For example, \code{constraints = "stationarity"} already imposes restrictions on the residual variances, so it cannot be combined with \code{constraints = "residuals"}. Similarly, because \code{constraints = "within"} already combines lagged and residual constraints, it cannot be combined with \code{"lagged"} or \code{"residuals"} in the same constraint vector.
-#'
-#' The \code{RI_loadings_free} option is available for \code{software = "lavaan"} only. With \code{software = "Mplus"}, \code{constraints = c("lagged", "residuals")} is equivalent to \code{constraints = "within"}. The \code{ME} constraint can also be combined with other constraints that are available for Mplus, for example \code{constraints = c("ME", "lagged")} when \code{estimate_ME = TRUE}.
+#' Compatible options can be combined in a character vector. For example, \code{constraints = c("lagged", "RI_loadings_free")} constrains the lagged effects over time and freely estimates the random-intercept factor loadings from the second wave onward. Similarly, \code{constraints = c("lagged", "residuals")} imposes the same constraints as \code{constraints = "within"}. Some options cannot be combined because they impose overlapping or incompatible restrictions. For example, \code{constraints = "stationarity"} already imposes restrictions on the residual variances, so it cannot be combined with \code{constraints = "residuals"}. Similarly, because \code{constraints = "within"} already combines lagged and residual constraints, it cannot be combined with \code{"lagged"} or \code{"residuals"} in the same constraint vector.
 #'
 #'}
 #'
