@@ -118,6 +118,47 @@ test_that("lavaan custom loadings require freed public estimation path", {
   expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
 })
 
+test_that("ICOV no convergence warnings are recognized", {
+  expect_true(is_icov_nonconvergence_warning("lavaan->getICOV():\n   no convergence"))
+  expect_false(is_icov_nonconvergence_warning("lavaan->getICOV():"))
+  expect_false(is_icov_nonconvergence_warning("lavaan->lav_object_post_check(): some estimated lv variances are negative"))
+})
+
+test_that("ICOV failures with freed RI loadings are counted as nonconverged", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  loadings <- matrix(c(
+    1, 0, -1.2, 2,
+    1, 2.5, 0.25, -0.5
+  ), nrow = 2, byrow = TRUE)
+
+  out <- expect_warning(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = loadings,
+      constraints = c("within", "RI_loadings_free"),
+      reps = 2,
+      seed = 123456
+    ),
+    NA
+  )
+
+  estimation_information <- out$conditions[[1]]$estimation_information
+
+  expect_equal(estimation_information$n_completed, 0)
+  expect_equal(estimation_information$n_error, 0)
+  expect_equal(estimation_information$n_nonconvergence, 2)
+  expect_equal(estimation_information$n_inadmissible, 0)
+  expect_true(all(is.na(out$conditions[[1]]$estimates$average)))
+  expect_true(all(is.na(out$conditions[[1]]$estimates$SEAvg)))
+  expect_true(all(is.na(out$conditions[[1]]$estimates$power)))
+})
+
 test_that("ICC and Phi argument names remain supported", {
   out <- powRICLPM(
     target_power = 0.8,

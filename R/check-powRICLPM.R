@@ -289,7 +289,7 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be used when random-intercept loadings are freely estimated:",
-        i = "Use `constraints = 'RI_loadings_free'` or include `'RI_loadings_free'` in the constraint vector.",
+        i = "Use `constraints = 'RI_loadings_free'` or include `'RI_loadings_free'` in a constraint vector.",
         x = paste0("You supplied {.arg {arg}}, but {.arg {con_arg}} = ", format_constraints(constraints), ".")
       ),
       call = call

@@ -112,6 +112,10 @@ test_that("icheck_loadings() works", {
   )
   expect_error(
     icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
+    "in a constraint vector"
+  )
+  expect_error(
+    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
     "supplied.*loadings.*constraints.*= lagged"
   )
 })
