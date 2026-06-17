@@ -131,7 +131,8 @@ test_that("ICOV failures with freed RI loadings are counted as nonconverged", {
     1, 2.5, 0.25, -0.5
   ), nrow = 2, byrow = TRUE)
 
-  out <- expect_warning(
+  icov_warnings <- character()
+  out <- withCallingHandlers(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -145,11 +146,17 @@ test_that("ICOV failures with freed RI loadings are counted as nonconverged", {
       reps = 2,
       seed = 123456
     ),
-    NA
+    warning = function(w) {
+      if (is_icov_nonconvergence_warning(conditionMessage(w))) {
+        icov_warnings <<- c(icov_warnings, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    }
   )
 
   estimation_information <- out$conditions[[1]]$estimation_information
 
+  expect_length(icov_warnings, 2)
   expect_equal(estimation_information$n_completed, 0)
   expect_equal(estimation_information$n_error, 0)
   expect_equal(estimation_information$n_nonconvergence, 2)

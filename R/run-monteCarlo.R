@@ -318,7 +318,6 @@ capture_icov_nonconvergence_warning <- function(expr) {
     warning = function(w) {
       if (is_icov_nonconvergence_warning(conditionMessage(w))) {
         icov_nonconverged <<- TRUE
-        invokeRestart("muffleWarning")
       }
     }
   )
