@@ -71,7 +71,7 @@ test_that("icheck_reliability() works", {
 
 test_that("icheck_loadings() works", {
   expect_null(icheck_loadings(NULL, 3, "lavaan"))
-  expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan"))
+  expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan", "RI_loadings_free"))
   expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan", "RI_loadings_free"))
   expect_null(icheck_loadings(
     matrix(c(1, 0.5, -1, 1, 2, 0), nrow = 2, byrow = TRUE),
@@ -80,16 +80,22 @@ test_that("icheck_loadings() works", {
     "RI_loadings_free"
   ))
 
-  expect_error(icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"), "one value")
-  expect_error(icheck_loadings(c(1, 2, 3), 3, "Mplus"), "lavaan")
+  expect_error(
+    icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"),
+    "separate call.*powRICLPM.*time_points.*= 2"
+  )
+  expect_error(
+    icheck_loadings(c(1, 2, 3), 3, "Mplus"),
+    "Time-varying random-intercept loadings"
+  )
   expect_error(icheck_loadings("loadings", 3, "lavaan"), "numeric")
   expect_error(
     icheck_loadings(c(1, 2), 3, "lavaan"),
-    "length 2.*time_points.*3"
+    "length 2.*time_points.*= 3"
   )
   expect_error(
     icheck_loadings(matrix(1, nrow = 3, ncol = 3), 3, "lavaan"),
-    "dimensions 3 x 3.*time_points.*3"
+    "dimensions 3 x 3.*implying 3 time points.*time_points.*= 3"
   )
   expect_error(
     icheck_loadings(c(1, Inf, 2), 3, "lavaan"),
@@ -103,6 +109,10 @@ test_that("icheck_loadings() works", {
   expect_error(
     icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),
     "RI_loadings_free"
+  )
+  expect_error(
+    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
+    "supplied.*loadings.*constraints.*= lagged"
   )
 })
 

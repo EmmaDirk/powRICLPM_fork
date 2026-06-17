@@ -208,12 +208,14 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
   if (is.null(x)) {
     return(invisible(NULL))
   }
+  arg <- format_argument_label(arg, "loadings")
   t_arg <- format_argument_label(t_arg, "time_points")
+  con_arg <- format_argument_label(con_arg, "constraints")
   if (software == "Mplus") {
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be used with `software = 'lavaan'`:",
-        x = "Custom random-intercept loadings are not available for Mplus."
+        x = "Time-varying random-intercept loadings are not available for Mplus."
       ),
       call = call
     )
@@ -222,8 +224,8 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be used with one value of {.arg {t_arg}}:",
-        i = "This first implementation requires one loading specification for one number of time points.",
-        x = paste0("Your {.arg {t_arg}} has length ", length(time_points), ".")
+        i = "Use one separate call to {.fun powRICLPM} for each number of time points.",
+        x = paste0("length({.arg {t_arg}}) = ", length(time_points), ".")
       ),
       call = call
     )
@@ -244,7 +246,8 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
           "{.arg {arg}} must have 2 rows and one column per time point:",
           i = "Rows correspond to variables A and B; columns correspond to time points.",
           x = paste0("Your {.arg {arg}} has dimensions ", paste(dim(x), collapse = " x "),
-                     ", but {.arg {t_arg}} is ", time_points, ".")
+                     ", implying ", ncol(x), " time points, but {.arg {t_arg}} = ",
+                     time_points, ".")
         ),
         call = call
       )
@@ -256,7 +259,7 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
         c(
           "{.arg {arg}} must have one value per time point:",
           x = paste0("Your {.arg {arg}} has length ", length(x),
-                     ", but {.arg {t_arg}} is ", time_points, ".")
+                     ", but {.arg {t_arg}} = ", time_points, ".")
         ),
         call = call
       )
@@ -277,17 +280,17 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       c(
         "The first random-intercept loading must be fixed to 1:",
         i = "{.arg {arg}} is specified relative to the first occasion.",
-        x = "Set the first loading to 1 for each variable."
+        x = "Set the first loading = 1 for each variable."
       ),
       call = call
     )
   }
-  if (any(x != 1) && !has_constraint(constraints, "RI_loadings_free")) {
+  if (!has_constraint(constraints, "RI_loadings_free")) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} can only differ from 1 when random-intercept loadings are freely estimated:",
+        "{.arg {arg}} can only be used when random-intercept loadings are freely estimated:",
         i = "Use `constraints = 'RI_loadings_free'` or include `'RI_loadings_free'` in the constraint vector.",
-        x = paste0("Your {.arg {con_arg}} is ", format_constraints(constraints), ".")
+        x = paste0("You supplied {.arg {arg}}, but {.arg {con_arg}} = ", format_constraints(constraints), ".")
       ),
       call = call
     )

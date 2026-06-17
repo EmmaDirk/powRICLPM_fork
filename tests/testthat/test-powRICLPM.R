@@ -35,7 +35,7 @@ test_that("basic power analysis using lavaan runs", {
   )
 })
 
-test_that("lavaan loadings preserve default public behavior", {
+test_that("lavaan supplied loadings require freed public estimation path", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
   out_default <- suppressWarnings(
@@ -52,7 +52,9 @@ test_that("lavaan loadings preserve default public behavior", {
     )
   )
 
-  out_explicit <- suppressWarnings(
+  expect_equal(class(out_default), c("powRICLPM", "list"))
+
+  expect_error(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -64,16 +66,12 @@ test_that("lavaan loadings preserve default public behavior", {
       loadings = c(1, 1, 1),
       reps = 1,
       seed = 123456
-    )
+    ),
+    "RI_loadings_free"
   )
-
-  expect_equal(out_explicit$conditions[[1]]$pop_synt, out_default$conditions[[1]]$pop_synt)
-  expect_equal(out_explicit$conditions[[1]]$est_synt, out_default$conditions[[1]]$est_synt)
-  expect_equal(names(out_explicit$conditions[[1]]$estimates), names(out_default$conditions[[1]]$estimates))
-  expect_equal(out_explicit$conditions[[1]]$estimates$parameter, out_default$conditions[[1]]$estimates$parameter)
 })
 
-test_that("lavaan non-default loadings require freed public estimation path", {
+test_that("lavaan custom loadings require freed public estimation path", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
 
