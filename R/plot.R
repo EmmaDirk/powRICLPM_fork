@@ -88,6 +88,9 @@ plot.powRICLPM <- function(
     give_powRICLPM_MCSE_parameter(x, parameter = parameter),
     by = c("sample_size", "time_points", "ICC", "reliability")
   )
+  if (identical(y, "SD")) {
+    d$SD <- d$EmpSE
+  }
 
   # Compute upper and lower bound of y-variable
   d$lb <- d[, y] - 1.96 * d[, paste0("MCSE_", y)]

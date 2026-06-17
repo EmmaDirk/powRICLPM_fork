@@ -66,6 +66,15 @@ icheck_y <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) 
       )
     )
   }
+  if (identical(x, "minimum")) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} cannot be 'minimum':",
+        i = "Monte Carlo standard errors are not computed for the minimum estimate."
+      ),
+      call = call
+    )
+  }
   if (!any(x == c("power", "coverage", "accuracy", "MSE", "bias", "average", "SD", "SEAvg"))) {
     cli::cli_abort(
       c(

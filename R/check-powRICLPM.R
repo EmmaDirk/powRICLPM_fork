@@ -87,7 +87,7 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       )
     )
   }
-  if (!all(x < 1 | x > 0)) {
+  if (!all(x > 0 & x < 1)) {
     cli::cli_abort(
       c(
         "Elements in {.arg {arg}} must be between 0 and 1:",
@@ -224,7 +224,7 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be used with one value of {.arg {t_arg}}:",
-        i = "Use one separate call to {.fun powRICLPM} for each number of time points.",
+        i = "If you want to compare power for multiple values of {.arg {t_arg}} while using free loadings, use multiple {.fun powRICLPM} calls.",
         x = paste0("length({.arg {t_arg}}) = ", length(time_points), ".")
       ),
       call = call
@@ -635,6 +635,82 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, arg = rlang::caller
         i = paste0("The highest number of estimated parameters in an experimental condition is ", n_parameters, "."),
         x = paste0("The smallest sample size you have specified is ", min(x), ".")
       )
+    )
+  }
+}
+
+
+#' Check sample size search arguments
+#'
+#' \code{icheck_sample_size_search()} checks if the \code{search_*}
+#' arguments define a valid range when \code{sample_size} is not supplied.
+#'
+#' @noRd
+icheck_sample_size_search <- function(search_lower, search_upper, search_step, call = rlang::caller_env()) {
+  search_args <- list(
+    search_lower = search_lower,
+    search_upper = search_upper,
+    search_step = search_step
+  )
+  missing_args <- names(search_args)[vapply(search_args, is.null, logical(1))]
+
+  if (length(missing_args) > 0) {
+    cli::cli_abort(
+      c(
+        "Either {.arg sample_size} or a complete sample-size search range must be supplied:",
+        i = "Use {.arg sample_size} to evaluate specific sample sizes.",
+        i = "Or use {.arg search_lower}, {.arg search_upper}, and {.arg search_step} to generate a range.",
+        x = paste0("Missing search argument", if (length(missing_args) > 1) "s" else "", ": ", paste(missing_args, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  invalid_type <- names(search_args)[!vapply(search_args, function(x) {
+    is.numeric(x) && length(x) == 1 && !is.na(x)
+  }, logical(1))]
+
+  if (length(invalid_type) > 0) {
+    cli::cli_abort(
+      c(
+        "The sample-size search range must use single numeric values:",
+        x = paste0("Check: ", paste(invalid_type, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  invalid_integer <- names(search_args)[!vapply(search_args, function(x) x %% 1 == 0, logical(1))]
+
+  if (length(invalid_integer) > 0) {
+    cli::cli_abort(
+      c(
+        "The sample-size search range must use integer values:",
+        x = paste0("Check: ", paste(invalid_integer, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  invalid_positive <- names(search_args)[!vapply(search_args, function(x) x > 0, logical(1))]
+
+  if (length(invalid_positive) > 0) {
+    cli::cli_abort(
+      c(
+        "The sample-size search range must use positive integers:",
+        x = paste0("Check: ", paste(invalid_positive, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  if (search_upper < search_lower) {
+    cli::cli_abort(
+      c(
+        "{.arg search_upper} must be greater than or equal to {.arg search_lower}:",
+        x = paste0("You supplied search_lower = ", search_lower, " and search_upper = ", search_upper, ".")
+      ),
+      call = call
     )
   }
 }

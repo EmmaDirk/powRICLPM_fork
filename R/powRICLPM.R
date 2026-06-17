@@ -223,6 +223,7 @@ powRICLPM <- function(
 
   # Get candidate sample sizes
   if (is.null(sample_size)) {
+    icheck_sample_size_search(search_lower, search_upper, search_step)
     sample_size <- seq(search_lower, search_upper, search_step)
   }
   icheck_N(sample_size, time_points, constraints, estimate_ME)

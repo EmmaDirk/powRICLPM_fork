@@ -26,6 +26,8 @@ test_that("basic power analysis using lavaan runs", {
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
   expect_type(out1$conditions[[1]]$estimation_information, "list")
+  expect_true(all(c("MCSE_average", "MCSE_SD", "MCSE_accuracy") %in% names(out1$conditions[[1]]$MCSEs)))
+  expect_equal(out1$conditions[[1]]$MCSEs$MCSE_SD, out1$conditions[[1]]$MCSEs$MCSE_EmpSE)
 
   test_summary_condition <- summary(out1, sample_size = 1000, time_points = 3, intraclass_correlation = 0.5, reliability = 1)
 
@@ -124,6 +126,40 @@ test_that("ICOV no convergence warnings are recognized", {
   expect_false(is_icov_nonconvergence_warning("lavaan->lav_object_post_check(): some estimated lv variances are negative"))
 })
 
+test_that("fatal estimation errors are counted separately from other estimation issues", {
+  estimation_information <- count_estimation_information(
+    reps_completed = 2,
+    n_error = 1,
+    converged = list(TRUE, TRUE),
+    admissible = list(TRUE, TRUE),
+    n_data_icov_nonconvergence = 0,
+    post_check_icov_nonconverged = c(FALSE, FALSE),
+    n_icov_nonconvergence = 0
+  )
+
+  expect_equal(estimation_information$n_completed, 2)
+  expect_equal(estimation_information$n_error, 1)
+  expect_equal(estimation_information$n_nonconvergence, 0)
+  expect_equal(estimation_information$n_inadmissible, 0)
+})
+
+test_that("ICOV failures remain counted as nonconverged estimation issues", {
+  estimation_information <- count_estimation_information(
+    reps_completed = 0,
+    n_error = 0,
+    converged = list(),
+    admissible = list(),
+    n_data_icov_nonconvergence = 1,
+    post_check_icov_nonconverged = logical(),
+    n_icov_nonconvergence = 1
+  )
+
+  expect_equal(estimation_information$n_completed, 0)
+  expect_equal(estimation_information$n_error, 0)
+  expect_equal(estimation_information$n_nonconvergence, 2)
+  expect_equal(estimation_information$n_inadmissible, 0)
+})
+
 test_that("ICOV failures with freed RI loadings are counted as nonconverged", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   loadings <- matrix(c(
@@ -196,6 +232,40 @@ test_that("ICC and Phi argument names remain supported", {
   expect_equal(out_phi$conditions[[1]]$ICC, 0.5)
   expect_equal(out_phi$session$argument_names$lagged_effects, "Phi")
   expect_equal(out_phi$conditions[[1]]$estimates$population_value[out_phi$conditions[[1]]$estimates$parameter == "wB2~wA1"], 0.2)
+})
+
+test_that("powRICLPM requires sample_size or a complete search range", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    ),
+    "Either.*sample_size.*search"
+  )
+
+  out <- powRICLPM(
+    target_power = 0.8,
+    search_lower = 1000,
+    search_upper = 1000,
+    search_step = 20,
+    time_points = 3,
+    ICC = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    reps = 1,
+    seed = 123456
+  )
+
+  expect_equal(out$conditions[[1]]$sample_size, 1000)
 })
 
 test_that("powRICLPM validation errors use user-facing alias names", {
@@ -407,8 +477,10 @@ test_that("power analysis using Mplus works", {
   )
 
   if (.Platform$OS.type %in% c("windows", "mac")) {
-    path <- file.path(tempdir(), "Condition1.inp") |>
-      normalizePath(mustWork = FALSE)
+    path <- normalizePath(
+      file.path(tempdir(), "Condition1.inp"),
+      mustWork = FALSE
+    )
 
     expect_true(file.exists(path))
   }

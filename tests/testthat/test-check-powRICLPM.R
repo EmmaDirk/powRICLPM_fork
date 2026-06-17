@@ -14,6 +14,9 @@ test_that("icheck_T() works", {
 
 test_that("icheck_ICC() works", {
   expect_null(icheck_ICC(c(0.5, 0.8)))
+  expect_error(icheck_ICC(-0.5))
+  expect_error(icheck_ICC(0))
+  expect_error(icheck_ICC(1))
   expect_error(icheck_ICC(2))
   expect_error(icheck_ICC("0.5"))
 })
@@ -61,6 +64,51 @@ test_that("check_Phi() writes Phi interpretation", {
   )
 })
 
+test_that("check_loadings() writes loading interpretation", {
+  loading_vector <- c(1, 0.5, -1.2, 2)
+  loading_matrix <- matrix(
+    c(1, 0, -1.2, 2, 1, 2.5, 0.25, -0.5),
+    nrow = 2,
+    byrow = TRUE
+  )
+
+  expect_output(
+    check_loadings(loading_vector, time_points = 4),
+    "According to `loadings`"
+  )
+  expect_output(
+    check_loadings(loading_vector, time_points = 4),
+    "same loading pattern is used for A and B"
+  )
+  expect_output(
+    check_loadings(loading_vector, time_points = 4),
+    "RI_A loads on A3 with -1.2"
+  )
+  expect_output(
+    check_loadings(loading_vector, time_points = 4),
+    "RI_B loads on B4 with 2"
+  )
+
+  expect_output(
+    check_loadings(loading_matrix, time_points = 4),
+    "row 1 is used for A and row 2 is used for B"
+  )
+  expect_output(
+    check_loadings(loading_matrix, time_points = 4),
+    "RI_A loads on A2 with 0"
+  )
+  expect_output(
+    check_loadings(loading_matrix, time_points = 4),
+    "RI_B loads on B2 with 2.5"
+  )
+
+  expect_error(check_loadings(), "must be supplied")
+  expect_error(check_loadings(loading_vector), "time_points")
+  expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
+  expect_error(check_loadings(c(0.8, 1, 1), time_points = 3), "fixed to 1")
+  expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
+})
+
 test_that("icheck_reliability() works", {
   expect_null(icheck_rel(c(.8, .9)))
   expect_null(icheck_rel(.8))
@@ -82,7 +130,7 @@ test_that("icheck_loadings() works", {
 
   expect_error(
     icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"),
-    "separate call.*powRICLPM.*time_points.*= 2"
+    "compare power.*multiple values.*time_points.*multiple.*powRICLPM.*calls.*time_points.*= 2"
   )
   expect_error(
     icheck_loadings(c(1, 2, 3), 3, "Mplus"),
@@ -247,6 +295,17 @@ test_that("icheck_N() works", {
   expect_null(icheck_N(17, 3, constraints = "lagged", ME = FALSE))
   expect_error(icheck_N(20, 3, constraints = "none", ME = TRUE))
   expect_null(icheck_N(20, 3, constraints = "within", ME = TRUE))
+})
+
+test_that("icheck_sample_size_search() works", {
+  expect_null(icheck_sample_size_search(100, 200, 20))
+  expect_error(icheck_sample_size_search(NULL, 200, 20), "sample_size")
+  expect_error(icheck_sample_size_search(100, NULL, 20), "search_upper")
+  expect_error(icheck_sample_size_search(100, 200, NULL), "search_step")
+  expect_error(icheck_sample_size_search("100", 200, 20), "single numeric")
+  expect_error(icheck_sample_size_search(100.5, 200, 20), "integer")
+  expect_error(icheck_sample_size_search(100, 200, 0), "positive")
+  expect_error(icheck_sample_size_search(200, 100, 20), "search_upper")
 })
 
 test_that("icheck_bounds() works", {

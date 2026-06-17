@@ -102,3 +102,104 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 
   iwrite_lagged_effects_check(Phi, argument_name = argument_name)
 }
+
+#' Check Interpretation of Random-Intercept Loadings
+#'
+#' Write a textual interpretation of the values in `loadings`. This can be used
+#' to check if time-varying random-intercept loadings have been correctly
+#' specified for lavaan data generation.
+#'
+#' @param loadings A \code{numeric} vector or matrix specifying
+#'   random-intercept loadings in the lavaan data-generating model. A vector of
+#'   length \code{time_points} is applied to both variables. A matrix must have
+#'   two rows, one for each variable, and one column per time point. The first
+#'   loading must be 1, so later values are interpreted relative to the first
+#'   occasion.
+#' @param time_points A single \code{integer} indicating the number of time
+#'   points.
+#' @param ... Not used.
+#'
+#' @return No return value, called for side effects.
+#' @export
+#'
+#' @examples
+#' # Same random-intercept loadings for A and B
+#' loadings1 <- c(1, .8, 1.1, .9)
+#' check_loadings(loadings1, time_points = 4)
+#'
+#' # Different random-intercept loadings for A and B
+#' loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)
+#' check_loadings(loadings2, time_points = 4)
+check_loadings <- function(loadings = NULL, time_points, ...) {
+  dots <- list(...)
+  if (length(dots) > 0) {
+    dot_names <- names(dots)
+    dot_names[dot_names == ""] <- "<unnamed>"
+    cli::cli_abort(
+      c(
+        "Unexpected argument in {.fn check_loadings}:",
+        x = paste0("Unknown argument(s): ", paste0(dot_names, collapse = ", "), ".")
+      )
+    )
+  }
+
+  if (is.null(loadings)) {
+    cli::cli_abort(
+      c(
+        "`loadings` must be supplied:",
+        x = "Your `loadings` is `NULL`."
+      )
+    )
+  }
+
+  if (missing(time_points)) {
+    cli::cli_abort(
+      c(
+        "`time_points` must be supplied:",
+        x = "`check_loadings()` needs `time_points` to label the waves."
+      )
+    )
+  }
+
+  icheck_loadings(
+    loadings,
+    time_points,
+    software = "lavaan",
+    constraints = "RI_loadings_free"
+  )
+  iwrite_loadings_check(loadings, time_points)
+  invisible(NULL)
+}
+
+iwrite_loadings_check <- function(loadings, time_points) {
+  loadings_matrix <- inormalize_loadings(loadings, time_points)
+  A_lines <- paste0(
+    "RI_A loads on A",
+    seq_len(time_points),
+    " with ",
+    loadings_matrix[1, ],
+    "."
+  )
+  B_lines <- paste0(
+    "RI_B loads on B",
+    seq_len(time_points),
+    " with ",
+    loadings_matrix[2, ],
+    "."
+  )
+  input_note <- if (is.matrix(loadings)) {
+    "Because `loadings` is a matrix, row 1 is used for A and row 2 is used for B."
+  } else {
+    "Because `loadings` is a vector, the same loading pattern is used for A and B."
+  }
+
+  writeLines(
+    rlang::format_error_bullets(c(
+      "According to `loadings`, the random-intercept loadings in the data-generating model are:",
+      i = "These loadings determine how the random intercepts are used to generate the observed scores at each wave.",
+      i = input_note,
+      "*" = A_lines,
+      "*" = B_lines
+    ))
+  )
+}
