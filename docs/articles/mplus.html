@@ -147,9 +147,10 @@ Vignette <a href="https://jeroendmulder.github.io/powRICLPM/articles/extensions.
 <div class="callout-warning">
 <p>Note that it is not possible to generate skewed or kurtosed data in
 Mplus via the <code>powRICLPM</code> package. Furthermore, bounded
-estimation is not available in Mplus. Therefore, the
-<code>skewness</code>, <code>kurtosis</code>, and <code>bounds</code>
-will be ignored when <code>software = "Mplus"</code>.</p>
+estimation and time-varying random-intercept loadings (both for data
+generation and estimation) are not available for Mplus. The
+<code>ME</code> constraint can be combined with other Mplus-supported
+constraints when <code>estimate_ME = TRUE</code>.</p>
 </div>
 <p>The <code><a href="../reference/powRICLPM.html">powRICLPM()</a></code> creates an Mplus input file (or multiple
 files when multiple experimental conditions are specified) and writes it

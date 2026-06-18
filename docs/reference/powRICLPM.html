@@ -196,7 +196,7 @@
 
 <div class="section">
 <h3 id="using-mplus">Using Mplus<a class="anchor" aria-label="anchor" href="#using-mplus"></a></h3>
-<p>When <code>software = "Mplus"</code>, Mplus input files will be generated and saved into <code>save_path</code>. Note that it is not possible to generate skewed or kurtosed data in Mplus via the <code>powRICLPM</code> package. Furthermore, bounded estimation is not available in Mplus. Therefore, the <code>skewness</code>, <code>kurtosis</code>, and <code>bounds</code> will be ignored when <code>software = "Mplus"</code>.</p>
+<p>When <code>software = "Mplus"</code>, Mplus input files will be generated and saved into <code>save_path</code>. Note that it is not possible to generate skewed or kurtosed data in Mplus via the <code>powRICLPM</code> package. Furthermore, bounded estimation and time-varying random-intercept loadings (both for data generation and estimation) are not available in Mplus. The <code>"ME"</code> constraint can be combined with other Mplus-supported constraints when <code>estimate_ME = TRUE</code>.</p>
 </div>
 
 <div class="section">
