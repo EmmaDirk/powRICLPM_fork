@@ -191,7 +191,7 @@ iwrite_loadings_check <- function(loadings, time_points) {
     writeLines(
       rlang::format_error_bullets(c(
         "According to `loadings`, the random-intercept loadings in the data-generating model are:",
-        "*" = loading_lines
+        setNames(loading_lines, rep("*", length(loading_lines)))
       ))
     )
     return(invisible(NULL))
@@ -203,10 +203,12 @@ iwrite_loadings_check <- function(loadings, time_points) {
   writeLines(
     rlang::format_error_bullets(c(
       "According to `loadings`, the random-intercept loadings in the data-generating model are:",
-      "*" = A_lines
+      setNames(A_lines, rep("*", length(A_lines)))
     ))
   )
   writeLines("")
-  writeLines(rlang::format_error_bullets(c("*" = B_lines)))
+  writeLines(rlang::format_error_bullets(
+    setNames(B_lines, rep("*", length(B_lines)))
+  ))
   invisible(NULL)
 }

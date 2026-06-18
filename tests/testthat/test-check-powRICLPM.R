@@ -93,6 +93,11 @@ test_that("check_loadings() writes loading interpretation", {
     check_loadings(loading_matrix_same),
     "RI_A loads on A2 and RI_B loads on B2 with 0.5"
   )
+  loading_matrix_same_output <- capture.output(check_loadings(loading_matrix_same))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_same_output)),
+    4
+  )
 
   expect_output(
     check_loadings(loading_matrix, time_points = 4),
@@ -105,6 +110,11 @@ test_that("check_loadings() writes loading interpretation", {
   expect_output(
     check_loadings(loading_matrix),
     "RI_B loads on B4 with -0.5"
+  )
+  loading_matrix_output <- capture.output(check_loadings(loading_matrix))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_output)),
+    8
   )
 
   expect_error(check_loadings(), "must be supplied")
