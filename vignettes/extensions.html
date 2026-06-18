@@ -39,6 +39,108 @@ ul.task-list{list-style: none;}
 
 
 
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; }
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; }
+code span.at { color: #7d9029; }
+code span.bn { color: #40a070; }
+code span.bu { color: #008000; }
+code span.cf { color: #007020; font-weight: bold; }
+code span.ch { color: #4070a0; }
+code span.cn { color: #880000; }
+code span.co { color: #60a0b0; font-style: italic; }
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; }
+code span.do { color: #ba2121; font-style: italic; }
+code span.dt { color: #902000; }
+code span.dv { color: #40a070; }
+code span.er { color: #ff0000; font-weight: bold; }
+code span.ex { }
+code span.fl { color: #40a070; }
+code span.fu { color: #06287e; }
+code span.im { color: #008000; font-weight: bold; }
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; }
+code span.kw { color: #007020; font-weight: bold; }
+code span.op { color: #666666; }
+code span.ot { color: #007020; }
+code span.pp { color: #bc7a00; }
+code span.sc { color: #4070a0; }
+code span.ss { color: #bb6688; }
+code span.st { color: #4070a0; }
+code span.va { color: #19177c; }
+code span.vs { color: #4070a0; }
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
 
 
 
@@ -47,7 +149,6 @@ ul.task-list{list-style: none;}
 div.csl-bib-body { }
 div.csl-entry {
 clear: both;
-margin-bottom: 0em;
 }
 .hanging div.csl-entry {
 margin-left:2em;
@@ -166,7 +267,7 @@ pre, code {
 background-color: #f7f7f7;
 border-radius: 3px;
 color: #333;
-white-space: pre-wrap; 
+white-space: pre-wrap;
 }
 pre {
 border-radius: 3px;
@@ -234,18 +335,18 @@ text-decoration: underline; }
 a[href^="https:"] {
 text-decoration: underline; }
 
-code > span.kw { color: #555; font-weight: bold; } 
-code > span.dt { color: #902000; } 
-code > span.dv { color: #40a070; } 
-code > span.bn { color: #d14; } 
-code > span.fl { color: #d14; } 
-code > span.ch { color: #d14; } 
-code > span.st { color: #d14; } 
-code > span.co { color: #888888; font-style: italic; } 
-code > span.ot { color: #007020; } 
-code > span.al { color: #ff0000; font-weight: bold; } 
-code > span.fu { color: #900; font-weight: bold; } 
-code > span.er { color: #a61717; background-color: #e3d2d2; } 
+code > span.kw { color: #555; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #d14; }
+code > span.fl { color: #d14; }
+code > span.ch { color: #d14; }
+code > span.st { color: #d14; }
+code > span.co { color: #888888; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #900; font-weight: bold; }
+code > span.er { color: #a61717; background-color: #e3d2d2; }
 </style>
 
 
@@ -262,11 +363,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<p>The basic power analysis as described in the vignette <a href="https://jeroendmulder.github.io/powRICLPM/articles/start.html">Getting
+<p>The basic power analysis as described in the vignette <a href="https://jeroendmulder.github.io/powRICLPM/articles/introduction.html">Getting
 Started</a> can be extended to using bounded estimation, estimation with
 constraints over time, inclusion of measurement error in the generated
 data and estimation model (i.e., the STARTS model), and generating data
 with skewness and kurtosis. These extensions are described below.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(powRICLPM)</span></code></pre></div>
 <div id="bounded-estimation-with-lavaan" class="section level2">
 <h2>Bounded estimation with <code>lavaan</code></h2>
 <p>To prevent non-convergence for small sample sizes (say, less than
@@ -277,11 +379,11 @@ algorithm to find unique solutions and prevents it from searching in the
 completely wrong direction for one, or multiple parameters. Sensible
 lower bounds involve those on the (residual) variances of latent
 variables (e.g., the random intercept variances), as negative variances
-are theoretically not possible. Upper bound for variances are determined
-based on the observed variances for variable. In the context of the
-RI-CLPM, the factor loadings are (usually) fixed, and hence these
-parameters are not estimated. The lagged effects are theoretically
-infinite, and hence there are no sensible bounds we can place à priori
+are theoretically not possible. Upper bounds for variances are
+determined based on the observed variances for each variable. In the
+context of the RI-CLPM, the factor loadings are usually fixed, and hence
+these parameters are not estimated. The lagged effects are theoretically
+infinite, and hence there are no sensible bounds we can place a priori
 on these parameters.</p>
 <p>The use of bounded estimation is theoretically appealing for models
 that are known to have convergence issues, such as the stable trait
@@ -290,50 +392,155 @@ autoregressive trait state (STARTS) model. The Special Topics vignette
 Error</a> uses the powRICLPM package to explore the impact of unmodeled
 measurement error in the RI-CLPM, and the use of bounded estimation to
 aid the convergence of the STARTS model.</p>
+<p>Bounded estimation can only be used when no equality or
+time-invariance constraints are imposed on the estimation model, except
+for <code>constraints = &quot;RI_loadings_free&quot;</code> since it frees
+random-intercept loadings rather than constraining parameters. It still
+cannot be combined with equality or time-invariance constraints such as
+<code>constraints = &quot;lagged&quot;</code>,
+<code>constraints = &quot;residuals&quot;</code>,
+<code>constraints = &quot;stationarity&quot;</code>, or
+<code>constraints = &quot;ME&quot;</code>.</p>
 </div>
 <div id="constraints-over-time" class="section level2">
 <h2>Constraints over time</h2>
 <p><code>powRICLPM()</code> offers users the option to impose various
-constraints over time on the estimation model through the
-<code>constraints</code> argument. This has statistical advantages as
-constraints over time reduce model complexity, thereby potentially
-reducing convergence issues and increasing power. Moreover, some
-researchers are interested in so called ‘stationarity’ constraints for
-theoretical reasons. A disadvantage of such constraints is that they
-assume certain parameters to be time-invariant. This might not be an
-assumption researchers are willing to make, especially in developmental
-contexts where you expect lagged effects might change over time (e.g.,
-the variable <code>wA</code> gets more important in driving
-<code>wB</code> as one gets older). Therefore, by default
-<code>constraints = &quot;none&quot;</code>, implying that all lagged effects, and
-within-components (residual) variances and covariances are freely
-estimated over time.</p>
+constraints on the estimation model through the <code>constraints</code>
+argument. This has statistical advantages as constraints over time
+reduce model complexity, thereby potentially reducing convergence issues
+and increasing power. Moreover, some researchers are interested in
+so-called stationarity constraints for theoretical reasons. A
+disadvantage of such constraints is that they assume certain parameters
+to be time-invariant. This might not be an assumption researchers are
+willing to make, especially in developmental contexts where you expect
+lagged effects might change over time (e.g., the variable
+<code>wA</code> gets more important in driving <code>wB</code> as one
+gets older). Therefore, by default <code>constraints = &quot;none&quot;</code>,
+implying that all lagged effects and within-components (residual)
+variances and covariances are freely estimated over time.</p>
 <p>Constraint options include:</p>
 <ul>
 <li><code>constraints = &quot;lagged&quot;</code>: Autoregressive and cross-lagged
 effects are constrained to be equal over time.</li>
-<li><code>constraints = &quot;residuals</code>: Within-unit residual
-variances and covariance (from wave 2 onward) are constrained to be
+<li><code>constraints = &quot;residuals&quot;</code>: Within-unit residual
+variances and covariances (from wave 2 onward) are constrained to be
 equal over time.</li>
 <li><code>constraints = &quot;within&quot;</code>: Both lagged effects and
 residual variances and covariances are constrained to be equal over
-time.</li>
-<li><code>constraints = &quot;stationary&quot;</code>: Constraints are imposed on
-the variances of the within-components at the first wave, and residual
-variances at wave 2 and further, such that the variances of the
+time. This is equivalent to
+<code>constraints = c(&quot;lagged&quot;, &quot;residuals&quot;)</code>.</li>
+<li><code>constraints = &quot;stationarity&quot;</code>: Constraints are imposed
+on the variances of the within-components at the first wave, and
+residual variances at wave 2 and further, such that the variances of the
 within-components themselves are all 1. This implies that the variances
 at the first wave are fixed to 1, and that the residual variances are a
 function of the lagged effects, and correlation between
 within-components at the same wave. These constraints are deduced in the
 supplementary materials of <span class="citation">Mulder and Hamaker
-(2021)</span>, see the FAQ <a href="https://jeroendmulder.github.io/RI-CLPM/faq.html#Standardization">“How
+(2021)</span>, see the FAQ <a href="https://jeroendmulder.github.io/RI-CLPM/faq.html#Standardization">â€œHow
 can I constrain the <em>standardized</em> parameters to be invariant
-over time?”</a>.</li>
+over time?â€</a>. This option cannot be combined with
+<code>constraints = &quot;lagged&quot;</code> or
+<code>constraints = &quot;residuals&quot;</code>.</li>
 <li><code>constraints = &quot;ME&quot;</code>: Constraints are imposed on the
 measurement error variances across time (separately for each variable).
 This constraint is only possible when
 <code>estimate_ME = TRUE</code>.</li>
+<li><code>constraints = &quot;RI_loadings_free&quot;</code>: Freely estimated
+random-intercept factor loadings; see details below.</li>
 </ul>
+<p>The random-intercept factor loadings are a special case. In the
+standard RI-CLPM specification, these loadings are fixed to 1 so that
+each observed variable loads equally on its random intercept. The option
+<code>constraints = &quot;RI_loadings_free&quot;</code> relaxes this assumption in
+the estimation model by freely estimating the random-intercept factor
+loadings from the second wave onward. The first loading remains fixed to
+1 for identification.</p>
+<p>Compatible options can be combined in a character vector. For
+example, <code>constraints = c(&quot;lagged&quot;, &quot;RI_loadings_free&quot;)</code>
+constrains the lagged effects over time and freely estimates the
+random-intercept factor loadings from the second wave onward. Similarly,
+<code>constraints = c(&quot;lagged&quot;, &quot;residuals&quot;)</code> imposes the same
+constraints as <code>constraints = &quot;within&quot;</code>. Some options cannot
+be combined because they impose overlapping or incompatible
+restrictions. For example, <code>constraints = &quot;stationarity&quot;</code>
+already imposes restrictions on the residual variances, so it cannot be
+combined with <code>constraints = &quot;residuals&quot;</code>. Similarly, because
+<code>constraints = &quot;within&quot;</code> already combines lagged and residual
+constraints, it cannot be combined with <code>&quot;lagged&quot;</code> or
+<code>&quot;residuals&quot;</code> in the same constraint vector.</p>
+</div>
+<div id="time-varying-random-intercept-loadings" class="section level2">
+<h2>Time-varying random-intercept loadings</h2>
+<p>By default, all random-intercept loadings in the <code>lavaan</code>
+data-generating model are fixed to 1. In some applications, researchers
+may want to generate data where the random intercepts load differently
+across waves. Researchers can specify these time-varying loadings by
+passing a vector or a matrix to the <code>loadings</code> argument.</p>
+<p>When a vector is passed, the same loading pattern is used for the
+random intercept of A and the random intercept of B. The first loading
+must always be 1:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>loadings <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, .<span class="dv">8</span>, <span class="fl">1.1</span>, .<span class="dv">9</span>)</span></code></pre></div>
+<p>When a matrix is passed, row 1 is used for variable A and row 2 is
+used for variable B. This allows the loading pattern to differ across
+variables:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>loadings <span class="ot">&lt;-</span> <span class="fu">matrix</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="fu">c</span>(<span class="dv">1</span>, .<span class="dv">8</span>, <span class="fl">1.1</span>, .<span class="dv">9</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>    <span class="dv">1</span>, <span class="fl">1.2</span>, .<span class="dv">7</span>, <span class="dv">1</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">nrow =</span> <span class="dv">2</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">byrow =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span></code></pre></div>
+<p>For example:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">powRICLPM</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">target_power =</span> <span class="fl">0.8</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">sample_size =</span> <span class="dv">1000</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">time_points =</span> <span class="dv">4</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">intraclass_correlation =</span> <span class="fl">0.5</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">RI_cor =</span> <span class="fl">0.3</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  <span class="at">lagged_effects =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(.<span class="dv">4</span>, .<span class="dv">1</span>, .<span class="dv">2</span>, .<span class="dv">3</span>), <span class="at">ncol =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>  <span class="at">within_cor =</span> <span class="fl">0.3</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  <span class="at">loadings =</span> loadings,</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  <span class="at">constraints =</span> <span class="st">&quot;RI_loadings_free&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="at">reps =</span> <span class="dv">1000</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">1234</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>)</span></code></pre></div>
+<p>If you are unsure if you have specified the <code>loadings</code>
+vector or matrix as intended, you can use the
+<code>check_loadings()</code> function to print how the random-intercept
+loadings are interpreted.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">check_loadings</span>(<span class="fu">c</span>(<span class="dv">1</span>, .<span class="dv">8</span>, <span class="fl">1.1</span>, .<span class="dv">9</span>))</span></code></pre></div>
+<pre><code>## According to `loadings`, the random-intercept loadings in the data-generating model are:
+## â€¢ RI_A loads on A1 and RI_B loads on B1 with 1.
+## â€¢ RI_A loads on A2 and RI_B loads on B2 with 0.8.
+## â€¢ RI_A loads on A3 and RI_B loads on B3 with 1.1.
+## â€¢ RI_A loads on A4 and RI_B loads on B4 with 0.9.</code></pre>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">check_loadings</span>(loadings)</span></code></pre></div>
+<pre><code>## According to `loadings`, the random-intercept loadings in the data-generating model are:
+## â€¢ RI_A loads on A1 with 1.
+## â€¢ RI_A loads on A2 with 0.8.
+## â€¢ RI_A loads on A3 with 1.1.
+## â€¢ RI_A loads on A4 with 0.9.
+##
+## â€¢ RI_B loads on B1 with 1.
+## â€¢ RI_B loads on B2 with 1.2.
+## â€¢ RI_B loads on B3 with 0.7.
+## â€¢ RI_B loads on B4 with 1.</code></pre>
+<p>The estimated random-intercept loadings are returned as regular model
+parameters. Use <code>give(out, &quot;names&quot;)</code> to inspect the available
+parameter names. Freed random-intercept loadings use lavaan loading
+syntax, such as <code>RI_A=~A2</code> or <code>RI_B=~B3</code>. They can
+then be inspected with the usual parameter workflow:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">give</span>(out, <span class="st">&quot;names&quot;</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">give</span>(out, <span class="st">&quot;results&quot;</span>, <span class="at">parameter =</span> <span class="st">&quot;RI_A=~A2&quot;</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">summary</span>(out, <span class="at">parameter =</span> <span class="st">&quot;RI_A=~A2&quot;</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">summary</span>(out, <span class="at">sample_size =</span> <span class="dv">1000</span>, <span class="at">time_points =</span> <span class="dv">4</span>, <span class="at">intraclass_correlation =</span> <span class="fl">0.5</span>)</span></code></pre></div>
+<p>Supplying <code>loadings</code> requires
+<code>constraints = &quot;RI_loadings_free&quot;</code>, so that the estimation
+model freely estimates the corresponding random-intercept loadings from
+the second wave onward. When comparing power for multiple numbers of
+time points with time-varying random-intercept loadings, use separate
+<code>powRICLPM()</code> calls for each value of
+<code>time_points</code>.</p>
 </div>
 <div id="measurement-error" class="section level2">
 <h2>Measurement error</h2>
@@ -369,26 +576,26 @@ maximum likelihood (<code>estimator = &quot;MLR&quot;</code>).</p>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2 class="unnumbered">References</h2>
-<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-dejonckere_using_2022" class="csl-entry">
-De Jonckere, Julie, and Yves Rosseel. 2022. <span>“<span class="nocase">Using bounded estimation to avoid nonconvergence in small
-sample structural equation modeling</span>.”</span> <em>Structural
-Equation Modeling</em> 29 (3): 412–27. <a href="https://doi.org/10.1080/10705511.2021.1982716">https://doi.org/10.1080/10705511.2021.1982716</a>.
+De Jonckere, Julie, and Yves Rosseel. 2022. <span>â€œ<span class="nocase">Using bounded estimation to avoid nonconvergence in small
+sample structural equation modeling</span>.â€</span> <em>Structural
+Equation Modeling</em> 29 (3): 412â€“27. <a href="https://doi.org/10.1080/10705511.2021.1982716">https://doi.org/10.1080/10705511.2021.1982716</a>.
 </div>
 <div id="ref-kenny_trait-state_2001" class="csl-entry">
-Kenny, David A., and Alex Zautra. 2001. <span>“<span class="nocase">Trait–state models for longitudinal data</span>.”</span>
-In <em>New Methods for the Analysis of Change</em>, 243–63. Washington:
-American Psychological Association. <a href="https://doi.org/10.1037/10409-008">https://doi.org/10.1037/10409-008</a>.
+Kenny, David A., and Alex Zautra. 2001. <span>â€œ<span class="nocase">Traitâ€“state models for longitudinal data</span>.â€</span>
+In <em>New Methods for the Analysis of Change</em>. American
+Psychological Association. <a href="https://doi.org/10.1037/10409-008">https://doi.org/10.1037/10409-008</a>.
 </div>
 <div id="ref-micceri_unicorn_1989" class="csl-entry">
-Micceri, Theodore. 1989. <span>“<span class="nocase">The unicorn, the
-normal curve, and other improbable creatures</span>.”</span>
-<em>Psychological Bulletin</em> 105 (1): 156–66.
+Micceri, Theodore. 1989. <span>â€œ<span class="nocase">The unicorn, the
+normal curve, and other improbable creatures</span>.â€</span>
+<em>Psychological Bulletin</em> 105 (1): 156â€“66.
 </div>
 <div id="ref-mulder_three_2021" class="csl-entry">
-Mulder, Jeroen D., and Ellen L. Hamaker. 2021. <span>“<span class="nocase">Three extensions of the random intercept cross-lagged
-panel model</span>.”</span> <em>Structural Equation Modeling: A
-Multidisciplinary Journal</em> 28 (4): 638–48. <a href="https://doi.org/10.1080/10705511.2020.1784738">https://doi.org/10.1080/10705511.2020.1784738</a>.
+Mulder, Jeroen D., and Ellen L. Hamaker. 2021. <span>â€œ<span class="nocase">Three extensions of the random intercept cross-lagged
+panel model</span>.â€</span> <em>Structural Equation Modeling: A
+Multidisciplinary Journal</em> 28 (4): 638â€“48. <a href="https://doi.org/10.1080/10705511.2020.1784738">https://doi.org/10.1080/10705511.2020.1784738</a>.
 </div>
 </div>
 </div>
