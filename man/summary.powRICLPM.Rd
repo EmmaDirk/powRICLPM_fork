@@ -52,7 +52,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \item \code{Avg}: The average (across replications) parameter estimate.
 \item \code{Bias}: The difference between the population value and the average parameter estimate.
 \item \code{Min}: The lowest (across replications) parameter estimate.
-\item \code{SD}: The standard deviation of the parameter estimate over replications.
+\item \code{EmpSE}: The empirical standard error, computed as the standard deviation of the parameter estimate over replications.
 \item \code{SEAvg}: The average (across replications) standard error of the parameter estimate.
 \item \code{MSE}: The parameter mean square error, combining a parameter's bias and efficiency.
 \item \code{Accuracy}: The average (across replications) width of the confidence interval.

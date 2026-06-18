@@ -26,7 +26,8 @@ test_that("basic power analysis using lavaan runs", {
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
   expect_type(out1$conditions[[1]]$estimation_information, "list")
-  expect_true(all(c("MCSE_average", "MCSE_SD", "MCSE_accuracy") %in% names(out1$conditions[[1]]$MCSEs)))
+  expect_true(all(c("MCSE_average", "MCSE_EmpSE", "MCSE_accuracy") %in% names(out1$conditions[[1]]$MCSEs)))
+  expect_true("MCSE_SD" %in% names(out1$conditions[[1]]$MCSEs))
   expect_equal(out1$conditions[[1]]$MCSEs$MCSE_SD, out1$conditions[[1]]$MCSEs$MCSE_EmpSE)
 
   test_summary_condition <- summary(out1, sample_size = 1000, time_points = 3, intraclass_correlation = 0.5, reliability = 1)
@@ -70,6 +71,40 @@ test_that("lavaan supplied loadings require freed public estimation path", {
       seed = 123456
     ),
     "RI_loadings_free"
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = matrix(1, nrow = 1, ncol = 3),
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    ),
+    "must have 2 rows.*has 1 row"
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = matrix(1, nrow = 2, ncol = 4),
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    ),
+    "one column per time point.*has 4 columns.*time_points.*= 3"
   )
 })
 

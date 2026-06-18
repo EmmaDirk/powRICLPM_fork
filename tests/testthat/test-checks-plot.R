@@ -25,16 +25,21 @@ test_that("icheck_plot_parameter() works", {
   expect_s3_class(p_icc, "ggplot")
 
   p_average <- plot(out, y = "average", parameter = "wB2~wA1")
+  p_empse <- plot(out, y = "EmpSE", parameter = "wB2~wA1")
   p_sd <- plot(out, y = "SD", parameter = "wB2~wA1")
   p_accuracy <- plot(out, y = "accuracy", parameter = "wB2~wA1")
   expect_s3_class(p_average, "ggplot")
+  expect_s3_class(p_empse, "ggplot")
   expect_s3_class(p_sd, "ggplot")
+  expect_equal(p_sd$labels$y, "EmpSE")
   expect_s3_class(p_accuracy, "ggplot")
 })
 
 test_that("icheck_y() works", {
   expect_null(icheck_y("power"))
   expect_null(icheck_y("bias"))
+  expect_null(icheck_y("EmpSE"))
+  expect_null(icheck_y("SD"))
   expect_error(icheck_y("minimum"), "minimum")
   expect_error(icheck_y("sample_size"))
   expect_error(icheck_y(3))

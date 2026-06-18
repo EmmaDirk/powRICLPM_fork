@@ -19,7 +19,7 @@
 #'   \item \code{MSE}: The mean square error.
 #'   \item \code{coverage}: The coverage rate
 #'   \item \code{accuracy}: The average width of the confidence interval.
-#'   \item \code{SD}: Standard deviation of parameter estimates.
+#'   \item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} is still accepted as an alias for \code{EmpSE}.
 #'   \item \code{SEAvg}: Average standard error.
 #'   \item \code{bias}: The absolute difference between the average estimate and population value.
 #' }
@@ -81,6 +81,9 @@ plot.powRICLPM <- function(
   icheck_plot_options(color_by)
   icheck_plot_options(shape_by)
   icheck_plot_options(facet_by)
+  if (identical(y, "SD")) {
+    y <- "EmpSE"
+  }
 
   # Get performance table
   d <- merge(
@@ -88,9 +91,6 @@ plot.powRICLPM <- function(
     give_powRICLPM_MCSE_parameter(x, parameter = parameter),
     by = c("sample_size", "time_points", "ICC", "reliability")
   )
-  if (identical(y, "SD")) {
-    d$SD <- d$EmpSE
-  }
 
   # Compute upper and lower bound of y-variable
   d$lb <- d[, y] - 1.96 * d[, paste0("MCSE_", y)]

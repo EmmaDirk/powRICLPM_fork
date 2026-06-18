@@ -119,7 +119,17 @@ test_that("check_loadings() writes loading interpretation", {
 
   expect_error(check_loadings(), "must be supplied")
   expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
-  expect_error(check_loadings(c(0.8, 1, 1), time_points = 3), "fixed to 1")
+  expect_error(
+    check_loadings(c(0.8, 1, 1), time_points = 3),
+    "first entry.*0.8.*first value is 1"
+  )
+  expect_error(
+    check_loadings(
+      suppressWarnings(matrix(c(1, 0, 1, -0.5, 0.25), nrow = 2, byrow = TRUE)),
+      time_points = 3
+    ),
+    "same number of time points.*recycled values"
+  )
   expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
 })
 
@@ -157,16 +167,23 @@ test_that("icheck_loadings() works", {
   )
   expect_error(
     icheck_loadings(matrix(1, nrow = 3, ncol = 3), 3, "lavaan"),
-    "dimensions 3 x 3.*implying 3 time points.*time_points.*= 3"
+    "must have 2 rows.*has 3 rows"
+  )
+  expect_error(
+    icheck_loadings(matrix(1, nrow = 2, ncol = 4), 3, "lavaan"),
+    "one column per time point.*has 4 columns.*time_points.*= 3"
   )
   expect_error(
     icheck_loadings(c(1, Inf, 2), 3, "lavaan"),
     "contains: c\\(1, Inf, 2\\)"
   )
-  expect_error(icheck_loadings(c(0.8, 1, 1), 3, "lavaan"), "fixed to 1")
+  expect_error(
+    icheck_loadings(c(0.8, 1, 1), 3, "lavaan"),
+    "first entry.*0.8.*first value is 1"
+  )
   expect_error(
     icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
-    "fixed to 1"
+    "first column.*RI_A = 1.*RI_B = 0.8.*first column is c\\(1, 1\\)"
   )
   expect_error(
     icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),

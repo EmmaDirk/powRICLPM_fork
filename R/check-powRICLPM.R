@@ -240,14 +240,26 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     )
   }
   if (is.matrix(x)) {
-    if (!identical(dim(x), c(2L, as.integer(time_points)))) {
+    if (nrow(x) != 2L) {
+      row_label <- if (nrow(x) == 1L) "row" else "rows"
       cli::cli_abort(
         c(
-          "{.arg {arg}} must have 2 rows and one column per time point:",
-          i = "Rows correspond to variables A and B; columns correspond to time points.",
-          x = paste0("Your {.arg {arg}} has dimensions ", paste(dim(x), collapse = " x "),
-                     ", implying ", ncol(x), " time points, but {.arg {t_arg}} = ",
-                     time_points, ".")
+          "{.arg {arg}} must have 2 rows:",
+          i = "Rows correspond to the random intercepts for variables A and B.",
+          x = paste0("Your {.arg {arg}} has ", nrow(x), " ", row_label, ".")
+        ),
+        call = call
+      )
+    }
+    if (ncol(x) != time_points) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one column per time point:",
+          i = "Columns correspond to time points.",
+          x = paste0(
+            "Your {.arg {arg}} has ", ncol(x),
+            " columns, but {.arg {t_arg}} = ", time_points, "."
+          )
         ),
         call = call
       )
@@ -276,14 +288,31 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     )
   }
   if (!all(first_loadings == 1)) {
-    cli::cli_abort(
-      c(
-        "The first random-intercept loading must be fixed to 1:",
-        i = "{.arg {arg}} is specified relative to the first occasion.",
-        x = "Set the first loading = 1 for each variable."
-      ),
-      call = call
-    )
+    if (is.matrix(x)) {
+      cli::cli_abort(
+        c(
+          "The first random-intercept loading must be 1 for both variables:",
+          i = "Random-intercept loadings are specified relative to the first occasion, so wave 1 is the reference point.",
+          x = paste0(
+            "The first column of {.arg {arg}} is RI_A = ", first_loadings[1],
+            " and RI_B = ", first_loadings[2], "."
+          ),
+          i = "Use a matrix whose first column is c(1, 1); row 1 is for variable A and row 2 is for variable B.",
+          i = "Both random intercepts must have loadings for the same number of time points; check that the matrix was not created from rows with different lengths or recycled values."
+        ),
+        call = call
+      )
+    } else {
+      cli::cli_abort(
+        c(
+          "The first random-intercept loading must be 1:",
+          i = "Random-intercept loadings are specified relative to the first occasion, so wave 1 is the reference point.",
+          x = paste0("The first entry of {.arg {arg}} is ", first_loadings, "."),
+          i = "Use a vector whose first value is 1, for example c(1, ...)."
+        ),
+        call = call
+      )
+    }
   }
   if (!has_constraint(constraints, "RI_loadings_free")) {
     cli::cli_abort(
