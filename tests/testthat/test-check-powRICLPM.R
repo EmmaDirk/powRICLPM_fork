@@ -7,6 +7,8 @@ test_that("icheck_target() works", {
 test_that("icheck_T() works", {
   expect_null(icheck_T(c(3, 4), ME = FALSE), c(3, 4))
   expect_error(icheck_T(3.5, ME = FALSE))
+  expect_error(icheck_T(Inf, ME = FALSE), "finite")
+  expect_error(icheck_T(NA_real_, ME = FALSE), "finite")
   expect_error(icheck_T(c(2, 3), ME = FALSE))
   expect_warning(icheck_T(c(3:30), ME = FALSE))
   expect_error(icheck_T(c(3, 4), ME = TRUE))
@@ -121,15 +123,26 @@ test_that("check_loadings() writes loading interpretation", {
   expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
   expect_error(
     check_loadings(c(0.8, 1, 1), time_points = 3),
-    "first entry.*0.8.*first value is 1"
+    "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
   )
   expect_error(
     check_loadings(
       suppressWarnings(matrix(c(1, 0, 1, -0.5, 0.25), nrow = 2, byrow = TRUE)),
       time_points = 3
     ),
-    "same number of time points.*recycled values"
+    "first column.*RI_A = 1.*RI_B = -0.5.*matrix.*c\\(1, 1\\)"
   )
+  expect_error(check_loadings(list(c(1, 0, 1))), "numeric vector.*numeric matrix.*list")
+  expect_error(check_loadings(data.frame(a = c(1, 0, 1))), "numeric vector.*numeric matrix.*data frame")
+  expect_error(check_loadings(array(c(1, 0, -1, 2.5), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
+  expect_error(check_loadings(numeric(0)), "at least one value.*length 0")
+  expect_error(check_loadings(loading_vector, time_points = c(3, 4)), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
+  expect_error(check_loadings(loading_vector, time_points = 3.5), "positive whole number.*time_points.*= 3.5")
+  expect_error(check_loadings(loading_vector, time_points = "4"), 'positive whole number.*time_points.*= "4"')
+  expect_error(check_loadings(loading_vector, time_points = NA), "positive whole number.*time_points.*= NA")
+  expect_error(check_loadings(loading_vector, time_points = Inf), "positive whole number.*time_points.*= Inf")
+  expect_error(check_loadings(loading_vector, time_points = 0), "positive whole number.*time_points.*= 0")
+  expect_error(check_loadings(loading_vector, time_points = -4), "positive whole number.*time_points.*= -4")
   expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
 })
 
@@ -160,7 +173,15 @@ test_that("icheck_loadings() works", {
     icheck_loadings(c(1, 2, 3), 3, "Mplus"),
     "Time-varying random-intercept loadings"
   )
-  expect_error(icheck_loadings("loadings", 3, "lavaan"), "numeric")
+  expect_error(icheck_loadings("loadings", 3, "lavaan"), "numeric vector.*numeric matrix")
+  expect_error(icheck_loadings(data.frame(a = c(1, 2, 3)), 3, "lavaan"), "data frame")
+  expect_error(icheck_loadings(array(c(1, 2, 3, 4), dim = c(2, 2, 1)), 4, "lavaan"), "array")
+  expect_error(icheck_loadings(c(1, 2, 3), 3.5, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), "3", "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), NA, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), Inf, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), 0, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), -3, "lavaan"), "positive whole")
   expect_error(
     icheck_loadings(c(1, 2), 3, "lavaan"),
     "length 2.*time_points.*= 3"
@@ -179,11 +200,11 @@ test_that("icheck_loadings() works", {
   )
   expect_error(
     icheck_loadings(c(0.8, 1, 1), 3, "lavaan"),
-    "first entry.*0.8.*first value is 1"
+    "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
   )
   expect_error(
     icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
-    "first column.*RI_A = 1.*RI_B = 0.8.*first column is c\\(1, 1\\)"
+    "first column.*RI_A = 1.*RI_B = 0.8.*matrix.*c\\(1, 1\\)"
   )
   expect_error(
     icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),

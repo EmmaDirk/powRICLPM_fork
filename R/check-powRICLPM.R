@@ -37,6 +37,14 @@ icheck_T <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env
       )
     )
   }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a vector of finite integers:",
+        x = "Some elements are `NA`, `NaN`, `Inf`, or `-Inf`."
+      )
+    )
+  }
   if (!all(x %% 1 == 0)) {
     cli::cli_abort(
       c(
@@ -230,11 +238,28 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       call = call
     )
   }
-  if (!is.numeric(x)) {
+  if (!is.numeric(time_points) ||
+      is.na(time_points) ||
+      !is.finite(time_points) ||
+      time_points %% 1 != 0 ||
+      time_points < 1) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a numeric vector or matrix:",
-        x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
+        "{.arg {t_arg}} must be one positive whole number when using {.arg {arg}}:",
+        x = paste0("{.arg {t_arg}} = ", format_scalar_value(time_points), ".")
+      ),
+      call = call
+    )
+  }
+  time_points <- as.integer(time_points)
+
+  is_numeric_vector <- is.numeric(x) && is.null(dim(x))
+  is_numeric_matrix <- is.numeric(x) && is.matrix(x)
+  if (!is_numeric_vector && !is_numeric_matrix) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a numeric vector or numeric matrix:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
       ),
       call = call
     )
@@ -288,31 +313,27 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     )
   }
   if (!all(first_loadings == 1)) {
-    if (is.matrix(x)) {
-      cli::cli_abort(
-        c(
-          "The first random-intercept loading must be 1 for both variables:",
-          i = "Random-intercept loadings are specified relative to the first occasion, so wave 1 is the reference point.",
-          x = paste0(
-            "The first column of {.arg {arg}} is RI_A = ", first_loadings[1],
-            " and RI_B = ", first_loadings[2], "."
-          ),
-          i = "Use a matrix whose first column is c(1, 1); row 1 is for variable A and row 2 is for variable B.",
-          i = "Both random intercepts must have loadings for the same number of time points; check that the matrix was not created from rows with different lengths or recycled values."
-        ),
-        call = call
+    first_loading_message <- if (is.matrix(x)) {
+      paste0(
+        "The first column of {.arg {arg}} is RI_A = ", first_loadings[1],
+        " and RI_B = ", first_loadings[2], "."
       )
     } else {
-      cli::cli_abort(
-        c(
-          "The first random-intercept loading must be 1:",
-          i = "Random-intercept loadings are specified relative to the first occasion, so wave 1 is the reference point.",
-          x = paste0("The first entry of {.arg {arg}} is ", first_loadings, "."),
-          i = "Use a vector whose first value is 1, for example c(1, ...)."
-        ),
-        call = call
-      )
+      paste0("The first entry of {.arg {arg}} is ", first_loadings, ".")
     }
+    first_loading_hint <- if (is.matrix(x)) {
+      "Use a matrix whose first column is c(1, 1), or use a vector beginning with 1."
+    } else {
+      "Use a vector beginning with 1, or use a matrix whose first column is c(1, 1)."
+    }
+    cli::cli_abort(
+      c(
+        "The first random-intercept loading must be 1:",
+        x = first_loading_message,
+        i = first_loading_hint
+      ),
+      call = call
+    )
   }
   if (!has_constraint(constraints, "RI_loadings_free")) {
     cli::cli_abort(
@@ -335,6 +356,26 @@ inormalize_loadings <- function(loadings, time_points) {
     return(loadings)
   }
   rbind(loadings, loadings)
+}
+
+format_object_type <- function(x) {
+  if (is.data.frame(x)) {
+    return("a data frame")
+  }
+  if (is.array(x) && !is.matrix(x)) {
+    return("an array")
+  }
+  paste0("a ", typeof(x))
+}
+
+format_scalar_value <- function(x) {
+  if (is.character(x)) {
+    return(paste0('"', x, '"'))
+  }
+  if (is.na(x)) {
+    return("NA")
+  }
+  as.character(x)
 }
 
 #' Check \code{moment} Arguments

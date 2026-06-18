@@ -3,7 +3,7 @@
 #' Write a textual interpretation of the values in `lagged_effects`. This can be used to check if `lagged_effects` has been correctly specified.
 #'
 #' @inheritParams powRICLPM
-#' @param ... Not used.
+#' @param ... Additional arguments are not allowed.
 #'
 #' @return No return value, called for side effects.
 #' @export
@@ -117,7 +117,7 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #'   occasion.
 #' @param time_points (optional) A single \code{integer} indicating the number
 #'   of time points. If omitted, this is inferred from \code{loadings}.
-#' @param ... Not used.
+#' @param ... Additional arguments are not allowed.
 #'
 #' @return No return value, called for side effects.
 #' @export
@@ -148,6 +148,14 @@ check_loadings <- function(loadings = NULL, time_points = NULL, ...) {
       c(
         "`loadings` must be supplied:",
         x = "Your `loadings` is `NULL`."
+      )
+    )
+  }
+  if (is.numeric(loadings) && is.null(dim(loadings)) && length(loadings) == 0L) {
+    cli::cli_abort(
+      c(
+        "`loadings` must contain at least one value:",
+        x = "Your `loadings` has length 0."
       )
     )
   }

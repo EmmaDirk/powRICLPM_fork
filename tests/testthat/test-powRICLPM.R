@@ -106,6 +106,23 @@ test_that("lavaan supplied loadings require freed public estimation path", {
     ),
     "one column per time point.*has 4 columns.*time_points.*= 3"
   )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = Inf,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = c(1, 1, 1),
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    ),
+    "finite"
+  )
 })
 
 test_that("lavaan custom loadings require freed public estimation path", {

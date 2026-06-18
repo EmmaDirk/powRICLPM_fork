@@ -17,7 +17,7 @@ occasion.}
 \item{time_points}{(optional) A single \code{integer} indicating the number
 of time points. If omitted, this is inferred from \code{loadings}.}
 
-\item{...}{Not used.}
+\item{...}{Additional arguments are not allowed.}
 }
 \value{
 No return value, called for side effects.

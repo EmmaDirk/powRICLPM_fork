@@ -38,28 +38,26 @@ The random-intercept factor loadings are a special case. In the standard RI-CLPM
 Compatible options can be combined in a character vector. For example, `constraints = c("lagged", "RI_loadings_free")` constrains the lagged effects over time and freely estimates the random-intercept factor loadings from the second wave onward. Similarly, `constraints = c("lagged", "residuals")` imposes the same constraints as `constraints = "within"`. Some options cannot be combined because they impose overlapping or incompatible restrictions. For example, `constraints = "stationarity"` already imposes restrictions on the residual variances, so it cannot be combined with `constraints = "residuals"`. Similarly, because `constraints = "within"` already combines lagged and residual constraints, it cannot be combined with `"lagged"` or `"residuals"` in the same constraint vector.
 
 ## Time-varying random-intercept loadings
-By default, all random-intercept loadings in the data-generating model are fixed to 1. In some applications, researchers may want to generate data where the random intercepts load differently across waves. This can be done with the `loadings` argument when `software = "lavaan"`.
+By default, all random-intercept loadings in the `lavaan` data-generating model are fixed to 1. In some applications, researchers may want to generate data where the random intercepts load differently across waves. Researchers can specify these time-varying loadings by passing a vector or a matrix to the `loadings` argument.
 
-A numeric vector is applied to both variables:
+When a vector is passed, the same loading pattern is used for the random intercept of A and the random intercept of B. The first loading must always be 1:
 
-```{r check-loading-vector}
+```{r loading-vector}
 loadings <- c(1, .8, 1.1, .9)
-check_loadings(loadings)
 ```
 
-A matrix can be used when the loading pattern differs across variables. Row 1 is used for variable A, and row 2 is used for variable B:
+When a matrix is passed, row 1 is used for variable A and row 2 is used for variable B. This allows the loading pattern to differ across variables:
 
-```{r check-loading-matrix}
+```{r loading-matrix}
 loadings <- matrix(
   c(1, .8, 1.1, .9,
     1, 1.2, .7, 1),
   nrow = 2,
   byrow = TRUE
 )
-check_loadings(loadings)
 ```
 
-The first loading must be 1 for each variable, and later loadings are interpreted relative to the first occasion. Supplying `loadings` also requires `constraints = "RI_loadings_free"`, so that the estimation model freely estimates the corresponding random-intercept loadings from the second wave onward. For example:
+Supplying `loadings` requires `constraints = "RI_loadings_free"`, so that the estimation model freely estimates the corresponding random-intercept loadings from the second wave onward. For example:
 
 ```{r loading-analysis, eval = FALSE}
 out <- powRICLPM(
@@ -75,6 +73,16 @@ out <- powRICLPM(
   reps = 1000,
   seed = 1234
 )
+```
+
+If you are unsure if you have specified the `loadings` vector or matrix as intended, you can use the `check_loadings()` function to print how the random-intercept loadings are interpreted.
+
+```{r check-loading-vector}
+check_loadings(c(1, .8, 1.1, .9))
+```
+
+```{r check-loading-matrix}
+check_loadings(loadings)
 ```
 
 The estimated random-intercept loadings are returned as regular model parameters. Use `give(out, "names")` to inspect the available parameter names. Freed random-intercept loadings use lavaan loading syntax, such as `RI_A=~A2` or `RI_B=~B3`. They can then be inspected with the usual parameter workflow:
