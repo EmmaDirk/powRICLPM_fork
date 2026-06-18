@@ -4,7 +4,7 @@
 \alias{check_loadings}
 \title{Check Interpretation of Random-Intercept Loadings}
 \usage{
-check_loadings(loadings = NULL, time_points, ...)
+check_loadings(loadings = NULL, time_points = NULL, ...)
 }
 \arguments{
 \item{loadings}{A \code{numeric} vector or matrix specifying
@@ -14,8 +14,8 @@ two rows, one for each variable, and one column per time point. The first
 loading must be 1, so later values are interpreted relative to the first
 occasion.}
 
-\item{time_points}{A single \code{integer} indicating the number of time
-points.}
+\item{time_points}{(optional) A single \code{integer} indicating the number
+of time points. If omitted, this is inferred from \code{loadings}.}
 
 \item{...}{Not used.}
 }
@@ -30,7 +30,7 @@ specified for lavaan data generation.
 \examples{
 # Same random-intercept loadings for A and B
 loadings1 <- c(1, .8, 1.1, .9)
-check_loadings(loadings1, time_points = 4)
+check_loadings(loadings1)
 
 # Different random-intercept loadings for A and B
 loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)

@@ -66,6 +66,11 @@ test_that("check_Phi() writes Phi interpretation", {
 
 test_that("check_loadings() writes loading interpretation", {
   loading_vector <- c(1, 0.5, -1.2, 2)
+  loading_matrix_same <- matrix(
+    c(1, 0.5, -1.2, 2, 1, 0.5, -1.2, 2),
+    nrow = 2,
+    byrow = TRUE
+  )
   loading_matrix <- matrix(
     c(1, 0, -1.2, 2, 1, 2.5, 0.25, -0.5),
     nrow = 2,
@@ -73,26 +78,22 @@ test_that("check_loadings() writes loading interpretation", {
   )
 
   expect_output(
-    check_loadings(loading_vector, time_points = 4),
+    check_loadings(loading_vector),
     "According to `loadings`"
   )
   expect_output(
-    check_loadings(loading_vector, time_points = 4),
-    "same loading pattern is used for A and B"
+    check_loadings(loading_vector),
+    "RI_A loads on A3 and RI_B loads on B3 with -1.2"
   )
   expect_output(
-    check_loadings(loading_vector, time_points = 4),
-    "RI_A loads on A3 with -1.2"
+    check_loadings(loading_vector),
+    "RI_A loads on A4 and RI_B loads on B4 with 2"
   )
   expect_output(
-    check_loadings(loading_vector, time_points = 4),
-    "RI_B loads on B4 with 2"
+    check_loadings(loading_matrix_same),
+    "RI_A loads on A2 and RI_B loads on B2 with 0.5"
   )
 
-  expect_output(
-    check_loadings(loading_matrix, time_points = 4),
-    "row 1 is used for A and row 2 is used for B"
-  )
   expect_output(
     check_loadings(loading_matrix, time_points = 4),
     "RI_A loads on A2 with 0"
@@ -101,9 +102,12 @@ test_that("check_loadings() writes loading interpretation", {
     check_loadings(loading_matrix, time_points = 4),
     "RI_B loads on B2 with 2.5"
   )
+  expect_output(
+    check_loadings(loading_matrix),
+    "RI_B loads on B4 with -0.5"
+  )
 
   expect_error(check_loadings(), "must be supplied")
-  expect_error(check_loadings(loading_vector), "time_points")
   expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
   expect_error(check_loadings(c(0.8, 1, 1), time_points = 3), "fixed to 1")
   expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")

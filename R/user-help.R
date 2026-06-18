@@ -115,8 +115,8 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #'   two rows, one for each variable, and one column per time point. The first
 #'   loading must be 1, so later values are interpreted relative to the first
 #'   occasion.
-#' @param time_points A single \code{integer} indicating the number of time
-#'   points.
+#' @param time_points (optional) A single \code{integer} indicating the number
+#'   of time points. If omitted, this is inferred from \code{loadings}.
 #' @param ... Not used.
 #'
 #' @return No return value, called for side effects.
@@ -125,12 +125,12 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #' @examples
 #' # Same random-intercept loadings for A and B
 #' loadings1 <- c(1, .8, 1.1, .9)
-#' check_loadings(loadings1, time_points = 4)
+#' check_loadings(loadings1)
 #'
 #' # Different random-intercept loadings for A and B
 #' loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)
 #' check_loadings(loadings2, time_points = 4)
-check_loadings <- function(loadings = NULL, time_points, ...) {
+check_loadings <- function(loadings = NULL, time_points = NULL, ...) {
   dots <- list(...)
   if (length(dots) > 0) {
     dot_names <- names(dots)
@@ -152,13 +152,8 @@ check_loadings <- function(loadings = NULL, time_points, ...) {
     )
   }
 
-  if (missing(time_points)) {
-    cli::cli_abort(
-      c(
-        "`time_points` must be supplied:",
-        x = "`check_loadings()` needs `time_points` to label the waves."
-      )
-    )
+  if (missing(time_points) || is.null(time_points)) {
+    time_points <- iinfer_loadings_time_points(loadings)
   }
 
   icheck_loadings(
@@ -171,35 +166,47 @@ check_loadings <- function(loadings = NULL, time_points, ...) {
   invisible(NULL)
 }
 
+iinfer_loadings_time_points <- function(loadings) {
+  if (is.matrix(loadings)) {
+    return(ncol(loadings))
+  }
+  length(loadings)
+}
+
 iwrite_loadings_check <- function(loadings, time_points) {
   loadings_matrix <- inormalize_loadings(loadings, time_points)
-  A_lines <- paste0(
-    "RI_A loads on A",
-    seq_len(time_points),
-    " with ",
-    loadings_matrix[1, ],
-    "."
-  )
-  B_lines <- paste0(
-    "RI_B loads on B",
-    seq_len(time_points),
-    " with ",
-    loadings_matrix[2, ],
-    "."
-  )
-  input_note <- if (is.matrix(loadings)) {
-    "Because `loadings` is a matrix, row 1 is used for A and row 2 is used for B."
-  } else {
-    "Because `loadings` is a vector, the same loading pattern is used for A and B."
+  same_loadings <- identical(loadings_matrix[1, ], loadings_matrix[2, ])
+
+  if (same_loadings) {
+    loading_lines <- paste0(
+      "RI_A loads on A",
+      seq_len(time_points),
+      " and RI_B loads on B",
+      seq_len(time_points),
+      " with ",
+      loadings_matrix[1, ],
+      "."
+    )
+
+    writeLines(
+      rlang::format_error_bullets(c(
+        "According to `loadings`, the random-intercept loadings in the data-generating model are:",
+        "*" = loading_lines
+      ))
+    )
+    return(invisible(NULL))
   }
+
+  A_lines <- paste0("RI_A loads on A", seq_len(time_points), " with ", loadings_matrix[1, ], ".")
+  B_lines <- paste0("RI_B loads on B", seq_len(time_points), " with ", loadings_matrix[2, ], ".")
 
   writeLines(
     rlang::format_error_bullets(c(
       "According to `loadings`, the random-intercept loadings in the data-generating model are:",
-      i = "These loadings determine how the random intercepts are used to generate the observed scores at each wave.",
-      i = input_note,
-      "*" = A_lines,
-      "*" = B_lines
+      "*" = A_lines
     ))
   )
+  writeLines("")
+  writeLines(rlang::format_error_bullets(c("*" = B_lines)))
+  invisible(NULL)
 }

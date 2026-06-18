@@ -57,7 +57,7 @@ powRICLPM(
 
 \item{reliability}{(optional) A \code{numeric} vector with elements between 0 and 1, denoting the reliability of the variables (see "Details").}
 
-\item{loadings}{(optional) A \code{numeric} vector or matrix specifying random-intercept loadings in the lavaan data-generating model. A vector of length \code{time_points} is applied to both variables. A matrix must have two rows, one for each variable, and one column per time point. The first loading must be 1, so later values are interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"}.}
+\item{loadings}{(optional) A \code{numeric} vector or matrix specifying random-intercept loadings in the lavaan data-generating model. A vector of length \code{time_points} is applied to both variables. A matrix must have two rows, one for each variable, and one column per time point. The first loading must be 1, so later values are interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"}. Use \code{\link{check_loadings}} to check how a loading vector or matrix is interpreted.}
 
 \item{skewness}{(optional) A \code{numeric}, denoting the skewness values for the observed variables (see \code{\link[lavaan]{simulateData}}).}
 
@@ -104,7 +104,7 @@ A rationale for the power analysis strategy implemented in this package can be f
 
 Parameter estimates from non-converged model solutions are discarded from the results. When \code{bounds = FALSE}, inadmissible parameter estimates from converged solutions (e.g., a negative random intercept variance) are discarded. When \code{bounds = TRUE}, inadmissible parameter estimates are retained following advice by De Jonckere and Rosseel (2022). The results include the minimum estimates for all parameters across replications to diagnose which parameter(s) might be the cause of the inadmissible solution.}
 
-\subsection{Using Mplus}{When \code{software = "Mplus"}, Mplus input files will be generated and saved into \code{save_path}. Note that it is not possible to generate skewed or kurtosed data in Mplus via the \code{powRICLPM} package. Furthermore, bounded estimation, custom data-generating random-intercept loadings, and freely estimated random-intercept factor loadings are not available in Mplus. The \code{"ME"} constraint can be combined with other Mplus-supported constraints when \code{estimate_ME = TRUE}. }
+\subsection{Using Mplus}{When \code{software = "Mplus"}, Mplus input files will be generated and saved into \code{save_path}. Note that it is not possible to generate skewed or kurtosed data in Mplus via the \code{powRICLPM} package. Furthermore, bounded estimation, time-varying data-generating random-intercept loadings, and freely estimated random-intercept factor loadings are not available in Mplus. The \code{"ME"} constraint can be combined with other Mplus-supported constraints when \code{estimate_ME = TRUE}. }
 
 \subsection{Naming Conventions Observed and Latent Variables}{The observed variables in the RI-CLPM are given default names, namely capital letters in alphabetical order, with numbers denoting the measurement occasion. For example, for a bivariate RICLPM with 3 time points, we observe \code{A1}, \code{A2}, \code{A3}, \code{B1}, \code{B2}, and \code{B3}. Their within-components are denoted by \code{wA1}, \code{wA2}, ..., \code{wB3}, respectively. The between-components have \code{RI_} prepended to the variable name, resulting in \code{RI_A} and \code{RI_B}.
 
