@@ -18,6 +18,18 @@ compute_MCSE_bias <- function(thetas_hat, thetas_bar) {
   return(out)
 }
 
+#' Compute Monte Carlo Standard Error of Average Estimate
+#'
+#' Compute Monte Carlo SE of the average estimate.
+#'
+#' @noRd
+#' @references
+#' Morris, T. P., White, Ian R., Crowther, Michael J. (2017). Using simulation studies to evaluate statistical methods. Statistics in Medicine, 38, 2074-2102. \url{https://doi.org/10.1002/sim.8086}
+compute_MCSE_average <- function(EmpSE, reps_completed) {
+  out <- EmpSE / sqrt(reps_completed)
+  return(out)
+}
+
 #' Compute Monte Carlo Standard Error of MSE
 #'
 #' Compute Monte Carlo SE of mean square error based on Morris et al. (2019).
@@ -34,8 +46,8 @@ compute_MCSE_MSE <- function(thetas_hat, population_values, MSE) {
   # Number of replications
   reps <- ncol(thetas_hat)
 
-  # Compute MC SE of bias
-  out <- sum_squared_diff / (reps * (reps - 1))
+  # Compute MC SE of MSE
+  out <- sqrt(sum_squared_diff / (reps * (reps - 1)))
   return(out)
 }
 
@@ -65,6 +77,19 @@ compute_MCSE_SEAvg <- function(standard_variances, VEAvg, SEAvg, reps_completed)
 
   # Compute average ModeSE
   out <- sqrt( var_var_theta / (4 * reps_completed * SEAvg^2))
+  return(out)
+}
+
+#' Compute Monte Carlo Standard Error of Accuracy
+#'
+#' Compute Monte Carlo SE of average confidence interval width.
+#'
+#' @noRd
+#' @references
+#' Morris, T. P., White, Ian R., Crowther, Michael J. (2017). Using simulation studies to evaluate statistical methods. Statistics in Medicine, 38, 2074-2102. \url{https://doi.org/10.1002/sim.8086}
+compute_MCSE_accuracy <- function(CI_widths, accuracy, reps_completed) {
+  width_variance <- rowSums((CI_widths - accuracy)^2) / (reps_completed - 1)
+  out <- sqrt(width_variance / reps_completed)
   return(out)
 }
 

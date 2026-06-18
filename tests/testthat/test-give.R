@@ -45,6 +45,8 @@ test_that("give() works", {
 
   expect_s3_class(df_uncertainty, "data.frame")
   expect_equal(nrow(df_uncertainty), 2)
+  expect_true(all(c("MCSE_average", "MCSE_EmpSE", "MCSE_accuracy") %in% names(df_uncertainty)))
+  expect_true("MCSE_SD" %in% names(df_uncertainty))
 
   expect_type(df_names, "character")
   expect_equal(length(df_names), 20)

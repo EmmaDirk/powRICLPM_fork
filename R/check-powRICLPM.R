@@ -37,6 +37,14 @@ icheck_T <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env
       )
     )
   }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a vector of finite integers:",
+        x = "Some elements are `NA`, `NaN`, `Inf`, or `-Inf`."
+      )
+    )
+  }
   if (!all(x %% 1 == 0)) {
     cli::cli_abort(
       c(
@@ -87,7 +95,7 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       )
     )
   }
-  if (!all(x < 1 | x > 0)) {
+  if (!all(x > 0 & x < 1)) {
     cli::cli_abort(
       c(
         "Elements in {.arg {arg}} must be between 0 and 1:",
@@ -192,6 +200,182 @@ icheck_rel <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       )
     )
   }
+}
+
+#' Check \code{loadings} Argument
+#'
+#' \code{icheck_loadings()} checks if the \code{loadings} argument is a valid
+#' random-intercept loading specification for the lavaan data-generating model.
+#'
+#' @noRd
+icheck_loadings <- function(x, time_points, software, constraints = "none",
+                            arg = rlang::caller_arg(x),
+                            t_arg = rlang::caller_arg(time_points),
+                            con_arg = rlang::caller_arg(constraints),
+                            call = rlang::caller_env()) {
+  if (is.null(x)) {
+    return(invisible(NULL))
+  }
+  arg <- format_argument_label(arg, "loadings")
+  t_arg <- format_argument_label(t_arg, "time_points")
+  con_arg <- format_argument_label(con_arg, "constraints")
+  if (software == "Mplus") {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used with `software = 'lavaan'`:",
+        x = "Time-varying random-intercept loadings are not available for Mplus."
+      ),
+      call = call
+    )
+  }
+  if (length(time_points) != 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used with one value of {.arg {t_arg}}:",
+        i = "If you want to compare power for multiple values of {.arg {t_arg}} while using free loadings, use multiple {.fun powRICLPM} calls.",
+        x = paste0("length({.arg {t_arg}}) = ", length(time_points), ".")
+      ),
+      call = call
+    )
+  }
+  if (!is.numeric(time_points) ||
+      is.na(time_points) ||
+      !is.finite(time_points) ||
+      time_points %% 1 != 0 ||
+      time_points < 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {t_arg}} must be one positive whole number when using {.arg {arg}}:",
+        x = paste0("{.arg {t_arg}} = ", format_scalar_value(time_points), ".")
+      ),
+      call = call
+    )
+  }
+  time_points <- as.integer(time_points)
+
+  is_numeric_vector <- is.numeric(x) && is.null(dim(x))
+  is_numeric_matrix <- is.numeric(x) && is.matrix(x)
+  if (!is_numeric_vector && !is_numeric_matrix) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a numeric vector or numeric matrix:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (is.matrix(x)) {
+    if (nrow(x) != 2L) {
+      row_label <- if (nrow(x) == 1L) "row" else "rows"
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have 2 rows:",
+          i = "Rows correspond to the random intercepts for variables A and B.",
+          x = paste0("Your {.arg {arg}} has ", nrow(x), " ", row_label, ".")
+        ),
+        call = call
+      )
+    }
+    if (ncol(x) != time_points) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one column per time point:",
+          i = "Columns correspond to time points.",
+          x = paste0(
+            "Your {.arg {arg}} has ", ncol(x),
+            " columns, but {.arg {t_arg}} = ", time_points, "."
+          )
+        ),
+        call = call
+      )
+    }
+    first_loadings <- x[, 1]
+  } else {
+    if (length(x) != time_points) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one value per time point:",
+          x = paste0("Your {.arg {arg}} has length ", length(x),
+                     ", but {.arg {t_arg}} = ", time_points, ".")
+        ),
+        call = call
+      )
+    }
+    first_loadings <- x[1]
+  }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite values:",
+        x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!all(first_loadings == 1)) {
+    first_loading_message <- if (is.matrix(x)) {
+      paste0(
+        "The first column of {.arg {arg}} is RI_A = ", first_loadings[1],
+        " and RI_B = ", first_loadings[2], "."
+      )
+    } else {
+      paste0("The first entry of {.arg {arg}} is ", first_loadings, ".")
+    }
+    first_loading_hint <- if (is.matrix(x)) {
+      "Use a matrix whose first column is c(1, 1), or use a vector beginning with 1."
+    } else {
+      "Use a vector beginning with 1, or use a matrix whose first column is c(1, 1)."
+    }
+    cli::cli_abort(
+      c(
+        "The first random-intercept loading must be 1:",
+        x = first_loading_message,
+        i = first_loading_hint
+      ),
+      call = call
+    )
+  }
+  if (!has_constraint(constraints, "RI_loadings_free")) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used when random-intercept loadings are freely estimated:",
+        i = "Use `constraints = 'RI_loadings_free'` or include `'RI_loadings_free'` in a constraint vector.",
+        x = paste0("You supplied {.arg {arg}}, but {.arg {con_arg}} = ", format_constraints(constraints), ".")
+      ),
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
+inormalize_loadings <- function(loadings, time_points) {
+  if (is.null(loadings)) {
+    return(matrix(1, nrow = 2, ncol = time_points))
+  }
+  if (is.matrix(loadings)) {
+    return(loadings)
+  }
+  rbind(loadings, loadings)
+}
+
+format_object_type <- function(x) {
+  if (is.data.frame(x)) {
+    return("a data frame")
+  }
+  if (is.array(x) && !is.matrix(x)) {
+    return("an array")
+  }
+  paste0("a ", typeof(x))
+}
+
+format_scalar_value <- function(x) {
+  if (is.character(x)) {
+    return(paste0('"', x, '"'))
+  }
+  if (is.na(x)) {
+    return("NA")
+  }
+  as.character(x)
 }
 
 #' Check \code{moment} Arguments
@@ -525,6 +709,82 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, arg = rlang::caller
   }
 }
 
+
+#' Check sample size search arguments
+#'
+#' \code{icheck_sample_size_search()} checks if the \code{search_*}
+#' arguments define a valid range when \code{sample_size} is not supplied.
+#'
+#' @noRd
+icheck_sample_size_search <- function(search_lower, search_upper, search_step, call = rlang::caller_env()) {
+  search_args <- list(
+    search_lower = search_lower,
+    search_upper = search_upper,
+    search_step = search_step
+  )
+  missing_args <- names(search_args)[vapply(search_args, is.null, logical(1))]
+
+  if (length(missing_args) > 0) {
+    cli::cli_abort(
+      c(
+        "Either {.arg sample_size} or a complete sample-size search range must be supplied:",
+        i = "Use {.arg sample_size} to evaluate specific sample sizes.",
+        i = "Or use {.arg search_lower}, {.arg search_upper}, and {.arg search_step} to generate a range.",
+        x = paste0("Missing search argument", if (length(missing_args) > 1) "s" else "", ": ", paste(missing_args, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  invalid_type <- names(search_args)[!vapply(search_args, function(x) {
+    is.numeric(x) && length(x) == 1 && !is.na(x)
+  }, logical(1))]
+
+  if (length(invalid_type) > 0) {
+    cli::cli_abort(
+      c(
+        "The sample-size search range must use single numeric values:",
+        x = paste0("Check: ", paste(invalid_type, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  invalid_integer <- names(search_args)[!vapply(search_args, function(x) x %% 1 == 0, logical(1))]
+
+  if (length(invalid_integer) > 0) {
+    cli::cli_abort(
+      c(
+        "The sample-size search range must use integer values:",
+        x = paste0("Check: ", paste(invalid_integer, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  invalid_positive <- names(search_args)[!vapply(search_args, function(x) x > 0, logical(1))]
+
+  if (length(invalid_positive) > 0) {
+    cli::cli_abort(
+      c(
+        "The sample-size search range must use positive integers:",
+        x = paste0("Check: ", paste(invalid_positive, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+
+  if (search_upper < search_lower) {
+    cli::cli_abort(
+      c(
+        "{.arg search_upper} must be greater than or equal to {.arg search_lower}:",
+        x = paste0("You supplied search_lower = ", search_lower, " and search_upper = ", search_upper, ".")
+      ),
+      call = call
+    )
+  }
+}
+
 #' Check \code{bounds} Argument
 #'
 #' \code{check_bounds()} tests if \code{bounds} is a logical, and whether bounded estimation can be used.
@@ -633,6 +893,26 @@ format_constraints <- function(constraints) {
     return(constraints)
   }
   paste0("c(", paste0("'", constraints, "'", collapse = ", "), ")")
+}
+
+
+format_loadings <- function(loadings) {
+  values <- paste(as.character(loadings), collapse = ", ")
+  if (is.matrix(loadings)) {
+    return(paste0(
+      "matrix(c(", values, "), nrow = ", nrow(loadings),
+      ", ncol = ", ncol(loadings), ")"
+    ))
+  }
+  paste0("c(", values, ")")
+}
+
+
+format_argument_label <- function(arg, fallback) {
+  if (grepl("^[.A-Za-z][.A-Za-z0-9_]*$", arg)) {
+    return(arg)
+  }
+  fallback
 }
 
 

@@ -15,6 +15,7 @@ create_conditions <- function(
   within_cor,
   Psi,
   reliability,
+  loadings = NULL,
   skewness,
   kurtosis,
   estimate_ME,
@@ -50,6 +51,9 @@ create_conditions <- function(
   conditions$constraints <- I(replicate(nrow(conditions), constraints, simplify = FALSE))
   conditions$lagged_effects <- replicate(nrow(conditions), lagged_effects, simplify = FALSE)
   conditions$Psi <- replicate(nrow(conditions), Psi, simplify = FALSE)
+  conditions$loadings <- I(lapply(conditions$time_points, function(time_points) {
+    inormalize_loadings(loadings, time_points)
+  }))
 
   # Compute and add additional parameters per condition
   conditions$condition_id <- 1:nrow(conditions)
@@ -62,6 +66,7 @@ create_conditions <- function(
   conditions <- lapply(conditions, function(condition) {
     condition <- as.list(condition)
     condition$constraints <- condition$constraints[[1]]
+    condition$loadings <- condition$loadings[[1]]
     condition
   })
 

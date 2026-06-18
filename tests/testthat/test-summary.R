@@ -14,10 +14,10 @@ test_that("all columns from summary.powRICLMP(...) are named", {
   )
 
   table_parameter <- summary(out, parameter = "wB2~wA1")
-  expect_equal(colnames(table_parameter), c("Sample size", "Time points", "ICC", "Reliability", "Population", "Avg", "Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible"))
+  expect_equal(colnames(table_parameter), c("Sample size", "Time points", "ICC", "Reliability", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible"))
 
   table_condition <- summary(out, sample_size = 500, intraclass_correlation = 0.4, time_points = 3, reliability = 1)
-  expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power"))
+  expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
 
   table_condition_inferred_reliability <- summary(out, sample_size = 500, intraclass_correlation = 0.4, time_points = 3)
   expect_equal(table_condition_inferred_reliability, table_condition)
@@ -76,5 +76,5 @@ test_that("summary.powRICLPM asks for reliability when condition matching is amb
     time_points = 3,
     reliability = 1
   )
-  expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power"))
+  expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
 })

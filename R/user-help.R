@@ -3,7 +3,7 @@
 #' Write a textual interpretation of the values in `lagged_effects`. This can be used to check if `lagged_effects` has been correctly specified.
 #'
 #' @inheritParams powRICLPM
-#' @param ... Not used.
+#' @param ... Additional arguments are not allowed.
 #'
 #' @return No return value, called for side effects.
 #' @export
@@ -101,4 +101,122 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
   }
 
   iwrite_lagged_effects_check(Phi, argument_name = argument_name)
+}
+
+#' Check Interpretation of Random-Intercept Loadings
+#'
+#' Write a textual interpretation of the values in `loadings`. This can be used
+#' to check if time-varying random-intercept loadings have been correctly
+#' specified for lavaan data generation.
+#'
+#' @param loadings A \code{numeric} vector or matrix specifying
+#'   random-intercept loadings in the lavaan data-generating model. A vector of
+#'   length \code{time_points} is applied to both variables. A matrix must have
+#'   two rows, one for each variable, and one column per time point. The first
+#'   loading must be 1, so later values are interpreted relative to the first
+#'   occasion.
+#' @param time_points (optional) A single \code{integer} indicating the number
+#'   of time points. If omitted, this is inferred from \code{loadings}.
+#' @param ... Additional arguments are not allowed.
+#'
+#' @return No return value, called for side effects.
+#' @export
+#'
+#' @examples
+#' # Same random-intercept loadings for A and B
+#' loadings1 <- c(1, .8, 1.1, .9)
+#' check_loadings(loadings1)
+#'
+#' # Different random-intercept loadings for A and B
+#' loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)
+#' check_loadings(loadings2, time_points = 4)
+check_loadings <- function(loadings = NULL, time_points = NULL, ...) {
+  dots <- list(...)
+  if (length(dots) > 0) {
+    dot_names <- names(dots)
+    dot_names[dot_names == ""] <- "<unnamed>"
+    cli::cli_abort(
+      c(
+        "Unexpected argument in {.fn check_loadings}:",
+        x = paste0("Unknown argument(s): ", paste0(dot_names, collapse = ", "), ".")
+      )
+    )
+  }
+
+  if (is.null(loadings)) {
+    cli::cli_abort(
+      c(
+        "`loadings` must be supplied:",
+        x = "Your `loadings` is `NULL`."
+      )
+    )
+  }
+  if (is.numeric(loadings) && is.null(dim(loadings)) && length(loadings) == 0L) {
+    cli::cli_abort(
+      c(
+        "`loadings` must contain at least one value:",
+        x = "Your `loadings` has length 0."
+      )
+    )
+  }
+
+  if (missing(time_points) || is.null(time_points)) {
+    time_points <- iinfer_loadings_time_points(loadings)
+  }
+
+  icheck_loadings(
+    loadings,
+    time_points,
+    software = "lavaan",
+    constraints = "RI_loadings_free"
+  )
+  iwrite_loadings_check(loadings, time_points)
+  invisible(NULL)
+}
+
+iinfer_loadings_time_points <- function(loadings) {
+  if (is.matrix(loadings)) {
+    return(ncol(loadings))
+  }
+  length(loadings)
+}
+
+iwrite_loadings_check <- function(loadings, time_points) {
+  loadings_matrix <- inormalize_loadings(loadings, time_points)
+  same_loadings <- identical(loadings_matrix[1, ], loadings_matrix[2, ])
+
+  if (same_loadings) {
+    loading_lines <- paste0(
+      "RI_A loads on A",
+      seq_len(time_points),
+      " and RI_B loads on B",
+      seq_len(time_points),
+      " with ",
+      loadings_matrix[1, ],
+      "."
+    )
+
+    writeLines(
+      rlang::format_error_bullets(c(
+        "According to `loadings`, the random-intercept loadings in the data-generating model are:",
+        stats::setNames(loading_lines, rep("*", length(loading_lines)))
+      ))
+    )
+    return(invisible(NULL))
+  }
+
+  A_lines <- paste0("RI_A loads on A", seq_len(time_points), " with ", loadings_matrix[1, ], ".")
+  B_lines <- paste0("RI_B loads on B", seq_len(time_points), " with ", loadings_matrix[2, ], ".")
+
+  writeLines(
+    rlang::format_error_bullets(c(
+      "According to `loadings`, the random-intercept loadings in the data-generating model are:",
+      stats::setNames(A_lines, rep("*", length(A_lines)))
+    ))
+  )
+  writeLines("")
+  writeLines(rlang::format_error_bullets(
+    stats::setNames(B_lines, rep("*", length(B_lines)))
+  ))
+  invisible(NULL)
 }

@@ -26,6 +26,9 @@ test_that("basic power analysis using lavaan runs", {
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
   expect_type(out1$conditions[[1]]$estimation_information, "list")
+  expect_true(all(c("MCSE_average", "MCSE_EmpSE", "MCSE_accuracy") %in% names(out1$conditions[[1]]$MCSEs)))
+  expect_true("MCSE_SD" %in% names(out1$conditions[[1]]$MCSEs))
+  expect_equal(out1$conditions[[1]]$MCSEs$MCSE_SD, out1$conditions[[1]]$MCSEs$MCSE_EmpSE)
 
   test_summary_condition <- summary(out1, sample_size = 1000, time_points = 3, intraclass_correlation = 0.5, reliability = 1)
 
@@ -33,6 +36,222 @@ test_that("basic power analysis using lavaan runs", {
     test_summary_condition$Population,
     c(1.000, 1.000, 0.300, 0.400, 0.150, 0.200, 0.300, 0.400, 0.150, 0.200, 0.300, 1.000, 1.000, 0.300, 0.781, 0.781, 0.834, 0.834, 0.130, 0.130)
   )
+})
+
+test_that("lavaan supplied loadings require freed public estimation path", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out_default <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(class(out_default), c("powRICLPM", "list"))
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = c(1, 1, 1),
+      reps = 1,
+      seed = 123456
+    ),
+    "RI_loadings_free"
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = matrix(1, nrow = 1, ncol = 3),
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    ),
+    "must have 2 rows.*has 1 row"
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = matrix(1, nrow = 2, ncol = 4),
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    ),
+    "one column per time point.*has 4 columns.*time_points.*= 3"
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = Inf,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = c(1, 1, 1),
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    ),
+    "finite"
+  )
+})
+
+test_that("lavaan custom loadings require freed public estimation path", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = loadings,
+      reps = 1,
+      seed = 123456
+    ),
+    "RI_loadings_free"
+  )
+
+  out_free <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = loadings,
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  RI_loading_parameters <- c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3")
+  index <- match(RI_loading_parameters, out_free$conditions[[1]]$estimates$parameter)
+
+  expect_true(grepl("RI_A=~0*A2", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1.2*A3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~2.5*B2", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.25*B3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_false(anyNA(index))
+  expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
+})
+
+test_that("ICOV no convergence warnings are recognized", {
+  expect_true(is_icov_nonconvergence_warning("lavaan->getICOV():\n   no convergence"))
+  expect_false(is_icov_nonconvergence_warning("lavaan->getICOV():"))
+  expect_false(is_icov_nonconvergence_warning("lavaan->lav_object_post_check(): some estimated lv variances are negative"))
+})
+
+test_that("fatal estimation errors are counted separately from other estimation issues", {
+  estimation_information <- count_estimation_information(
+    reps_completed = 2,
+    n_error = 1,
+    converged = list(TRUE, TRUE),
+    admissible = list(TRUE, TRUE),
+    n_data_icov_nonconvergence = 0,
+    post_check_icov_nonconverged = c(FALSE, FALSE),
+    n_icov_nonconvergence = 0
+  )
+
+  expect_equal(estimation_information$n_completed, 2)
+  expect_equal(estimation_information$n_error, 1)
+  expect_equal(estimation_information$n_nonconvergence, 0)
+  expect_equal(estimation_information$n_inadmissible, 0)
+})
+
+test_that("ICOV failures remain counted as nonconverged estimation issues", {
+  estimation_information <- count_estimation_information(
+    reps_completed = 0,
+    n_error = 0,
+    converged = list(),
+    admissible = list(),
+    n_data_icov_nonconvergence = 1,
+    post_check_icov_nonconverged = logical(),
+    n_icov_nonconvergence = 1
+  )
+
+  expect_equal(estimation_information$n_completed, 0)
+  expect_equal(estimation_information$n_error, 0)
+  expect_equal(estimation_information$n_nonconvergence, 2)
+  expect_equal(estimation_information$n_inadmissible, 0)
+})
+
+test_that("ICOV failures with freed RI loadings are counted as nonconverged", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  loadings <- matrix(c(
+    1, 0, -1.2, 2,
+    1, 2.5, 0.25, -0.5
+  ), nrow = 2, byrow = TRUE)
+
+  icov_warnings <- character()
+  out <- withCallingHandlers(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      loadings = loadings,
+      constraints = c("within", "RI_loadings_free"),
+      reps = 2,
+      seed = 123456
+    ),
+    warning = function(w) {
+      if (is_icov_nonconvergence_warning(conditionMessage(w))) {
+        icov_warnings <<- c(icov_warnings, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+
+  estimation_information <- out$conditions[[1]]$estimation_information
+
+  expect_length(icov_warnings, 2)
+  expect_equal(estimation_information$n_completed, 0)
+  expect_equal(estimation_information$n_error, 0)
+  expect_equal(estimation_information$n_nonconvergence, 2)
+  expect_equal(estimation_information$n_inadmissible, 0)
+  expect_true(all(is.na(out$conditions[[1]]$estimates$average)))
+  expect_true(all(is.na(out$conditions[[1]]$estimates$SEAvg)))
+  expect_true(all(is.na(out$conditions[[1]]$estimates$power)))
 })
 
 test_that("ICC and Phi argument names remain supported", {
@@ -65,6 +284,40 @@ test_that("ICC and Phi argument names remain supported", {
   expect_equal(out_phi$conditions[[1]]$ICC, 0.5)
   expect_equal(out_phi$session$argument_names$lagged_effects, "Phi")
   expect_equal(out_phi$conditions[[1]]$estimates$population_value[out_phi$conditions[[1]]$estimates$parameter == "wB2~wA1"], 0.2)
+})
+
+test_that("powRICLPM requires sample_size or a complete search range", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reps = 1,
+      seed = 123456
+    ),
+    "Either.*sample_size.*search"
+  )
+
+  out <- powRICLPM(
+    target_power = 0.8,
+    search_lower = 1000,
+    search_upper = 1000,
+    search_step = 20,
+    time_points = 3,
+    ICC = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    reps = 1,
+    seed = 123456
+  )
+
+  expect_equal(out$conditions[[1]]$sample_size, 1000)
 })
 
 test_that("powRICLPM validation errors use user-facing alias names", {
@@ -276,8 +529,10 @@ test_that("power analysis using Mplus works", {
   )
 
   if (.Platform$OS.type %in% c("windows", "mac")) {
-    path <- file.path(tempdir(), "Condition1.inp") |>
-      normalizePath(mustWork = FALSE)
+    path <- normalizePath(
+      file.path(tempdir(), "Condition1.inp"),
+      mustWork = FALSE
+    )
 
     expect_true(file.exists(path))
   }

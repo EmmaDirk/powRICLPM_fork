@@ -14,7 +14,7 @@ check_Phi(lagged_effects = NULL, Phi = NULL)
 
 \item{Phi}{Alternative name for \code{lagged_effects}.}
 
-\item{...}{Not used.}
+\item{...}{Additional arguments are not allowed.}
 }
 \value{
 No return value, called for side effects.

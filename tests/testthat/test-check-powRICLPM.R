@@ -7,6 +7,8 @@ test_that("icheck_target() works", {
 test_that("icheck_T() works", {
   expect_null(icheck_T(c(3, 4), ME = FALSE), c(3, 4))
   expect_error(icheck_T(3.5, ME = FALSE))
+  expect_error(icheck_T(Inf, ME = FALSE), "finite")
+  expect_error(icheck_T(NA_real_, ME = FALSE), "finite")
   expect_error(icheck_T(c(2, 3), ME = FALSE))
   expect_warning(icheck_T(c(3:30), ME = FALSE))
   expect_error(icheck_T(c(3, 4), ME = TRUE))
@@ -14,6 +16,9 @@ test_that("icheck_T() works", {
 
 test_that("icheck_ICC() works", {
   expect_null(icheck_ICC(c(0.5, 0.8)))
+  expect_error(icheck_ICC(-0.5))
+  expect_error(icheck_ICC(0))
+  expect_error(icheck_ICC(1))
   expect_error(icheck_ICC(2))
   expect_error(icheck_ICC("0.5"))
 })
@@ -61,12 +66,158 @@ test_that("check_Phi() writes Phi interpretation", {
   )
 })
 
+test_that("check_loadings() writes loading interpretation", {
+  loading_vector <- c(1, 0.5, -1.2, 2)
+  loading_matrix_same <- matrix(
+    c(1, 0.5, -1.2, 2, 1, 0.5, -1.2, 2),
+    nrow = 2,
+    byrow = TRUE
+  )
+  loading_matrix <- matrix(
+    c(1, 0, -1.2, 2, 1, 2.5, 0.25, -0.5),
+    nrow = 2,
+    byrow = TRUE
+  )
+
+  expect_output(
+    check_loadings(loading_vector),
+    "According to `loadings`"
+  )
+  expect_output(
+    check_loadings(loading_vector),
+    "RI_A loads on A3 and RI_B loads on B3 with -1.2"
+  )
+  expect_output(
+    check_loadings(loading_vector),
+    "RI_A loads on A4 and RI_B loads on B4 with 2"
+  )
+  expect_output(
+    check_loadings(loading_matrix_same),
+    "RI_A loads on A2 and RI_B loads on B2 with 0.5"
+  )
+  loading_matrix_same_output <- capture.output(check_loadings(loading_matrix_same))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_same_output)),
+    4
+  )
+
+  expect_output(
+    check_loadings(loading_matrix, time_points = 4),
+    "RI_A loads on A2 with 0"
+  )
+  expect_output(
+    check_loadings(loading_matrix, time_points = 4),
+    "RI_B loads on B2 with 2.5"
+  )
+  expect_output(
+    check_loadings(loading_matrix),
+    "RI_B loads on B4 with -0.5"
+  )
+  loading_matrix_output <- capture.output(check_loadings(loading_matrix))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_output)),
+    8
+  )
+
+  expect_error(check_loadings(), "must be supplied")
+  expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
+  expect_error(
+    check_loadings(c(0.8, 1, 1), time_points = 3),
+    "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
+  )
+  expect_error(
+    check_loadings(
+      suppressWarnings(matrix(c(1, 0, 1, -0.5, 0.25), nrow = 2, byrow = TRUE)),
+      time_points = 3
+    ),
+    "first column.*RI_A = 1.*RI_B = -0.5.*matrix.*c\\(1, 1\\)"
+  )
+  expect_error(check_loadings(list(c(1, 0, 1))), "numeric vector.*numeric matrix.*list")
+  expect_error(check_loadings(data.frame(a = c(1, 0, 1))), "numeric vector.*numeric matrix.*data frame")
+  expect_error(check_loadings(array(c(1, 0, -1, 2.5), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
+  expect_error(check_loadings(numeric(0)), "at least one value.*length 0")
+  expect_error(check_loadings(loading_vector, time_points = c(3, 4)), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
+  expect_error(check_loadings(loading_vector, time_points = 3.5), "positive whole number.*time_points.*= 3.5")
+  expect_error(check_loadings(loading_vector, time_points = "4"), 'positive whole number.*time_points.*= "4"')
+  expect_error(check_loadings(loading_vector, time_points = NA), "positive whole number.*time_points.*= NA")
+  expect_error(check_loadings(loading_vector, time_points = Inf), "positive whole number.*time_points.*= Inf")
+  expect_error(check_loadings(loading_vector, time_points = 0), "positive whole number.*time_points.*= 0")
+  expect_error(check_loadings(loading_vector, time_points = -4), "positive whole number.*time_points.*= -4")
+  expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
+})
+
 test_that("icheck_reliability() works", {
   expect_null(icheck_rel(c(.8, .9)))
   expect_null(icheck_rel(.8))
   expect_error(icheck_rel(8))
   expect_error(icheck_rel("a"))
   expect_error(icheck_rel(-.8))
+})
+
+test_that("icheck_loadings() works", {
+  expect_null(icheck_loadings(NULL, 3, "lavaan"))
+  expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan", "RI_loadings_free"))
+  expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan", "RI_loadings_free"))
+  expect_null(icheck_loadings(
+    matrix(c(1, 0.5, -1, 1, 2, 0), nrow = 2, byrow = TRUE),
+    3,
+    "lavaan",
+    "RI_loadings_free"
+  ))
+
+  expect_error(
+    icheck_loadings(c(1, 2, 3), c(3, 4), "lavaan"),
+    "compare power.*multiple values.*time_points.*multiple.*powRICLPM.*calls.*time_points.*= 2"
+  )
+  expect_error(
+    icheck_loadings(c(1, 2, 3), 3, "Mplus"),
+    "Time-varying random-intercept loadings"
+  )
+  expect_error(icheck_loadings("loadings", 3, "lavaan"), "numeric vector.*numeric matrix")
+  expect_error(icheck_loadings(data.frame(a = c(1, 2, 3)), 3, "lavaan"), "data frame")
+  expect_error(icheck_loadings(array(c(1, 2, 3, 4), dim = c(2, 2, 1)), 4, "lavaan"), "array")
+  expect_error(icheck_loadings(c(1, 2, 3), 3.5, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), "3", "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), NA, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), Inf, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), 0, "lavaan"), "positive whole")
+  expect_error(icheck_loadings(c(1, 2, 3), -3, "lavaan"), "positive whole")
+  expect_error(
+    icheck_loadings(c(1, 2), 3, "lavaan"),
+    "length 2.*time_points.*= 3"
+  )
+  expect_error(
+    icheck_loadings(matrix(1, nrow = 3, ncol = 3), 3, "lavaan"),
+    "must have 2 rows.*has 3 rows"
+  )
+  expect_error(
+    icheck_loadings(matrix(1, nrow = 2, ncol = 4), 3, "lavaan"),
+    "one column per time point.*has 4 columns.*time_points.*= 3"
+  )
+  expect_error(
+    icheck_loadings(c(1, Inf, 2), 3, "lavaan"),
+    "contains: c\\(1, Inf, 2\\)"
+  )
+  expect_error(
+    icheck_loadings(c(0.8, 1, 1), 3, "lavaan"),
+    "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
+    "first column.*RI_A = 1.*RI_B = 0.8.*matrix.*c\\(1, 1\\)"
+  )
+  expect_error(
+    icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),
+    "RI_loadings_free"
+  )
+  expect_error(
+    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
+    "in a constraint vector"
+  )
+  expect_error(
+    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
+    "supplied.*loadings.*constraints.*= lagged"
+  )
 })
 
 test_that("icheck_moment() works", {
@@ -196,6 +347,17 @@ test_that("icheck_N() works", {
   expect_null(icheck_N(17, 3, constraints = "lagged", ME = FALSE))
   expect_error(icheck_N(20, 3, constraints = "none", ME = TRUE))
   expect_null(icheck_N(20, 3, constraints = "within", ME = TRUE))
+})
+
+test_that("icheck_sample_size_search() works", {
+  expect_null(icheck_sample_size_search(100, 200, 20))
+  expect_error(icheck_sample_size_search(NULL, 200, 20), "sample_size")
+  expect_error(icheck_sample_size_search(100, NULL, 20), "search_upper")
+  expect_error(icheck_sample_size_search(100, 200, NULL), "search_step")
+  expect_error(icheck_sample_size_search("100", 200, 20), "single numeric")
+  expect_error(icheck_sample_size_search(100.5, 200, 20), "integer")
+  expect_error(icheck_sample_size_search(100, 200, 0), "positive")
+  expect_error(icheck_sample_size_search(200, 100, 20), "search_upper")
 })
 
 test_that("icheck_bounds() works", {
@@ -413,6 +575,81 @@ test_that("RI_loadings_free changes lavaan estimation syntax only", {
   expect_true(grepl("RI_A=~lx3*start(1)*A3", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly2*start(1)*B2", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly3*start(1)*B3", condition$est_synt, fixed = TRUE))
+})
+
+test_that("loadings update lavaan data generation syntax", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  conditions_vector <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    loadings = c(1, 0.5, -1),
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "none",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  condition_vector <- conditions_vector[[1]]
+  expect_true(grepl("RI_A=~0.5*A2", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1*A3", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.5*B2", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~-1*B3", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~1*A2", condition_vector$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~1*B2", condition_vector$est_synt, fixed = TRUE))
+
+  conditions_matrix <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    loadings = matrix(c(1, 0, -1.2, 1, 2, 0.25), nrow = 2, byrow = TRUE),
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "RI_loadings_free",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+
+  condition_matrix <- conditions_matrix[[1]]
+  expect_true(grepl("RI_A=~0*A2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~-1.2*A3", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~2*B2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~0.25*B3", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~lx2*start(0)*A2", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A=~lx3*start(-1.2)*A3", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~ly2*start(2)*B2", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_B=~ly3*start(0.25)*B3", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A~~start(1)*RI_A", condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl("RI_A~~start(0.3)*RI_B", condition_matrix$est_synt, fixed = TRUE))
 })
 
 test_that("RI_loadings_free combines with compatible lavaan constraints", {

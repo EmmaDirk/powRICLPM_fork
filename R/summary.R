@@ -28,7 +28,7 @@
 #'   \item \code{Avg}: The average (across replications) parameter estimate.
 #'   \item \code{Bias}: The difference between the population value and the average parameter estimate.
 #'   \item \code{Min}: The lowest (across replications) parameter estimate.
-#'   \item \code{SD}: The standard deviation of the parameter estimate over replications.
+#'   \item \code{EmpSE}: The empirical standard error, computed as the standard deviation of the parameter estimate over replications.
 #'   \item \code{SEAvg}: The average (across replications) standard error of the parameter estimate.
 #'   \item \code{MSE}: The parameter mean square error, combining a parameter's bias and efficiency.
 #'   \item \code{Accuracy}: The average (across replications) width of the confidence interval.
@@ -98,7 +98,7 @@ summary.powRICLPM <- function(
     ## Simulation results
     results <- condition$estimates[, -1]
     results <- round(results, digits = 3)
-    colnames(results) <- c("Population", "Avg", "Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power")
+    colnames(results) <- c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
     rownames(results) <- condition$estimates$parameter
 
     ## Summary of analysis
@@ -138,7 +138,7 @@ summary.powRICLPM <- function(
     parameter_df <- give_powRICLPM_results(object, parameter)
     replications_df <- give_powRICLPM_estimation_problems(object)
     parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
-    colnames(parameter_summary) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Population", "Avg","Bias", "Min", "SD", "SE Avg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
+    colnames(parameter_summary) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter)
     invisible(parameter_summary)
 

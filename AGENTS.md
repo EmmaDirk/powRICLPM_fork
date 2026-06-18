@@ -34,14 +34,15 @@ At the start of a new Codex chat, read this file first:
 
 `C:\Users\Admin\Documents\Obsidian Vault\UU\powRICLPM\powRICLPM.md`
 
-That note is the top-level runner. It contains compact timelines for ideas, decisions, work logs, and verifications. Use it to understand what has recently happened and which deeper notes are relevant before editing code.
+That note is the top-level runner. It is now a compact hub that links to sub-runners for ideas, decisions, work logs, verifications, and meeting notes. Use it first to understand which sub-runner has the relevant history, then open the relevant sub-runner and deeper notes before editing code.
 
 ### Obsidian folders
 
-- `Decisions\`: design and API decisions. These notes explain what changed and why.
-- `Work logs\`: implementation records. These notes summarize what changed in each touched file, why it changed, and how it was done.
-- `Verifications\`: checks that were run. These notes record what was checked, how it was checked, and the result.
+- `Decisions\`: design and API decisions. These notes explain what changed and why. Its runner is `Decisions\Decisions.md`.
+- `Work logs\`: implementation records. These notes summarize what changed in each touched file, why it changed, and how it was done. Its runner is `Work logs\Work logs.md`.
+- `Verifications\`: checks that were run. These notes record what was checked, how it was checked, and the result. Its runner is `Verifications\Verifications.md`.
 - `Ideas\`: user-owned thinking space. Do not create or edit notes in `Ideas\` unless the user explicitly asks.
+- `Meeting Notes\`: meeting material and remarkable notes connected to the project. Its runner is `Meeting Notes\Meeting notes.md`.
 
 ### Obsidian naming conventions
 
@@ -82,11 +83,13 @@ Verification notes should usually include:
 
 ### Updating the runner
 
-After creating shared notes, update:
+After creating shared notes, update the matching sub-runner:
 
-`C:\Users\Admin\Documents\Obsidian Vault\UU\powRICLPM\powRICLPM.md`
+- Decisions: `C:\Users\Admin\Documents\Obsidian Vault\UU\powRICLPM\Decisions\Decisions.md`
+- Work logs: `C:\Users\Admin\Documents\Obsidian Vault\UU\powRICLPM\Work logs\Work logs.md`
+- Verifications: `C:\Users\Admin\Documents\Obsidian Vault\UU\powRICLPM\Verifications\Verifications.md`
 
-Add the new notes to the appropriate timeline table. Keep the runner readable and compact. Link notes with Obsidian wiki links like `[[2026-06-05-1 clarify renamed argument conflict errors]]`.
+Add the new notes to the appropriate timeline table. Keep the sub-runner readable and compact. Link notes with Obsidian wiki links like `[[2026-06-05-1 clarify renamed argument conflict errors]]`. Do not add detailed timeline rows to the top-level `powRICLPM.md`; keep it as the compact hub unless the hub structure itself changes.
 
 ## R package workflow
 
