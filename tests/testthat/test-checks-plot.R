@@ -14,8 +14,8 @@ test_that("icheck_plot_parameter() works", {
 
   expect_null(icheck_plot_parameter("wB2~wA1", out))
   expect_error(icheck_plot_parameter(object = out))
-  expect_error(icheck_plot_parameter(c("wB2~wA1", "wA2~wB1"), out))
-  expect_error(icheck_plot_parameter(12, out))
+  expect_error(icheck_plot_parameter(c("wB2~wA1", "wA2~wB1"), out), "length 2")
+  expect_error(icheck_plot_parameter(12, out), "type double")
   expect_error(icheck_plot_parameter("wB4~wA3", out))
   expect_error(icheck_plot_parameter("wY2~wX1", out))
 

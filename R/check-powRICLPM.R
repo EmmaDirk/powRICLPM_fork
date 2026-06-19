@@ -476,7 +476,7 @@ icheck_reps <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
       )
     )
   }
-  if (x < 0) {
+  if (x <= 0) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a positive integer:",
@@ -598,6 +598,15 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
 #'
 #' @noRd
 icheck_estimator <- function(x, skewness, kurtosis, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (length(x) != 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single estimator:",
+        x = paste0("Your {.arg {arg}} is of length ", length(x), ".")
+      ),
+      call = call
+    )
+  }
   if (is.na(x)) {
     if (skewness != 0 || kurtosis != 0) {
       cli::cli_alert(
@@ -618,6 +627,7 @@ icheck_estimator <- function(x, skewness, kurtosis, arg = rlang::caller_arg(x), 
       )
     )
   }
+  x
 }
 
 #' Check \code{save_path} Argument

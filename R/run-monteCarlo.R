@@ -270,7 +270,7 @@ run_condition_monteCarlo <- function(
     MCSE_EmpSE <- compute_MCSE_EmpSE(EmpSE, reps_completed)
     MCSE_SD <- MCSE_EmpSE
     MCSE_accuracy <- compute_MCSE_accuracy(CI_widths, accuracy, reps_completed)
-    MCSE_power <- compute_MCSE_power(power, reps)
+    MCSE_power <- compute_MCSE_power(power, reps_completed)
 
     # Structure estimates, MCSEs, and replication info
     condition$estimates <- data.frame(

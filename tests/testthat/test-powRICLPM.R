@@ -38,6 +38,44 @@ test_that("basic power analysis using lavaan runs", {
   )
 })
 
+test_that("powRICLPM defaults to MLR for nonnormal lavaan data", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  out <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      skewness = 1,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out$session$estimator, "MLR")
+
+  out_explicit <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      skewness = 1,
+      estimator = "ML",
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out_explicit$session$estimator, "ML")
+})
+
 test_that("lavaan supplied loadings require freed public estimation path", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 

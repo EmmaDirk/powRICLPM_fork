@@ -27,7 +27,7 @@ powRICLPM(
   seed = NA,
   constraints = "none",
   bounds = FALSE,
-  estimator = "ML",
+  estimator = NA,
   save_path = NULL,
   software = "lavaan",
   ICC = NULL,
@@ -79,7 +79,7 @@ powRICLPM(
 
 \item{bounds}{(optional) A \code{logical}, denoting if bounded estimation should be used for the latent variable variances in the model (see "Details").}
 
-\item{estimator}{(optional) A \code{character} string of length 1, denoting the estimator to be used (default: \code{ML}, see "Details").}
+\item{estimator}{(optional) A \code{character} string of length 1, denoting the estimator to be used. The default \code{NA} uses \code{ML} for normally generated data and \code{MLR} when \code{skewness} or \code{kurtosis} is nonzero (see "Details").}
 
 \item{save_path}{A \code{character} string of length 1, naming the directory to save (data) files to (used for validation purposes of this package). Variables are saved in alphabetical and numerical order.}
 
@@ -100,7 +100,7 @@ A rationale for the power analysis strategy implemented in this package can be f
 
 \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"} so that the estimation model also frees the corresponding random-intercept loadings.}
 
-\subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. The default estimator is maximum likelihood (\code{ML}). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. When skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments), the estimator defaults to robust maximum likelihood \code{MLR}. The population parameter values are used as starting values.
+\subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. With the default \code{estimator = NA}, the estimator is maximum likelihood (\code{ML}) for normally generated data and robust maximum likelihood (\code{MLR}) when skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. The population parameter values are used as starting values.
 
 Parameter estimates from non-converged model solutions are discarded from the results. When \code{bounds = FALSE}, inadmissible parameter estimates from converged solutions (e.g., a negative random intercept variance) are discarded. When \code{bounds = TRUE}, inadmissible parameter estimates are retained following advice by De Jonckere and Rosseel (2022). The results include the minimum estimates for all parameters across replications to diagnose which parameter(s) might be the cause of the inadmissible solution.}
 

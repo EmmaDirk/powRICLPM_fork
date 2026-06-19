@@ -244,6 +244,7 @@ test_that("icheck_reps() works", {
   expect_null(icheck_reps(1000))
   expect_error(icheck_reps("1000"))
   expect_error(icheck_reps(1000.5))
+  expect_error(icheck_reps(0), "positive")
   expect_error(icheck_reps(-1000))
 })
 
@@ -327,8 +328,10 @@ test_that("icheck_estimator() works", {
   expect_equal(icheck_estimator(NA, skewness = 0, kurtosis = 1), "MLR")
   expect_equal(icheck_estimator(NA, 0, 0), "ML")
   expect_equal(icheck_estimator(NA, skewness = 1, kurtosis = 0), "MLR")
+  expect_equal(icheck_estimator("ML", skewness = 1, kurtosis = 1), "ML")
   expect_error(icheck_estimator("a", skewness = 0, kurtosis = 0))
   expect_error(icheck_estimator(1, skewness = 0, kurtosis = 0))
+  expect_error(icheck_estimator(c("ML", "MLR"), skewness = 0, kurtosis = 0))
 })
 
 test_that("icheck_path() works", {

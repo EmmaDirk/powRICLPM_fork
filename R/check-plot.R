@@ -19,7 +19,7 @@ icheck_plot_parameter <- function(parameter, object, arg = rlang::caller_arg(par
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character vector of size 1:",
-        "x" = "Your {.arg {arg}} is of length {length(sample_size)}."
+        "x" = "Your {.arg {arg}} is of length {length(parameter)}."
       ),
       call = call
     )
@@ -28,8 +28,8 @@ icheck_plot_parameter <- function(parameter, object, arg = rlang::caller_arg(par
   if (!is.character(parameter)) {
     cli::cli_abort(
       c(
-        "{.arg} must be a character string:",
-        x = paste0("Your {.arg {arg}} is of type {typeof(x)}.")
+        "{.arg {arg}} must be a character string:",
+        x = paste0("Your {.arg {arg}} is of type ", typeof(parameter), ".")
       )
     )
   }
