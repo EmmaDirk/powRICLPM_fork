@@ -55,7 +55,7 @@ powRICLPM(
 Optionally, you can extend this power analysis as described in the Vignette [Extensions](https://jeroendmulder.github.io/powRICLPM/articles/extensions.html). 
 
 ::: {.callout-warning}
-Note that it is not possible to generate skewed or kurtosed data in Mplus via the `powRICLPM` package. Furthermore, bounded estimation and time-varying random-intercept loadings (both for data generation and estimation) are not available for Mplus. The `ME` constraint can be combined with other Mplus-supported constraints when `estimate_ME = TRUE`.
+Note that it is not possible to generate skewed or kurtosed data in Mplus via the `powRICLPM` package. Furthermore, bounded estimation, time-varying reliability, and time-varying random-intercept loadings (both for data generation and estimation) are not available for Mplus. The `ME` constraint can be combined with other Mplus-supported constraints when `estimate_ME = TRUE`.
 :::
 
 `powRICLPM()` creates an Mplus input file (or multiple files when multiple experimental conditions are specified) and writes it to the specified directory. The file contains the Mplus model syntax needed to run a power analysis for the RI-CLPM in Mplus. More information about Monte Carlo simulations in Mplus can be found at [http://statmodel.com/download/usersguide/Chapter12.pdf](http://statmodel.com/download/usersguide/Chapter12.pdf).

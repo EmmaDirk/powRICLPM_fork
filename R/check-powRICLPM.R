@@ -175,31 +175,153 @@ icheck_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlang::c
 #' \code{icheck_rel()} checks if the \code{reliability} argument is a valid reliability coefficient.
 #'
 #' @noRd
-icheck_rel <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!all(is.numeric(x))) {
+icheck_rel <- function(x, time_points = NULL, software = "lavaan",
+                       arg = rlang::caller_arg(x),
+                       t_arg = rlang::caller_arg(time_points),
+                       call = rlang::caller_env()) {
+  arg <- format_argument_label(arg, "reliability")
+  t_arg <- format_argument_label(t_arg, "time_points")
+
+  is_numeric_vector <- is.numeric(x) && is.null(dim(x))
+  is_numeric_matrix <- is.numeric(x) && is.matrix(x)
+  if (!is_numeric_vector && !is_numeric_matrix) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a numeric (vector):",
-        x = paste0("Your {.arg {arg}} is a ", class(x), ".")
-      )
+        "{.arg {arg}} must be a numeric vector or numeric matrix:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
     )
   }
-  if (!all(x <= 1 & x > 0)) {
+
+  if (is_numeric_vector && length(x) == 0L) {
     cli::cli_abort(
       c(
-        "Elements in {.arg {arg}} must be between 0 and 1:",
-        x = paste0("Some elements in {.arg {arg}} are smaller than 0 or larger than 1.")
-      )
+        "{.arg {arg}} must contain at least one value:",
+        x = paste0("Your {.arg {arg}} has length 0.")
+      ),
+      call = call
     )
   }
-  if (!all(x > 0.1)) {
+
+  if (!all(is.finite(x))) {
     cli::cli_abort(
       c(
-        "Some elements in {.arg {arg}} are close to 0:",
-        x = paste0("A low reliability can lead to problems with estimation. Use a minimum of 0.1.")
-      )
+        "{.arg {arg}} must contain only finite values:",
+        x = paste0("Your {.arg {arg}} contains: ", format_reliability(x), ".")
+      ),
+      call = call
     )
   }
+
+  if (!all(x <= 1 & x > 0.1)) {
+    cli::cli_abort(
+      c(
+        "Elements in {.arg {arg}} must be larger than 0.1 and at most 1:",
+        x = paste0("Your {.arg {arg}} contains: ", format_reliability(x), ".")
+      ),
+      call = call
+    )
+  }
+
+  time_varying_reliability <- is.matrix(x) || length(x) > 1L
+  if (software == "Mplus" && time_varying_reliability) {
+    cli::cli_abort(
+      c(
+        "Time-varying reliability is only available with `software = 'lavaan'`:",
+        x = "Vector or matrix reliability specifications are not available for Mplus."
+      ),
+      call = call
+    )
+  }
+
+  if (!time_varying_reliability) {
+    return(invisible(NULL))
+  }
+
+  if (length(time_points) != 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used with one value of {.arg {t_arg}}:",
+        i = "If you want to compare power for multiple values of {.arg {t_arg}} while using time-varying reliability, use multiple {.fun powRICLPM} calls.",
+        x = paste0("length({.arg {t_arg}}) = ", length(time_points), ".")
+      ),
+      call = call
+    )
+  }
+
+  if (!is.numeric(time_points) ||
+      is.na(time_points) ||
+      !is.finite(time_points) ||
+      time_points %% 1 != 0 ||
+      time_points < 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {t_arg}} must be one positive whole number when using time-varying {.arg {arg}}:",
+        x = paste0("{.arg {t_arg}} = ", format_scalar_value(time_points), ".")
+      ),
+      call = call
+    )
+  }
+  time_points <- as.integer(time_points)
+
+  if (is.matrix(x)) {
+    if (nrow(x) != 2L) {
+      row_label <- if (nrow(x) == 1L) "row" else "rows"
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have 2 rows:",
+          i = "Rows correspond to the reliabilities for variables A and B.",
+          x = paste0("Your {.arg {arg}} has ", nrow(x), " ", row_label, ".")
+        ),
+        call = call
+      )
+    }
+    if (ncol(x) != time_points) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one column per time point:",
+          i = "Columns correspond to time points.",
+          x = paste0(
+            "Your {.arg {arg}} has ", ncol(x),
+            " columns, but {.arg {t_arg}} = ", time_points, "."
+          )
+        ),
+        call = call
+      )
+    }
+  } else if (length(x) != time_points) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must have one value per time point:",
+        x = paste0("Your {.arg {arg}} has length ", length(x),
+                   ", but {.arg {t_arg}} = ", time_points, ".")
+      ),
+      call = call
+    )
+  }
+
+  invisible(NULL)
+}
+
+inormalize_reliability <- function(reliability, time_points) {
+  if (is.matrix(reliability)) {
+    return(unname(reliability))
+  }
+  if (length(reliability) == 1L) {
+    return(unname(matrix(reliability, nrow = 2, ncol = time_points)))
+  }
+  unname(rbind(reliability, reliability))
+}
+
+ireliability_condition_value <- function(reliability) {
+  if (length(reliability) == 1L && is.null(dim(reliability))) {
+    return(reliability)
+  }
+  if (length(unique(c(reliability))) == 1L) {
+    return(unique(c(reliability)))
+  }
+  "structured"
 }
 
 #' Check \code{loadings} Argument
@@ -912,6 +1034,17 @@ format_loadings <- function(loadings) {
     return(paste0(
       "matrix(c(", values, "), nrow = ", nrow(loadings),
       ", ncol = ", ncol(loadings), ")"
+    ))
+  }
+  paste0("c(", values, ")")
+}
+
+format_reliability <- function(reliability) {
+  values <- paste(as.character(reliability), collapse = ", ")
+  if (is.matrix(reliability)) {
+    return(paste0(
+      "matrix(c(", values, "), nrow = ", nrow(reliability),
+      ", ncol = ", ncol(reliability), ")"
     ))
   }
   paste0("c(", values, ")")

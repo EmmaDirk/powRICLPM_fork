@@ -40,11 +40,12 @@ create_conditions <- function(
     ICC = ICC,
     RI_cor = RI_cor,
     within_cor = within_cor,
-    reliability = reliability,
+    reliability = ireliability_condition_value(reliability),
     skewness = skewness,
     kurtosis = kurtosis,
     significance_criterion = significance_criterion,
-    estimate_ME = estimate_ME
+    estimate_ME = estimate_ME,
+    stringsAsFactors = FALSE
   )
 
   # Add matrix input to conditions
@@ -54,12 +55,15 @@ create_conditions <- function(
   conditions$loadings <- I(lapply(conditions$time_points, function(time_points) {
     inormalize_loadings(loadings, time_points)
   }))
+  conditions$reliability_matrix <- I(lapply(conditions$time_points, function(time_points) {
+    inormalize_reliability(reliability, time_points)
+  }))
 
   # Compute and add additional parameters per condition
   conditions$condition_id <- 1:nrow(conditions)
   conditions$RI_var <- sapply(conditions$ICC, compute_RI_var)
   conditions$RI_cov <- mapply(compute_RI_cov, conditions$RI_cor, conditions$RI_var)
-  conditions$ME_var <- mapply(compute_ME_var, conditions$RI_var, conditions$reliability)
+  conditions$ME_var <- Map(compute_ME_var, conditions$RI_var, conditions$reliability_matrix)
 
   # Create list of conditions
   conditions <- split(conditions, seq(nrow(conditions)))
@@ -67,6 +71,8 @@ create_conditions <- function(
     condition <- as.list(condition)
     condition$constraints <- condition$constraints[[1]]
     condition$loadings <- condition$loadings[[1]]
+    condition$reliability_matrix <- condition$reliability_matrix[[1]]
+    condition$ME_var <- condition$ME_var[[1]]
     condition
   })
 

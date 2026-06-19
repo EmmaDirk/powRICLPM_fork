@@ -5,7 +5,7 @@
 #   sample_size = c(500, 700),
 #   time_points = c(3, 4),
 #   ICC = c(0.4, 0.6),
-#   reliability = c(1, 0.8),
+#   reliability = 0.8,
 #   RI_cor = 0.3,
 #   lagged_effects = lagged_effects,
 #   within_cor = 0.3,

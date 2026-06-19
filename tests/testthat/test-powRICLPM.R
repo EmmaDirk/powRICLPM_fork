@@ -17,11 +17,11 @@ test_that("basic power analysis using lavaan runs", {
   expect_equal(
     c(
       "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
-      "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
+      "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
       "kurtosis", "significance_criterion", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 19)
+    rep(TRUE, times = 20)
   )
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
@@ -454,11 +454,11 @@ test_that("basic power analysis with multiple experimental conditions works", {
   expect_equal(
     c(
       "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
-      "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
+      "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
       "kurtosis", "significance_criterion", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 19)
+    rep(TRUE, times = 20)
   )
 
 })
@@ -528,6 +528,52 @@ test_that("power analysis for the STARTS model works", {
     c("A1~~A1", "A2~~A2", "B1~~B1", "B2~~B2") %in% out$conditions[[1]]$estimates$parameter,
     c(T, T, T, T)
   )
+})
+
+test_that("time-varying reliability lavaan paths run", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out_vector <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reliability = c(0.8, 0.7, 1),
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out_vector$conditions[[1]]$reliability, "structured")
+  expect_true(grepl("A2~~0.857142857142857*A2", out_vector$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0*B3", out_vector$conditions[[1]]$pop_synt, fixed = TRUE))
+
+  reliability_matrix <- matrix(c(0.8, 0.7, 1, 0.9, 0.85, 0.75), nrow = 2, byrow = TRUE)
+  out_matrix <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reliability = cbind(reliability_matrix, c(0.9, 1)),
+      estimate_ME = TRUE,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out_matrix$conditions[[1]]$reliability, "structured")
+  expect_true(grepl("A2~~0.857142857142857*A2", out_matrix$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("B2~~0.352941176470588*B2", out_matrix$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("A2~~start(0.857142857142857)*A2", out_matrix$conditions[[1]]$est_synt, fixed = TRUE))
+  expect_true(grepl("B2~~start(0.352941176470588)*B2", out_matrix$conditions[[1]]$est_synt, fixed = TRUE))
 })
 
 test_that("bounded estimation for STARTS model in powRICLPM() works", {
@@ -628,6 +674,25 @@ test_that("power analysis for the STARTS model using Mplus works", {
       bounds = TRUE,
       save_path = tempdir()
     )
+  )
+
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = c(2000),
+      time_points = 4,
+      ICC = .5,
+      RI_cor = 0.3,
+      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      within_cor = 0.3,
+      reliability = c(.85, .8, .9, 1),
+      estimate_ME = TRUE,
+      reps = 2,
+      seed = 1234,
+      software = "Mplus",
+      save_path = tempdir()
+    ),
+    "Time-varying reliability.*lavaan"
   )
 
 })

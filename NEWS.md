@@ -3,6 +3,8 @@
 ## Minor improvements and fixes
 * Added a lavaan-only `loadings` argument to `powRICLPM()` for specifying time-varying random-intercept loadings in the data-generating model. The first occasion must be fixed to 1, and later loadings can vary over time and across variables. Supplying `loadings` requires `constraints = "RI_loadings_free"` so the estimation model frees the corresponding random-intercept loadings.
 * Added `check_loadings()` to help users check how a loading vector or matrix maps onto the random-intercept loadings used in the data-generating model.
+* Changed `reliability` so vectors now specify lavaan data-generating reliabilities over time rather than multiple experimental conditions. Matrix input can specify reliabilities separately for variables A and B over time. Use separate `powRICLPM()` calls to compare multiple reliability patterns.
+* Added `check_reliability()` to help users check how a reliability value, vector, or matrix maps onto the measurement-error reliabilities used in the data-generating model.
 * Standardized the user-facing performance-measure name for the empirical standard error to `EmpSE`, matching the stored results column. `plot(y = "SD")` remains available as a backwards-compatible alias for `plot(y = "EmpSE")`.
 * Added vector-valued constraint specifications to `powRICLPM()`, so users can combine compatible constraints explicitly, such as `constraints = c("lagged", "residuals")`. For Mplus, this vector form is accepted as equivalent to `constraints = "within"`. Added `constraints = "RI_loadings_free"` for lavaan analyses, which frees random-intercept factor loadings in the estimation model while leaving the data-generating model unchanged. The `constraints = "within"` option remains available as shorthand for `c("lagged", "residuals")`.
 * Added clearer argument names `intraclass_correlation` and `lagged_effects` to `powRICLPM()` and `summary.powRICLPM()`, and added `check_lagged_effects()` as the clearer helper for checking lagged-effect matrices. The legacy `ICC`, `Phi`, and `check_Phi()` names remain available for backwards compatibility. Internally, lagged effects are now carried forward as `lagged_effects`; `Phi` is only handled as a legacy input alias.
@@ -19,7 +21,7 @@
 * The argument `alpha` has been superseded by the `significance_criterion` argument. 
 
 ## Minor improvements and fixes
-* The `reliability` argument can now take in a vector of reliabilities to simulate performance metrics under various levels of item reliability. 
+* The `reliability` argument gained support for multiple scalar reliability conditions in version 0.2.0; this behavior was superseded in version 0.2.1 by time-varying reliability specifications.
 * The `powRICLPM` package now does not import the packages `dplyr` and `purrr` anymore. 
 * The `cli` package is now used for error handling. 
 * Slight speed and stability improvements when using `software = "lavaan"`. 

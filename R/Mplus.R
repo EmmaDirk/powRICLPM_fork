@@ -141,6 +141,7 @@ create_Mplus <- function(condition, reps, seed) {
     time_points = condition[["time_points"]],
     ICC = condition[["ICC"]],
     reliability = condition[["reliability"]],
+    reliability_matrix = condition[["reliability_matrix"]],
     RI_var = condition[["RI_var"]],
     RI_cov = condition[["RI_cov"]],
     Mplus_synt = Mplus_syntax,
@@ -348,7 +349,7 @@ Mplus_within_cov2 <- function(condition, estimation = FALSE, name_within) {
 Mplus_pop_ME <- function(condition, name_obs) {
   lhs <- c(unlist(name_obs))
   op <- rhs <- ""
-  con <- paste0("@", condition[["ME_var"]])
+  con <- paste0("@", c(t(condition[["ME_var"]])))
   return(cbind.data.frame(lhs, op, rhs, con,
                           stringsAsFactors = FALSE
   ))
@@ -364,9 +365,10 @@ Mplus_estimate_ME <- function(condition, name_obs) {
     has_constraint(condition[["constraints"]], "ME")
   ) {
     label <- rep(c("MEvarA", "MEvarB"), each = condition[["time_points"]])
-    con <- paste0("*", condition[["ME_var"]], " (", label, ")")
+    starts <- rep(rowMeans(condition[["ME_var"]]), each = condition[["time_points"]])
+    con <- paste0("*", starts, " (", label, ")")
   } else { # Freely estimate
-    con <- paste0("*", condition[["ME_var"]])
+    con <- paste0("*", c(t(condition[["ME_var"]])))
   }
   return(cbind.data.frame(lhs, op, rhs, con,
                           stringsAsFactors = FALSE

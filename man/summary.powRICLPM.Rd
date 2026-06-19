@@ -28,7 +28,7 @@
 
 \item{intraclass_correlation}{(optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.}
 
-\item{reliability}{(optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.}
+\item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest.}
 
 \item{ICC}{Alternative name for \code{intraclass_correlation}.}
 }

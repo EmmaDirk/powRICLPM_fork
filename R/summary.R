@@ -9,7 +9,7 @@
 #' @param sample_size (optional) An \code{integer}, denoting the sample size of the experimental condition of interest.
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
 #' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
-#' @param reliability (optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.
+#' @param reliability (optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest.
 #' @param ICC Alternative name for \code{intraclass_correlation}.
 #'
 #' @return No return value, called for side effects.
@@ -102,14 +102,28 @@ summary.powRICLPM <- function(
     rownames(results) <- condition$estimates$parameter
 
     ## Summary of analysis
-    summary_replications <- matrix(c(
+    replication_values <- c(
       object$session$reps,
-      condition$estimation_information$n_completed,
+      condition$estimation_information$n_completed
+    )
+    replication_names <- c("Requested:", "Completed:")
+    if (condition$estimation_information$n_error > 0) {
+      replication_values <- c(replication_values, condition$estimation_information$n_error)
+      replication_names <- c(replication_names, "Errors:")
+    }
+    replication_values <- c(
+      replication_values,
       condition$estimation_information$n_nonconvergence,
       condition$estimation_information$n_inadmissible
-    ), ncol = 1)
+    )
+    replication_names <- c(
+      replication_names,
+      "Convergence issues:",
+      "Inadmissible results:"
+    )
+    summary_replications <- matrix(replication_values, ncol = 1)
     colnames(summary_replications) <- c("Number of replications")
-    rownames(summary_replications) <- c("Requested:", "Completed:", "Convergence issues:", "Inadmissible results:")
+    rownames(summary_replications) <- replication_names
 
     ## Summary of condition
     summary_condition <- matrix(c(

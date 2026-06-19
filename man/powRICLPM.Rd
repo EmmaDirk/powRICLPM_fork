@@ -55,7 +55,7 @@ powRICLPM(
 
 \item{within_cor}{A \code{double} between 0 and 1, denoting the correlation between the within-unit components.}
 
-\item{reliability}{(optional) A \code{numeric} vector with elements between 0 and 1, denoting the reliability of the variables (see "Details").}
+\item{reliability}{(optional) A \code{numeric} value, vector, or matrix with elements larger than 0.1 and at most 1, denoting the reliability of the variables (see "Details").}
 
 \item{loadings}{(optional) A \code{numeric} vector or matrix specifying random-intercept loadings in the \pkg{lavaan} data-generating model (see "Details").}
 
@@ -104,7 +104,7 @@ A rationale for the power analysis strategy implemented in this package can be f
 
 Parameter estimates from non-converged model solutions are discarded from the results. When \code{bounds = FALSE}, inadmissible parameter estimates from converged solutions (e.g., a negative random intercept variance) are discarded. When \code{bounds = TRUE}, inadmissible parameter estimates are retained following advice by De Jonckere and Rosseel (2022). The results include the minimum estimates for all parameters across replications to diagnose which parameter(s) might be the cause of the inadmissible solution.}
 
-\subsection{Using Mplus}{When \code{software = "Mplus"}, Mplus input files will be generated and saved into \code{save_path}. Note that it is not possible to generate skewed or kurtosed data in Mplus via the \code{powRICLPM} package. Furthermore, bounded estimation and time-varying random-intercept loadings (both for data generation and estimation) are not available in Mplus. The \code{"ME"} constraint can be combined with other Mplus-supported constraints when \code{estimate_ME = TRUE}. }
+\subsection{Using Mplus}{When \code{software = "Mplus"}, Mplus input files will be generated and saved into \code{save_path}. Note that it is not possible to generate skewed or kurtosed data in Mplus via the \code{powRICLPM} package. Furthermore, bounded estimation, time-varying reliability, and time-varying random-intercept loadings (both for data generation and estimation) are not available in Mplus. The \code{"ME"} constraint can be combined with other Mplus-supported constraints when \code{estimate_ME = TRUE}. }
 
 \subsection{Naming Conventions Observed and Latent Variables}{The observed variables in the RI-CLPM are given default names, namely capital letters in alphabetical order, with numbers denoting the measurement occasion. For example, for a bivariate RICLPM with 3 time points, we observe \code{A1}, \code{A2}, \code{A3}, \code{B1}, \code{B2}, and \code{B3}. Their within-components are denoted by \code{wA1}, \code{wA2}, ..., \code{wB3}, respectively. The between-components have \code{RI_} prepended to the variable name, resulting in \code{RI_A} and \code{RI_B}.
 
@@ -114,7 +114,7 @@ Parameters are denoted using \pkg{lavaan} model syntax (see \href{https://lavaan
 
 A progress bar displaying the status of the power analysis has been implemented using \pkg{progressr}. By default, a simple progress bar will be shown. For more information on how to control this progress bar and several other notification options (e.g., auditory notifications), see \url{https://progressr.futureverse.org}.}
 
-\subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
+\subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting \code{reliability = 0.8} implies that 80 percent is true score variance, and 20 percent is measurement error variance. A vector of length \code{time_points} specifies reliabilities that vary over time and are the same for both variables. A matrix with two rows and one column per time point specifies reliabilities separately for variables A and B. Vector and matrix reliability specifications are only available with \code{software = "lavaan"} and one value of \code{time_points}. To compare multiple reliability patterns, use multiple calls to \code{powRICLPM()}. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
 
 \subsection{Extension: Imposing Constraints}{The following options can be supplied to the estimation model using the \code{constraints} argument. By default, \code{constraints = "none"}, and no equality or time-invariance constraints are imposed.
 
@@ -154,7 +154,7 @@ with_progress({
     search_step = 100,
     time_points = c(3, 4),
     intraclass_correlation = c(0.4, 0.6),
-    reliability = c(1, 0.8),
+    reliability = 0.8,
     RI_cor = 0.3,
     lagged_effects = lagged_effects,
     within_cor = 0.3,
@@ -175,7 +175,7 @@ De Jonckere, J., & Rosseel, Y. (2022). Using bounded estimation to avoid nonconv
 
 Kenny, D. A., & Zautra, A. (2001). Trait–state models for longitudinal data. \emph{New methods for the analysis of change} (pp. 243–263). American Psychological Association. \doi{10.1037/10409-008}
 
-Mulder, J. D. (2022). Power analysis for the random intercept cross-lagged panel model using the \emph{powRICLPM} R-package. \emph{Structural Equation Modeling}. \doi{10.1080/10705511.2022.2122467}
+Mulder, J. D. (2023). Power analysis for the random intercept cross-lagged panel model using the \emph{powRICLPM} R-package. \emph{Structural Equation Modeling: A Multidisciplinary Journal}, \emph{30}(4), 645-658. \doi{10.1080/10705511.2022.2122467}
 }
 \seealso{
 \itemize{

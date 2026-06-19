@@ -146,12 +146,77 @@ test_that("check_loadings() writes loading interpretation", {
   expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
 })
 
+test_that("check_reliability() writes reliability interpretation", {
+  reliability_vector <- c(0.8, 0.7, 1, 0.9)
+  reliability_matrix_same <- matrix(
+    c(0.8, 0.7, 1, 0.9, 0.8, 0.7, 1, 0.9),
+    nrow = 2,
+    byrow = TRUE
+  )
+  reliability_matrix <- matrix(
+    c(0.8, 0.7, 1, 0.9, 0.9, 0.85, 0.75, 1),
+    nrow = 2,
+    byrow = TRUE
+  )
+
+  expect_output(check_reliability(0.8), "Variables A and B have reliability 0.8")
+  expect_output(check_reliability(reliability_vector), "A2 and B2 have reliability 0.7")
+  expect_output(check_reliability(reliability_matrix_same), "A3 and B3 have reliability 1")
+  reliability_matrix_same_output <- capture.output(check_reliability(reliability_matrix_same))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] A", reliability_matrix_same_output)),
+    4
+  )
+
+  expect_output(check_reliability(reliability_matrix, time_points = 4), "A2 has reliability 0.7")
+  expect_output(check_reliability(reliability_matrix, time_points = 4), "B2 has reliability 0.85")
+  reliability_matrix_output <- capture.output(check_reliability(reliability_matrix))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] [AB]", reliability_matrix_output)),
+    8
+  )
+
+  expect_error(check_reliability(), "must be supplied")
+  expect_error(check_reliability(reliability_vector, time_points = 3), "length 4.*time_points.*= 3")
+  expect_error(check_reliability(list(c(0.8, 0.7, 1))), "numeric vector.*numeric matrix.*list")
+  expect_error(check_reliability(data.frame(a = c(0.8, 0.7, 1))), "numeric vector.*numeric matrix.*data frame")
+  expect_error(check_reliability(array(c(0.8, 0.7, 1, 0.9), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
+  expect_error(check_reliability(numeric(0)), "at least one value.*length 0")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = c(3, 4)), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = 3.5), "positive whole")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = "3"), 'positive whole.*"3"')
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = NA), "positive whole.*NA")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = Inf), "positive whole.*Inf")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = 0), "positive whole.*0")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = -3), "positive whole.*-3")
+  expect_error(check_reliability(reliability_vector, time_points = 4, extra = TRUE), "Unexpected argument")
+})
+
 test_that("icheck_reliability() works", {
-  expect_null(icheck_rel(c(.8, .9)))
   expect_null(icheck_rel(.8))
-  expect_error(icheck_rel(8))
-  expect_error(icheck_rel("a"))
-  expect_error(icheck_rel(-.8))
+  expect_null(icheck_rel(.8, c(3, 4), "Mplus"))
+  expect_null(icheck_rel(c(.8, .9, 1), 3, "lavaan"))
+  expect_null(icheck_rel(matrix(c(.8, .9, 1, .7, .8, .9), nrow = 2, byrow = TRUE), 3, "lavaan"))
+  expect_error(icheck_rel(8), "larger than 0.1.*at most 1")
+  expect_error(icheck_rel("a"), "numeric vector.*numeric matrix")
+  expect_error(icheck_rel(data.frame(a = c(.8, .9, 1)), 3, "lavaan"), "data frame")
+  expect_error(icheck_rel(array(c(.8, .9, 1, .7), dim = c(2, 2, 1)), 2, "lavaan"), "array")
+  expect_error(icheck_rel(numeric(0)), "at least one value.*length 0")
+  expect_error(icheck_rel(-.8), "larger than 0.1.*at most 1")
+  expect_error(icheck_rel(.1), "larger than 0.1.*at most 1")
+  expect_error(icheck_rel(c(.8, Inf, 1), 3, "lavaan"), "contains: c\\(0.8, Inf, 1\\)")
+  expect_error(icheck_rel(c(.8, .9, 1), c(3, 4), "lavaan"), "compare power.*multiple values.*time_points")
+  expect_error(icheck_rel(c(.8, .9, 1), 3, "Mplus"), "Time-varying reliability.*lavaan")
+  expect_error(icheck_rel(matrix(.8, nrow = 1, ncol = 3), 3, "lavaan"), "must have 2 rows.*has 1 row")
+  expect_error(icheck_rel(matrix(.8, nrow = 3, ncol = 3), 3, "lavaan"), "must have 2 rows.*has 3 rows")
+  expect_error(icheck_rel(matrix(.8, nrow = 2, ncol = 4), 3, "lavaan"), "one column per time point.*has 4 columns.*time_points.*= 3")
+  expect_error(icheck_rel(c(.8, .9), 3, "lavaan"), "length 2.*time_points.*= 3")
+  expect_error(icheck_rel(c(.8, .9, 1), 3.5, "lavaan"), "positive whole")
+  expect_error(icheck_rel(c(.8, .9, 1), "3", "lavaan"), "positive whole")
+  expect_error(icheck_rel(c(.8, .9, 1), NA, "lavaan"), "positive whole")
+  expect_error(icheck_rel(c(.8, .9, 1), Inf, "lavaan"), "positive whole")
+  expect_error(icheck_rel(c(.8, .9, 1), 0, "lavaan"), "positive whole")
+  expect_error(icheck_rel(c(.8, .9, 1), -3, "lavaan"), "positive whole")
 })
 
 test_that("icheck_loadings() works", {
@@ -653,6 +718,113 @@ test_that("loadings update lavaan data generation syntax", {
   expect_true(grepl("RI_B=~ly3*start(0.25)*B3", condition_matrix$est_synt, fixed = TRUE))
   expect_true(grepl("RI_A~~start(1)*RI_A", condition_matrix$est_synt, fixed = TRUE))
   expect_true(grepl("RI_A~~start(0.3)*RI_B", condition_matrix$est_synt, fixed = TRUE))
+})
+
+test_that("reliability updates lavaan measurement-error syntax", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  conditions_scalar <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "none",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+  condition_scalar <- conditions_scalar[[1]]
+  expect_equal(condition_scalar$reliability, 0.8)
+  expect_equal(condition_scalar$reliability_matrix, matrix(0.8, nrow = 2, ncol = 3))
+  expect_equal(condition_scalar$ME_var, matrix(0.5, nrow = 2, ncol = 3))
+  expect_true(grepl("A1~~0.5*A1", condition_scalar$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0.5*B3", condition_scalar$pop_synt, fixed = TRUE))
+
+  conditions_vector <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = c(0.8, 0.7, 1),
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "none",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+  condition_vector <- conditions_vector[[1]]
+  expected_vector_ME <- matrix(c(0.5, 6 / 7, 0, 0.5, 6 / 7, 0), nrow = 2, byrow = TRUE)
+  expect_equal(condition_vector$reliability, "structured")
+  expect_equal(condition_vector$reliability_matrix, matrix(c(0.8, 0.7, 1, 0.8, 0.7, 1), nrow = 2, byrow = TRUE))
+  expect_equal(condition_vector$ME_var, expected_vector_ME)
+  expect_true(grepl("A2~~0.857142857142857*A2", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0*B3", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("A2~~start(0.857142857142857)*A2", condition_vector$est_synt, fixed = TRUE))
+  expect_true(grepl("B3~~start(0)*B3", condition_vector$est_synt, fixed = TRUE))
+
+  reliability_matrix <- matrix(c(0.8, 0.7, 1, 0.9, 0.85, 0.75), nrow = 2, byrow = TRUE)
+  conditions_matrix <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = reliability_matrix,
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "ME",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+  condition_matrix <- conditions_matrix[[1]]
+  expected_matrix_ME <- ((1 - reliability_matrix) * 2) / reliability_matrix
+  expected_A_start <- mean(expected_matrix_ME[1, ])
+  expected_B_start <- mean(expected_matrix_ME[2, ])
+  expect_equal(condition_matrix$reliability, "structured")
+  expect_equal(condition_matrix$reliability_matrix, reliability_matrix)
+  expect_equal(condition_matrix$ME_var, expected_matrix_ME)
+  expect_true(grepl("A2~~0.857142857142857*A2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("B2~~0.352941176470588*B2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl(paste0("A1~~MEvarA*start(", expected_A_start, ")*A1"), condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl(paste0("B1~~MEvarB*start(", expected_B_start, ")*B1"), condition_matrix$est_synt, fixed = TRUE))
 })
 
 test_that("RI_loadings_free combines with compatible lavaan constraints", {

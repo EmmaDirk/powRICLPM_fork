@@ -99,6 +99,55 @@ Supplying `loadings` requires `constraints = "RI_loadings_free"`, so that the es
 ## Measurement error
 While it is generally advisable to include measurement error when analyzing psychological data, the RI-CLPM does not include it. Adding measurement error to the model would result in the bivariate STARTS model by @kenny_trait-state_2001, and requires at least 4 waves of data to be identified. Users can add measurement error variances to the estimation model by specifying `estimate_ME = TRUE`. Measurement error can be added to the simulated data using the `reliability` argument.
 
+By default, `reliability = 1`, so no measurement error is added to the generated data. A single value is applied to both variables at every wave. For example, `reliability = .8` means that 80 percent of the observed variance is true score variance and 20 percent is measurement error variance for both variables at every wave.
+
+Researchers can also specify reliability that differs over time by passing a vector. When a vector is passed, the same reliability pattern is used for A and B:
+
+```{r reliability-vector}
+reliability <- c(.8, .7, .9, .85)
+```
+
+When a matrix is passed, row 1 is used for variable A and row 2 is used for variable B. This allows reliability to differ across variables and time:
+
+```{r reliability-matrix}
+reliability <- matrix(
+  c(.8, .8, .8, .8,
+    .7, .75, .8, .85),
+  nrow = 2,
+  byrow = TRUE
+)
+```
+
+For example:
+
+```{r reliability-analysis, eval = FALSE}
+out <- powRICLPM(
+  target_power = 0.8,
+  sample_size = 1000,
+  time_points = 4,
+  intraclass_correlation = 0.5,
+  RI_cor = 0.3,
+  lagged_effects = matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE),
+  within_cor = 0.3,
+  reliability = reliability,
+  estimate_ME = TRUE,
+  reps = 1000,
+  seed = 1234
+)
+```
+
+If you are unsure if you have specified the `reliability` vector or matrix as intended, you can use the `check_reliability()` function to print how the reliabilities are interpreted.
+
+```{r check-reliability-vector}
+check_reliability(c(.8, .7, .9, .85))
+```
+
+```{r check-reliability-matrix}
+check_reliability(reliability)
+```
+
+Vector and matrix reliability specifications are lavaan-only and require one value of `time_points`. If you want to compare power for multiple reliability patterns, use multiple `powRICLPM()` calls.
+
 Note, however, that the STARTS model has been shown to be prone to empirical under-identification, often requiring upwards of 8 waves of data and sample sizes larger than 500. The Special Topics vignette [Measurement Error](https://jeroendmulder.github.io/powRICLPM/articles/measurement_error.html) uses the powRICLPM package to explore the impact of unmodeled measurement error in the RI-CLPM, and the use of bounded estimation to aid the convergence of the STARTS model. 
 
 ## Data with skewness and kurtosis

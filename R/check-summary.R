@@ -145,13 +145,13 @@ icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_
 
   reliabilities <- lapply(object$conditions, function(x) {x$reliability})
 
-  if (!any(reliability == reliabilities)) {
+  if (!any(as.character(reliability) == as.character(reliabilities))) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must refer to an experimental condition in the {.cls {class(object)}} object with that reliability:",
         "i" = "The reliability you've indicated is not included in any experimental condition.",
         "x" = "Perhaps you meant any of the following reliabilities?",
-        paste(unique(reliabilities), collapse = ", ")
+        paste(unique(as.character(reliabilities)), collapse = ", ")
       ),
       call = call
     )
@@ -165,7 +165,7 @@ imatch_condition_summary <- function(object, sample_size, time_points, ICC, reli
     x$sample_size == sample_size &&
       x$time_points == time_points &&
       x$ICC == ICC &&
-      (is.null(reliability) || x$reliability == reliability)
+      (is.null(reliability) || as.character(x$reliability) == as.character(reliability))
   }, object$conditions)
 
   if (length(matches) == 0) {
@@ -189,7 +189,7 @@ imatch_condition_summary <- function(object, sample_size, time_points, ICC, reli
     )
   }
 
-  matching_reliabilities <- unique(vapply(matches, function(x) x$reliability, numeric(1)))
+  matching_reliabilities <- unique(vapply(matches, function(x) as.character(x$reliability), character(1)))
   if (is.null(reliability) && length(matching_reliabilities) > 1) {
     cli::cli_abort(
       c(
