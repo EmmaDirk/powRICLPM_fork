@@ -41,6 +41,22 @@ test_that("all columns from summary.powRICLMP(...) are named", {
     summary(out, sample_size = 500, intraclass_correlation = 0.4, ICC = 0.4, time_points = 3, reliability = 1),
     "Both.*intraclass_correlation.*ICC"
   )
+  expect_error(
+    summary(out, sample_size = 500, AF_proportion = 0.4, time_points = 3),
+    "only available for DPM"
+  )
+  expect_error(
+    summary(out, parameter = c("wB2~wA1", "wA2~wB1")),
+    "length 2"
+  )
+  expect_error(
+    summary(out, parameter = 1),
+    "type double"
+  )
+  expect_error(
+    summary(out, parameter = "not_a_parameter"),
+    "not found"
+  )
 })
 
 test_that("summary.powRICLPM labels intraclass correlation from the selected argument name", {
@@ -85,4 +101,58 @@ test_that("summary.powRICLPM handles time-varying reliability condition labels",
     time_points = 3
   )
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
+})
+
+test_that("summary.powRICLPM omits reliability column for DPM objects", {
+  object <- list(
+    conditions = list(list(
+      sample_size = 800,
+      time_points = 3,
+      ICC = 0.2,
+      reliability = 1,
+      estimates = data.frame(
+        parameter = "B2~A1",
+        population_value = 0.2,
+        average = 0.2,
+        bias = 0,
+        minimum = 0.1,
+        EmpSE = 0.05,
+        SEAvg = 0.05,
+        MSE = 0.0025,
+        accuracy = 0.2,
+        coverage = 0.95,
+        power = 0.8
+      ),
+      estimation_information = list(
+        n_error = 0,
+        n_nonconvergence = 0,
+        n_inadmissible = 0,
+        n_completed = 1
+      )
+    )),
+    session = list(
+      model = "DPM",
+      version = "0.2.1",
+      reps = 1,
+      bounds = FALSE,
+      constraints = "none",
+      estimate_ME = FALSE,
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  table_parameter <- summary(object, parameter = "B2~A1")
+  expect_false("Reliability" %in% colnames(table_parameter))
+  expect_equal(colnames(table_parameter)[3], "AF proportion")
+
+  overview_output <- capture.output(summary(object))
+  expect_true(any(grepl("Dynamic Panel Model \\(DPM\\)", overview_output)))
+  expect_false(any(grepl("Reliability", overview_output, fixed = TRUE)))
+  expect_true(any(grepl("AF proportion", overview_output, fixed = TRUE)))
+  expect_error(summary(object, reliability = 1), "not available for DPM")
+  expect_error(
+    summary(object, sample_size = 800, time_points = 3, ICC = 0.2),
+    "not available for DPM"
+  )
 })

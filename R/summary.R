@@ -10,7 +10,7 @@
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
 #' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
 #' @param AF_proportion (optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.
-#' @param reliability (optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest.
+#' @param reliability (optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is not available for DPM objects.
 #' @param ICC Alternative name for \code{intraclass_correlation}.
 #'
 #' @return No return value, called for side effects.
@@ -18,13 +18,13 @@
 #' @details
 #' \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 #' \itemize{
-#'   \item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
+#'   \item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple RI-CLPM conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
 #'   \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 #'   \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 #' }
 #' \subsection{Interpretation Output}{Depending on the arguments that you set, \code{summary()} prints a table with different analysis outcomes in the columns and where each row refers to a different experimental condition. The following information is available:
 #'  \itemize{
-#'   \item \code{Sample size}, \code{Time points}, \code{ICC}, \code{Reliability}: The experimental condition that the row refers to.
+#'   \item \code{Sample size}, \code{Time points}, \code{ICC} or \code{AF proportion}, and \code{Reliability} when applicable: The experimental condition that the row refers to.
 #'   \item \code{Population}: The true value of the parameter.
 #'   \item \code{Avg}: The average (across replications) parameter estimate.
 #'   \item \code{Bias}: The difference between the population value and the average parameter estimate.
@@ -67,12 +67,31 @@ summary.powRICLPM <- function(
   ) {
 
   call_summary <- match.call()
+  icheck_object_summary(object)
+  dpm_object <- iis_DPM_object(object)
+  riclpm_icc_supplied <- !is.null(intraclass_correlation) || !is.null(ICC)
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
   if (!is.null(AF_proportion) &&
-      (!is.null(intraclass_correlation) || !is.null(ICC))) {
+      riclpm_icc_supplied) {
     iabort_renamed_argument_conflict("AF_proportion", "intraclass_correlation/ICC")
+  }
+  if (dpm_object && riclpm_icc_supplied) {
+    cli::cli_abort(
+      c(
+        "`intraclass_correlation` and `ICC` are not available for DPM summaries:",
+        i = "Use `AF_proportion` to select DPM conditions."
+      )
+    )
+  }
+  if (!dpm_object && !is.null(AF_proportion)) {
+    cli::cli_abort(
+      c(
+        "`AF_proportion` is only available for DPM summaries:",
+        i = "Use `intraclass_correlation` or `ICC` to select RI-CLPM and STARTS conditions."
+      )
+    )
   }
   if (!is.null(AF_proportion)) {
     intraclass_correlation <- AF_proportion
@@ -84,11 +103,19 @@ summary.powRICLPM <- function(
   icc_table_label <- iicc_table_name(object = object, call = call_summary)
 
   # Argument validation
-  icheck_object_summary(object)
   if (!is.null(parameter)) {icheck_parameter_summary(parameter, object)}
   if (!is.null(sample_size)) {icheck_sample_size_summary(sample_size, object)}
   if (!is.null(time_points)) {icheck_time_points_summary(time_points, object)}
   if (!is.null(ICC)) {icheck_ICC_summary(ICC, object)}
+  if (iis_DPM_object(object) && !is.null(reliability)) {
+    cli::cli_abort(
+      c(
+        "`reliability` is not available for DPM summaries:",
+        i = "The DPM does not separate measurement error, so reliability is not part of the DPM simulation conditions.",
+        i = "Select DPM conditions with `sample_size`, `time_points`, and `AF_proportion`."
+      )
+    )
+  }
   if (!is.null(reliability)) {icheck_reliability_summary(reliability, object)}
 
 
@@ -136,6 +163,7 @@ summary.powRICLPM <- function(
 
     ## Summary of condition
     summary_condition <- matrix(c(
+      imodel_display_name(object),
       condition$skewness,
       condition$kurtosis,
       format_constraints(object$session$constraints),
@@ -144,7 +172,7 @@ summary.powRICLPM <- function(
       condition$significance_criterion
     ), ncol = 1)
     colnames(summary_condition) <- c("Value")
-    rownames(summary_condition) <- c("Skewness:", "Kurtosis:", "Constraints:", "Bounds:", "Estimated measurement error:", "Significance criterion:")
+    rownames(summary_condition) <- c("Model:", "Skewness:", "Kurtosis:", "Constraints:", "Bounds:", "Estimated measurement error:", "Significance criterion:")
 
     summary_list <- list(
       summary_condition = summary_condition,
@@ -153,7 +181,7 @@ summary.powRICLPM <- function(
     )
 
     inote_condition_loading_anchor(object, results)
-    print.summary.powRICLPM.condition(summary_list)
+    print.summary.powRICLPM.condition(summary_list, object = object)
     invisible(results)
 
   } else if (!is.null(parameter)) {
@@ -162,9 +190,14 @@ summary.powRICLPM <- function(
     parameter_df <- give_powRICLPM_results(object, parameter)
     replications_df <- give_powRICLPM_estimation_problems(object)
     parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
-    colnames(parameter_summary) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
+    parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
+    parameter_col_names <- c("Sample size", "Time points", icc_table_label)
+    if (!iis_DPM_object(object)) {
+      parameter_col_names <- c(parameter_col_names, "Reliability")
+    }
+    colnames(parameter_summary) <- c(parameter_col_names, "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
     inote_condition_loading_anchor(object, parameter_summary)
-    print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter)
+    print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
     invisible(parameter_summary)
 
   } else {
@@ -172,10 +205,14 @@ summary.powRICLPM <- function(
     # Collect information for print.summary.powRICLPM()
     ## Summary of analysis
     replications_df <- give_powRICLPM_estimation_problems(object)
-    colnames(replications_df) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Error", "Not converged", "Inadmissible")
-    version <- utils::packageVersion("powRICLPM")
+    replications_df <- idrop_DPM_reliability_column(object, replications_df)
+    replications_col_names <- c("Sample size", "Time points", icc_table_label)
+    if (!iis_DPM_object(object)) {
+      replications_col_names <- c(replications_col_names, "Reliability")
+    }
+    colnames(replications_df) <- c(replications_col_names, "Error", "Not converged", "Inadmissible")
     inote_condition_loading_anchor(object, replications_df)
-    print.summary.powRICLPM(replications_df, powRICLPM_version = version)
+    print.summary.powRICLPM(replications_df, object = object)
     iprint_reliability_tables(object$conditions)
   }
 }

@@ -437,6 +437,20 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
+      intraclass_correlation = 0.5,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "model = 'RICLPM'"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
       AF_proportion = 0.2,
       lagged_effects = lagged_effects,
       wave_cor = 0.3,
@@ -470,7 +484,7 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
       wave_cor = 0.3,
       reps = 1
     ),
-    "intraclass_correlation.*not valid.*DPM.*AF_proportion"
+    "model = 'RICLPM'"
   )
   expect_error(
     powRICLPM(
@@ -501,6 +515,39 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
       reps = 1
     ),
     "RI_cor.*not valid.*DPM.*AF_cor"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1,
+      constraints = "ME"
+    ),
+    "DPM does not separate measurement error"
+  )
+  expect_warning(
+    expect_error(
+      powRICLPM(
+        model = "DPM",
+        target_power = 0.8,
+        sample_size = 1000,
+        time_points = 3,
+        AF_proportion = 0.2,
+        AF_cor = 0.3,
+        lagged_effects = lagged_effects,
+        wave_cor = 0.3,
+        constraints = "ME",
+        reps = 1
+      ),
+      "DPM does not separate measurement error"
+    ),
+    NA
   )
   expect_error(
     powRICLPM(
@@ -558,7 +605,7 @@ test_that("powRICLPM validation errors catch common DPM loading mistakes", {
   )
   expect_error(
     do.call(powRICLPM, c(base, list(loadings = c(NA, 1, Inf)))),
-    "finite values after the required first-wave NA"
+    "finite values, except for the required first-wave NA"
   )
   expect_error(
     do.call(powRICLPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 1, 1, 1.2), nrow = 2, byrow = TRUE)))),

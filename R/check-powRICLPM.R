@@ -144,7 +144,7 @@ icheck_T_model <- function(x, ME, model,
       cli::cli_abort(
         c(
           "Elements in {.arg {arg}} should be larger than 1:",
-          i = "The DPM needs at least 2 time points.",
+          i = "The DPM needs at least 2 time points to be identified.",
           x = "You've supplied a number of time points smaller than 2."
         ),
         call = call
@@ -199,15 +199,6 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
 icheck_DPM_aliases <- function(AF_proportion, intraclass_correlation, ICC,
                                RI_cor, within_cor,
                                call = rlang::caller_env()) {
-  if (is.null(AF_proportion)) {
-    cli::cli_abort(
-      c(
-        "`AF_proportion` must be specified for `model = 'DPM'`:",
-        x = "`AF_proportion` is `NULL`."
-      ),
-      call = call
-    )
-  }
   if (!is.null(intraclass_correlation) || !is.null(ICC)) {
     supplied <- c(
       if (!is.null(intraclass_correlation)) "intraclass_correlation",
@@ -217,7 +208,7 @@ icheck_DPM_aliases <- function(AF_proportion, intraclass_correlation, ICC,
       c(
         "`intraclass_correlation` and `ICC` are not valid for `model = 'DPM'`:",
         i = "Use `AF_proportion` for the DPM accumulating-factor proportion.",
-        i = "If you meant to run an RI-CLPM, omit `model = 'DPM'`.",
+        i = "If you meant to run an RI-CLPM, use `model = 'RICLPM'`.",
         x = paste0("You supplied: ", paste(supplied, collapse = ", "), ".")
       ),
       call = call
@@ -228,7 +219,7 @@ icheck_DPM_aliases <- function(AF_proportion, intraclass_correlation, ICC,
       c(
         "`RI_cor` is not valid for `model = 'DPM'`:",
         i = "Use `AF_cor` for the DPM accumulating-factor correlation.",
-        i = "If you meant to run an RI-CLPM, omit `model = 'DPM'`."
+        i = "If you meant to run an RI-CLPM, use `model = 'RICLPM'`."
       ),
       call = call
     )
@@ -238,7 +229,17 @@ icheck_DPM_aliases <- function(AF_proportion, intraclass_correlation, ICC,
       c(
         "`within_cor` is not valid for `model = 'DPM'`:",
         i = "Use `wave_cor` for the DPM observed wave-level correlation.",
-        i = "If you meant to run an RI-CLPM, omit `model = 'DPM'`."
+        i = "If you meant to run an RI-CLPM, use `model = 'RICLPM'`."
+      ),
+      call = call
+    )
+  }
+  if (is.null(AF_proportion)) {
+    cli::cli_abort(
+      c(
+        "`AF_proportion` must be specified for `model = 'DPM'`:",
+        i = "The DPM uses `AF_proportion` instead of `intraclass_correlation` or `ICC`.",
+        x = "`AF_proportion` is `NULL`."
       ),
       call = call
     )
@@ -681,6 +682,16 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       )
     }
     first_loadings <- x[1]
+  }
+  if (any(is.na(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} contains `NA`, which is only valid for DPM loadings:",
+        i = "If these are accumulating-factor loadings, use `model = 'DPM'`.",
+        i = "For the RI-CLPM, loadings must be finite and the first loading must be 1."
+      ),
+      call = call
+    )
   }
   if (!all(is.finite(x))) {
     cli::cli_abort(

@@ -31,7 +31,7 @@
 
 \item{AF_proportion}{(optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.}
 
-\item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest.}
+\item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is not available for DPM objects.}
 
 \item{ICC}{Alternative name for \code{intraclass_correlation}.}
 }
@@ -44,13 +44,13 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \details{
 \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 \itemize{
-\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
+\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple RI-CLPM conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
 \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 }
 \subsection{Interpretation Output}{Depending on the arguments that you set, \code{summary()} prints a table with different analysis outcomes in the columns and where each row refers to a different experimental condition. The following information is available:
 \itemize{
-\item \code{Sample size}, \code{Time points}, \code{ICC}, \code{Reliability}: The experimental condition that the row refers to.
+\item \code{Sample size}, \code{Time points}, \code{ICC} or \code{AF proportion}, and \code{Reliability} when applicable: The experimental condition that the row refers to.
 \item \code{Population}: The true value of the parameter.
 \item \code{Avg}: The average (across replications) parameter estimate.
 \item \code{Bias}: The difference between the population value and the average parameter estimate.

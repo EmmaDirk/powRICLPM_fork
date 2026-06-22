@@ -38,13 +38,13 @@ icheck_sample_size_summary <- function(sample_size, object, arg = rlang::caller_
 }
 
 
-icheck_parameter_summary <- function(x, object, parameter, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+icheck_parameter_summary <- function(x, object, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
 
   if (length(x) > 1) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character string of length 1:",
-        "x" = "Your {.arg {arg}} is of length {length(sample_size)}."
+        "x" = "Your {.arg {arg}} is of length {length(x)}."
       ),
       call = call
     )
@@ -54,7 +54,7 @@ icheck_parameter_summary <- function(x, object, parameter, arg = rlang::caller_a
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character string:",
-        "x" = "Your {.arg {arg}} is of type {typeof(arg)}"
+        "x" = "Your {.arg {arg}} is of type {typeof(x)}."
       ),
       call = call
     )
@@ -66,8 +66,9 @@ icheck_parameter_summary <- function(x, object, parameter, arg = rlang::caller_a
   if (!any(x == names_parameters)) {
     cli::cli_abort(
       c(
-        "Your {.arg {arg}} is not available across all experimental conditions.",
-        "i" = "Perhaps use `give(object, what = 'names')` to get an overview of parameter names in the `powRICLPM` object."
+        "The requested {.arg {arg}} was not found across all experimental conditions:",
+        "x" = "No summary is available for parameter `{x}`.",
+        "i" = "Use `give(object, what = 'names')` to see available parameter names."
       ),
       call = call
     )

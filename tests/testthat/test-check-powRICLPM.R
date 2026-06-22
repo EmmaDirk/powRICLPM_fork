@@ -27,7 +27,7 @@ test_that("icheck_model() and DPM time-points work", {
   expect_error(icheck_T_model("4", ME = FALSE, model = "DPM"), "integers")
   expect_error(icheck_T_model(NA_real_, ME = FALSE, model = "DPM"), "finite")
   expect_error(icheck_T_model(2.5, ME = FALSE, model = "DPM"), "integers")
-  expect_error(icheck_T_model(1, ME = FALSE, model = "DPM"), "larger than 1")
+  expect_error(icheck_T_model(1, ME = FALSE, model = "DPM"), "identified")
 })
 
 test_that("icheck_ICC() works", {
@@ -162,6 +162,10 @@ test_that("check_loadings() writes loading interpretation", {
   expect_error(check_loadings(loading_vector, time_points = 0), "positive whole number.*time_points.*= 0")
   expect_error(check_loadings(loading_vector, time_points = -4), "positive whole number.*time_points.*= -4")
   expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
+  expect_error(
+    check_loadings(c(NA, 1, 0.8, 1.1)),
+    "only valid for DPM loadings"
+  )
 })
 
 test_that("check_loadings() writes DPM loading interpretation", {
@@ -193,11 +197,15 @@ test_that("check_loadings() writes DPM loading interpretation", {
   )
   expect_error(
     check_loadings(c(NA, 1, Inf), model = "DPM"),
-    "finite values after the required first-wave NA"
+    "finite values, except for the required first-wave NA"
   )
   expect_error(
     check_loadings(c(NA, 1, 0.8), time_points = 4, model = "DPM"),
     "one value per time point"
+  )
+  expect_error(
+    check_loadings(c(NA, 1), time_points = 4, model = "DPM"),
+    "length 2.*time_points.*= 4"
   )
   expect_error(
     check_loadings(matrix(c(NA, 1, 0.8, 1, NA, 1, 0.8, 1), nrow = 2, byrow = TRUE), time_points = 3, model = "DPM"),
@@ -585,8 +593,16 @@ test_that("DPM alias checks guide common RI-CLPM and DPM mixups", {
     "AF_proportion.*must be specified.*NULL"
   )
   expect_error(
+    icheck_DPM_aliases(NULL, 0.5, NULL, NULL, NULL),
+    "model = 'RICLPM'"
+  )
+  expect_error(
+    icheck_DPM_aliases(NULL, NULL, NULL, 0.3, NULL),
+    "RI_cor.*not valid.*DPM.*AF_cor"
+  )
+  expect_error(
     icheck_DPM_aliases(0.2, 0.5, NULL, NULL, NULL),
-    "intraclass_correlation.*not valid.*DPM.*AF_proportion"
+    "model = 'RICLPM'"
   )
   expect_error(
     icheck_DPM_aliases(0.2, NULL, 0.5, NULL, NULL),

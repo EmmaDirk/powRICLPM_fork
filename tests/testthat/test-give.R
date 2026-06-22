@@ -27,6 +27,7 @@ test_that("give() works", {
   # Run tests
   expect_error(give(1, "conditions"))
   expect_error(give(out1, "results"))
+  expect_error(give(out1, "AF_proportion"), "only available for DPM")
 
   expect_s3_class(df_conditions, "data.frame")
   expect_equal(dim(df_conditions), c(2, 4))
@@ -62,6 +63,7 @@ test_that("give() labels DPM proportion conditions", {
     )),
     session = list(
       model = "DPM",
+      version = "0.2.1",
       argument_names = list(intraclass_correlation = "AF_proportion")
     )
   )
@@ -69,6 +71,14 @@ test_that("give() labels DPM proportion conditions", {
 
   expect_equal(names(give(object, "conditions"))[3], "AF_proportion")
   expect_equal(names(give(object, "AF_proportion"))[3], "AF_proportion")
+  expect_error(give(object, "intraclass_correlation"), "not available for DPM")
+  expect_error(give(object, "ICC"), "not available for DPM")
+  expect_false("reliability" %in% names(give(object, "conditions")))
+  expect_error(give(object, "reliability"), "not available for DPM")
+
+  print_output <- capture.output(print(object))
+  expect_true(any(grepl("Dynamic Panel Model \\(DPM\\)", print_output)))
+  expect_false(any(grepl("Reliability", print_output, fixed = TRUE)))
 })
 
 test_that("give() notes free-loading anchor for condition tables", {

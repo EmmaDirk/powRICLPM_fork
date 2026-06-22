@@ -107,10 +107,10 @@ icheck_plot_options <- function(x, arg = rlang::caller_arg(x), call = rlang::cal
     )
   }
   x <- normalize_intraclass_correlation_value(x)
-  if (!any(x == c("time_points", "intraclass_correlation", "reliability"))) {
+  if (!any(x == c("time_points", "intraclass_correlation", "AF_proportion", "reliability", "none"))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'time_points', 'intraclass_correlation', 'ICC', or 'reliability':",
+        "{.arg {arg}} must be 'time_points', 'intraclass_correlation', 'ICC', 'AF_proportion', 'reliability', or 'none':",
         x = "Your {.arg {arg}} is {.val {x}}."
       )
     )

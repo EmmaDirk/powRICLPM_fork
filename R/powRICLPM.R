@@ -196,8 +196,7 @@ powRICLPM <- function(
     cli::cli_abort(
       c(
         "These arguments look like a DPM setup, but `model` defaults to `'RICLPM'`:",
-        i = "Use `model = 'DPM'` with `AF_proportion`, `AF_cor`, and `wave_cor`.",
-        i = "For the RI-CLPM, use `intraclass_correlation`, `RI_cor`, and `within_cor`.",
+        i = "Use `model = 'DPM'` with `AF_proportion`, `AF_cor`, and `wave_cor`; for the RI-CLPM, use `model = 'RICLPM'` with `intraclass_correlation`, `RI_cor`, and `within_cor`.",
         x = paste0(
           "DPM argument(s) supplied: ",
           paste(c("AF_proportion", "AF_cor", "wave_cor")[
@@ -262,9 +261,6 @@ powRICLPM <- function(
   icheck_significance_criterion(significance_criterion)
   icheck_ME(estimate_ME)
   icheck_reps(reps)
-  seed <- icheck_seed(seed)
-  icheck_constraints(constraints, estimate_ME)
-  icheck_bounds(bounds, constraints, software)
   estimator <- icheck_estimator(estimator, skewness, kurtosis)
   save_path <- icheck_path(save_path, software)
   icheck_software(software, skewness, kurtosis)
@@ -277,6 +273,8 @@ powRICLPM <- function(
   }
   icheck_rel(reliability, time_points, software)
   icheck_DPM_compatibility(model, reliability, estimate_ME, software, constraints, bounds)
+  icheck_constraints(constraints, estimate_ME)
+  icheck_bounds(bounds, constraints, software)
   icheck_loadings(loadings, time_points, software, constraints, model = model)
   icheck_constraints_software(constraints, software)
 
@@ -312,6 +310,7 @@ powRICLPM <- function(
     sample_size <- seq(search_lower, search_upper, search_step)
   }
   icheck_N(sample_size, time_points, constraints, estimate_ME, model = model)
+  seed <- icheck_seed(seed)
 
   # Inform user that input check is complete
   cli::cli_alert_success("Argument checking complete.")

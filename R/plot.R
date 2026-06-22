@@ -1,14 +1,14 @@
 #' Plot Results From \code{powRICLPM} Object
 #'
 #' @description
-#' Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance, and shaped by the reliability. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.
+#' Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance or accumulating-factor proportion, and shaped by reliability when applicable. For DPM objects, the default is no shape mapping. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.
 #'
 #' @param x A \code{powRICLPM} object.
 #' @param y (optional) A \code{character} string, specifying which outcome is plotted on the y-axis (see "Details").
 #' @param ... (don't use)
 #' @param parameter Character string of length 1, denoting the parameter to visualize the results for.
 #' @param color_by Character string of length 1, denoting what variable to map to color (see "Details").
-#' @param shape_by Character string of length 1, denoting what variable to map to point shapes (see "Details").
+#' @param shape_by Character string of length 1, denoting what variable to map to point shapes (see "Details"). Use \code{"none"} to omit shape mapping. \code{"reliability"} is not available for DPM objects.
 #' @param facet_by Character string of length 1, denoting what variable to facet by (see "Details").
 #'
 #' @details
@@ -30,7 +30,9 @@
 #'    \item \code{sample_size}: Sample size.
 #'    \item \code{time_points}: Time points.
 #'    \item \code{intraclass_correlation} or \code{ICC}: Intraclass correlation.
-#'    \item \code{reliability}: Item-reliablity.
+#'    \item \code{AF_proportion}: Accumulating-factor proportion for the DPM.
+#'    \item \code{reliability}: Item-reliability, when applicable. This is not available for DPM objects.
+#'    \item \code{none}: No shape mapping.
 #' }
 #' }
 #'
@@ -75,12 +77,47 @@ plot.powRICLPM <- function(
   if (missing(facet_by)) {
     facet_by <- iicc_value_name(object = x)
   }
+  if (missing(shape_by) && iis_DPM_object(x)) {
+    shape_by <- "none"
+  }
 
   icheck_plot_parameter(parameter, x)
   icheck_y(y)
   icheck_plot_options(color_by)
   icheck_plot_options(shape_by)
   icheck_plot_options(facet_by)
+  if (identical(color_by, "none")) {
+    cli::cli_abort("`color_by = 'none'` is not supported; use `shape_by = 'none'` to omit shape mapping.")
+  }
+  if (identical(facet_by, "none")) {
+    cli::cli_abort("`facet_by = 'none'` is not supported; use `shape_by = 'none'` to omit shape mapping.")
+  }
+  mapping_choices <- unique(c(color_by, facet_by, if (!identical(shape_by, "none")) shape_by))
+  if (iis_DPM_object(x) && any(mapping_choices %in% c("intraclass_correlation", "ICC"))) {
+    cli::cli_abort(
+      c(
+        "`intraclass_correlation` and `ICC` are not available for DPM plots:",
+        i = "Use `AF_proportion` for the DPM accumulating-factor proportion."
+      )
+    )
+  }
+  if (!iis_DPM_object(x) && any(mapping_choices == "AF_proportion")) {
+    cli::cli_abort(
+      c(
+        "`AF_proportion` is only available for DPM plots:",
+        i = "Use `intraclass_correlation` or `ICC` for RI-CLPM and STARTS plots."
+      )
+    )
+  }
+  if (iis_DPM_object(x) && any(mapping_choices == "reliability")) {
+    cli::cli_abort(
+      c(
+        "`reliability` is not available for DPM plots:",
+        i = "The DPM does not separate measurement error, so reliability is not part of the DPM simulation conditions.",
+        i = "Use `shape_by = 'none'` or map aesthetics to another simulation condition."
+      )
+    )
+  }
   if (identical(y, "SD")) {
     y <- "EmpSE"
   }
@@ -96,17 +133,26 @@ plot.powRICLPM <- function(
   d$lb <- d[, y] - 1.96 * d[, paste0("MCSE_", y)]
   d$ub <- d[, y] + 1.96 * d[, paste0("MCSE_", y)]
   d$intraclass_correlation <- d$ICC
+  d$AF_proportion <- d$ICC
 
   # Select relevant columns
-  d <- d[, unique(c(y, "sample_size", color_by, shape_by, facet_by, "lb", "ub"))]
+  mapping_vars <- mapping_choices
+  d <- d[, unique(c(y, "sample_size", mapping_vars, "lb", "ub"))]
 
   # Ensure inputs are factors for proper handling in ggplot2
   d[[facet_by]] <- as.factor(d[[facet_by]])
   d[[color_by]] <- as.factor(d[[color_by]])
-  d[[shape_by]] <- as.factor(d[[shape_by]])
+  if (!identical(shape_by, "none")) {
+    d[[shape_by]] <- as.factor(d[[shape_by]])
+  }
 
   # Create plot
-  p <- ggplot2::ggplot(d, ggplot2::aes(x = .data$sample_size, y = !!ggplot2::sym(y), color = !!ggplot2::sym(color_by), shape = !!ggplot2::sym(shape_by), fill = !!ggplot2::sym(color_by))) +
+  if (identical(shape_by, "none")) {
+    p <- ggplot2::ggplot(d, ggplot2::aes(x = .data$sample_size, y = !!ggplot2::sym(y), color = !!ggplot2::sym(color_by), fill = !!ggplot2::sym(color_by)))
+  } else {
+    p <- ggplot2::ggplot(d, ggplot2::aes(x = .data$sample_size, y = !!ggplot2::sym(y), color = !!ggplot2::sym(color_by), shape = !!ggplot2::sym(shape_by), fill = !!ggplot2::sym(color_by)))
+  }
+  p <- p +
     ggplot2::geom_point(size = 3) +
     ggplot2::geom_line() +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$lb, ymax = .data$ub), alpha = 0.2, color = NA) +
@@ -120,9 +166,11 @@ plot.powRICLPM <- function(
       legend.text = ggplot2::element_text(size = 8)
     ) +
     ggplot2::guides(
-      color = ggplot2::guide_legend(title = color_by, nrow = 1),
-      shape = ggplot2::guide_legend(title = shape_by, nrow = 1)
+      color = ggplot2::guide_legend(title = color_by, nrow = 1)
     )
+  if (!identical(shape_by, "none")) {
+    p <- p + ggplot2::guides(shape = ggplot2::guide_legend(title = shape_by, nrow = 1))
+  }
 
   # Add dashed horizontal line if y is "power"
   if (y == "power") {

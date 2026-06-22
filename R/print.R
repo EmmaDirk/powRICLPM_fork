@@ -25,9 +25,20 @@ print.powRICLPM <- function(x, ...) {
     )
   }))
   df_conditions <- cbind(condition = 1:length(x$conditions), df_conditions)
+  df_conditions <- idrop_DPM_reliability_column(x, df_conditions)
+  condition_col_names <- c("Condition", "Sample size", "Time points", icc_table_label)
+  if (!iis_DPM_object(x)) {
+    condition_col_names <- c(condition_col_names, "Reliability")
+  }
 
   # Print header
-  cat("powRICLPM (", as.character(x$session$powRICLPM_version), ") simulated power for ", length(x$conditions), " experimental conditions:", sep = "")
+  n_conditions <- length(x$conditions)
+  cat(
+    "powRICLPM (", as.character(ipowRICLPM_version(x)), ") simulated power for the ",
+    imodel_display_name(x), " for ", n_conditions, " ",
+    iexperimental_condition_label(n_conditions), ":",
+    sep = ""
+  )
 
   # Format condition table
   print(
@@ -35,7 +46,7 @@ print.powRICLPM <- function(x, ...) {
       df_conditions,
       format = "simple",
       align = rep("r", times = length(colnames(df_conditions))),
-      col.names = c("Condition", "Sample size", "Time points", icc_table_label, "Reliability")
+      col.names = condition_col_names
     )
   )
   iprint_reliability_tables(x$conditions)
@@ -46,13 +57,19 @@ print.powRICLPM <- function(x, ...) {
 #' Print Summary Call powRICLPM
 #'
 #' @noRd
-print.summary.powRICLPM <- function(x, ..., powRICLPM_version) {
-  cat("powRICLPM (", as.character(powRICLPM_version), ") simulated power for ", nrow(x), " experimental conditions.", sep = "")
+print.summary.powRICLPM <- function(x, ..., object) {
+  n_conditions <- nrow(x)
+  cat(
+    "powRICLPM (", as.character(ipowRICLPM_version(object)), ") simulated power for the ",
+    imodel_display_name(object), " for ", n_conditions, " ",
+    iexperimental_condition_label(n_conditions), ".",
+    sep = ""
+  )
   cat("\n")
   print(
     knitr::kable(
       x,
-      align = "rrrrrrr",
+      align = rep("r", times = length(colnames(x))),
       format = "simple",
       caption = "SUMMARY OF ANALYSIS PER EXPERIMENTAL CONDITION"
     )
@@ -62,7 +79,7 @@ print.summary.powRICLPM <- function(x, ..., powRICLPM_version) {
 #' Print Summary Condition Call powRICLPM
 #'
 #' @noRd
-print.summary.powRICLPM.condition <- function(x, ...) {
+print.summary.powRICLPM.condition <- function(x, ..., object) {
   cat("\n")
   print(
     knitr::kable(
@@ -78,7 +95,7 @@ print.summary.powRICLPM.condition <- function(x, ...) {
       x$summary_condition,
       align = "lr",
       format = "simple",
-      caption = "SUMMARY OF SIMULATION CONDITION"
+      caption = paste0("SUMMARY OF ", imodel_display_short(object), " SIMULATION CONDITION")
     )
   )
   cat("\n")
@@ -96,13 +113,13 @@ print.summary.powRICLPM.condition <- function(x, ...) {
 #' Print Summary Parameter Call powRICLPM
 #'
 #' @noRd
-print.summary.powRICLPM.parameter <- function(x, ..., parameter) {
+print.summary.powRICLPM.parameter <- function(x, ..., parameter, object) {
   print(
     knitr::kable(
       x,
       format = "simple",
       align = rep("r", times = length(colnames(x))),
-      caption = paste0("SIMULATION RESULTS FOR ", parameter)
+      caption = paste0("SIMULATION RESULTS FOR ", parameter, " (", imodel_display_short(object), ")")
     )
   )
 }

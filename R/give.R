@@ -1,6 +1,6 @@
 #' Extract Information From \code{powRICLPM} Object
 #'
-#' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. The information is presented by condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, and reliability).
+#' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. The information is presented by condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, and reliability when applicable).
 #'
 #' @param from A \code{powRICLPM} object
 #' @param what A character string, denoting the information to extract, such as "conditions", "estimation_problems", "results", or "names" (see "Details").
@@ -10,8 +10,8 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability. Time-varying reliability specifications are shown with a compact label.
-#'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Time-varying reliability specifications are shown with a compact label.
+#'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is not available for DPM objects.
 #'   \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
 #'   \item \code{results}: The average estimate (\code{average}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 #'   \item \code{names}: The parameter names in the condition with the least parameters (i.e., parameter names that apply to each experimental condition).
@@ -37,6 +37,7 @@ give <- function(from, what, parameter = NULL) {
 
   # Input checking
   icheck_object_summary(from)
+  raw_what <- what
   icc_column_label <- if (identical(what, "ICC")) {
     "ICC"
   } else if (identical(what, "AF_proportion")) {
@@ -48,6 +49,32 @@ give <- function(from, what, parameter = NULL) {
   }
   what <- normalize_intraclass_correlation_value(what)
   icheck_what_give(what)
+  if (iis_DPM_object(from) &&
+      any(identical(raw_what, "intraclass_correlation"), identical(raw_what, "ICC"))) {
+    cli::cli_abort(
+      c(
+        "`intraclass_correlation` and `ICC` are not available for DPM objects:",
+        i = "Use `AF_proportion` for the DPM accumulating-factor proportion."
+      )
+    )
+  }
+  if (!iis_DPM_object(from) && identical(raw_what, "AF_proportion")) {
+    cli::cli_abort(
+      c(
+        "`AF_proportion` is only available for DPM objects:",
+        i = "Use `intraclass_correlation` or `ICC` for RI-CLPM and STARTS objects."
+      )
+    )
+  }
+  if (iis_DPM_object(from) && identical(what, "reliability")) {
+    cli::cli_abort(
+      c(
+        "`reliability` is not available for DPM objects:",
+        i = "The DPM does not separate measurement error, so reliability is not part of the DPM simulation conditions.",
+        i = "Use `give(object, 'conditions')` or `give(object, 'AF_proportion')` to inspect DPM conditions."
+      )
+    )
+  }
 
   # Call to relevant give_*() based on `what` argument
   if (what == "conditions" || what == "sample_size" || what == "time_points" ||
@@ -64,6 +91,7 @@ give <- function(from, what, parameter = NULL) {
   }
 
   inote_condition_loading_anchor(from, out)
+  out <- idrop_DPM_reliability_column(from, out)
   ilabel_icc_column(out, icc_column_label)
 }
 
@@ -115,6 +143,55 @@ iprint_reliability_tables <- function(conditions) {
     )
   }
   invisible(NULL)
+}
+
+iis_DPM_object <- function(object) {
+  identical(object$session$model, "DPM")
+}
+
+imodel_display_name <- function(object) {
+  if (iis_DPM_object(object)) {
+    return("Dynamic Panel Model (DPM)")
+  }
+  if (isTRUE(object$session$estimate_ME)) {
+    return("STARTS model")
+  }
+  "RI-CLPM"
+}
+
+imodel_display_short <- function(object) {
+  if (iis_DPM_object(object)) {
+    return("DPM")
+  }
+  if (isTRUE(object$session$estimate_ME)) {
+    return("STARTS")
+  }
+  "RI-CLPM"
+}
+
+ipowRICLPM_version <- function(object) {
+  if (!is.null(object$session$powRICLPM_version)) {
+    return(object$session$powRICLPM_version)
+  }
+  if (!is.null(object$session$version)) {
+    return(object$session$version)
+  }
+  utils::packageVersion("powRICLPM")
+}
+
+iexperimental_condition_label <- function(n) {
+  if (identical(n, 1L)) {
+    return("experimental condition")
+  }
+  "experimental conditions"
+}
+
+idrop_DPM_reliability_column <- function(object, x) {
+  if (!iis_DPM_object(object) || !is.data.frame(x) || !"reliability" %in% names(x)) {
+    return(x)
+  }
+  x$reliability <- NULL
+  x
 }
 
 ihas_free_loadings <- function(condition) {
