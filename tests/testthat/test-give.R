@@ -51,3 +51,22 @@ test_that("give() works", {
   expect_type(df_names, "character")
   expect_equal(length(df_names), 20)
 })
+
+test_that("give() labels DPM proportion conditions", {
+  object <- list(
+    conditions = list(list(
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.2,
+      reliability = 1
+    )),
+    session = list(
+      model = "DPM",
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  expect_equal(names(give(object, "conditions"))[3], "AF_proportion")
+  expect_equal(names(give(object, "AF_proportion"))[3], "AF_proportion")
+})

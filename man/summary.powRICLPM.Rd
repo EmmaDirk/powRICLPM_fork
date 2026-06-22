@@ -11,6 +11,7 @@
   sample_size = NULL,
   time_points = NULL,
   intraclass_correlation = NULL,
+  AF_proportion = NULL,
   reliability = NULL,
   ICC = NULL
 )
@@ -27,6 +28,8 @@
 \item{time_points}{(optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.}
 
 \item{intraclass_correlation}{(optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.}
+
+\item{AF_proportion}{(optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.}
 
 \item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest.}
 

@@ -9,6 +9,7 @@
 #' @param sample_size (optional) An \code{integer}, denoting the sample size of the experimental condition of interest.
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
 #' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
+#' @param AF_proportion (optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.
 #' @param reliability (optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest.
 #' @param ICC Alternative name for \code{intraclass_correlation}.
 #'
@@ -60,6 +61,7 @@ summary.powRICLPM <- function(
     sample_size = NULL,
     time_points = NULL,
     intraclass_correlation = NULL,
+    AF_proportion = NULL,
     reliability = NULL,
     ICC = NULL
   ) {
@@ -67,6 +69,13 @@ summary.powRICLPM <- function(
   call_summary <- match.call()
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
+  }
+  if (!is.null(AF_proportion) &&
+      (!is.null(intraclass_correlation) || !is.null(ICC))) {
+    iabort_renamed_argument_conflict("AF_proportion", "intraclass_correlation/ICC")
+  }
+  if (!is.null(AF_proportion)) {
+    intraclass_correlation <- AF_proportion
   }
   if (!is.null(ICC)) {
     intraclass_correlation <- ICC

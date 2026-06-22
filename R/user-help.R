@@ -104,21 +104,26 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
   iwrite_lagged_effects_check(Phi, argument_name = argument_name)
 }
 
-#' Check Interpretation of Random-Intercept Loadings
+#' Check Interpretation of Factor Loadings
 #'
 #' Write a textual interpretation of the values in `loadings`. This can be used
 #' to check if time-varying random-intercept loadings have been correctly
-#' specified for lavaan data generation. Time-varying random-intercept loadings
-#' are not supported for Mplus.
+#' specified for lavaan data generation, or if accumulating-factor loadings have
+#' been correctly specified for the DPM. Time-varying loadings are not supported
+#' for Mplus.
 #'
 #' @param loadings A \code{numeric} vector or matrix specifying
 #'   random-intercept loadings in the lavaan data-generating model. A vector of
 #'   length \code{time_points} is applied to both variables. A matrix must have
 #'   two rows, one for each variable, and one column per time point. The first
 #'   loading must be 1, so later values are interpreted relative to the first
-#'   occasion.
+#'   occasion. For \code{model = "DPM"}, vectors or matrices specify waves 2
+#'   through T and may optionally include an explicit first-wave \code{NA}; the
+#'   wave-2 loading must be 1.
 #' @param time_points (optional) A single \code{integer} indicating the number
 #'   of time points. If omitted, this is inferred from \code{loadings}.
+#' @param model A \code{character} string, either \code{"RICLPM"} or
+#'   \code{"DPM"}, indicating how \code{loadings} should be interpreted.
 #' @param ... Additional arguments are not allowed.
 #'
 #' @return Invisibly returns \code{NULL}. The function is used for printing an
@@ -133,7 +138,8 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #' # Different random-intercept loadings for A and B
 #' loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)
 #' check_loadings(loadings2, time_points = 4)
-check_loadings <- function(loadings = NULL, time_points = NULL, ...) {
+check_loadings <- function(loadings = NULL, time_points = NULL, model = "RICLPM", ...) {
+  model <- icheck_model(model)
   dots <- list(...)
   if (length(dots) > 0) {
     dot_names <- names(dots)
@@ -164,36 +170,46 @@ check_loadings <- function(loadings = NULL, time_points = NULL, ...) {
   }
 
   if (missing(time_points) || is.null(time_points)) {
-    time_points <- iinfer_loadings_time_points(loadings)
+    time_points <- iinfer_loadings_time_points(loadings, model)
   }
 
   icheck_loadings(
     loadings,
     time_points,
     software = "lavaan",
-    constraints = "RI_loadings_free"
+    constraints = if (model == "DPM") "loadings_free" else "RI_loadings_free",
+    model = model
   )
-  iwrite_loadings_check(loadings, time_points)
+  iwrite_loadings_check(loadings, time_points, model)
   invisible(NULL)
 }
 
-iinfer_loadings_time_points <- function(loadings) {
+iinfer_loadings_time_points <- function(loadings, model = "RICLPM") {
   if (is.matrix(loadings)) {
+    if (model == "DPM" && !all(is.na(loadings[, 1]))) {
+      return(ncol(loadings) + 1L)
+    }
     return(ncol(loadings))
+  }
+  if (model == "DPM" && !is.na(loadings[1])) {
+    return(length(loadings) + 1L)
   }
   length(loadings)
 }
 
-iwrite_loadings_check <- function(loadings, time_points) {
-  loadings_matrix <- inormalize_loadings(loadings, time_points)
+iwrite_loadings_check <- function(loadings, time_points, model = "RICLPM") {
+  loadings_matrix <- inormalize_loadings(loadings, time_points, model)
   same_loadings <- identical(loadings_matrix[1, ], loadings_matrix[2, ])
+  factor_label <- if (model == "DPM") "accumulating-factor" else "random-intercept"
+  latent_names <- if (model == "DPM") c("AF_A", "AF_B") else c("RI_A", "RI_B")
+  waves <- if (model == "DPM") 2:time_points else seq_len(time_points)
 
   if (same_loadings) {
     loading_lines <- paste0(
-      "RI_A loads on A",
-      seq_len(time_points),
-      " and RI_B loads on B",
-      seq_len(time_points),
+      latent_names[1], " loads on A",
+      waves,
+      " and ", latent_names[2], " loads on B",
+      waves,
       " with ",
       loadings_matrix[1, ],
       "."
@@ -201,19 +217,19 @@ iwrite_loadings_check <- function(loadings, time_points) {
 
     writeLines(
       rlang::format_error_bullets(c(
-        "According to `loadings`, the random-intercept loadings in the data-generating model are:",
+        paste0("According to `loadings`, the ", factor_label, " loadings in the data-generating model are:"),
         stats::setNames(loading_lines, rep("*", length(loading_lines)))
       ))
     )
     return(invisible(NULL))
   }
 
-  A_lines <- paste0("RI_A loads on A", seq_len(time_points), " with ", loadings_matrix[1, ], ".")
-  B_lines <- paste0("RI_B loads on B", seq_len(time_points), " with ", loadings_matrix[2, ], ".")
+  A_lines <- paste0(latent_names[1], " loads on A", waves, " with ", loadings_matrix[1, ], ".")
+  B_lines <- paste0(latent_names[2], " loads on B", waves, " with ", loadings_matrix[2, ], ".")
 
   writeLines(
     rlang::format_error_bullets(c(
-      "According to `loadings`, the random-intercept loadings in the data-generating model are:",
+      paste0("According to `loadings`, the ", factor_label, " loadings in the data-generating model are:"),
       stats::setNames(A_lines, rep("*", length(A_lines)))
     ))
   )

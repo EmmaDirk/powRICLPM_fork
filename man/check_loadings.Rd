@@ -2,9 +2,9 @@
 % Please edit documentation in R/user-help.R
 \name{check_loadings}
 \alias{check_loadings}
-\title{Check Interpretation of Random-Intercept Loadings}
+\title{Check Interpretation of Factor Loadings}
 \usage{
-check_loadings(loadings = NULL, time_points = NULL, ...)
+check_loadings(loadings = NULL, time_points = NULL, model = "RICLPM", ...)
 }
 \arguments{
 \item{loadings}{A \code{numeric} vector or matrix specifying
@@ -12,10 +12,15 @@ random-intercept loadings in the lavaan data-generating model. A vector of
 length \code{time_points} is applied to both variables. A matrix must have
 two rows, one for each variable, and one column per time point. The first
 loading must be 1, so later values are interpreted relative to the first
-occasion.}
+occasion. For \code{model = "DPM"}, vectors or matrices specify waves 2
+through T and may optionally include an explicit first-wave \code{NA}; the
+wave-2 loading must be 1.}
 
 \item{time_points}{(optional) A single \code{integer} indicating the number
 of time points. If omitted, this is inferred from \code{loadings}.}
+
+\item{model}{A \code{character} string, either \code{"RICLPM"} or
+\code{"DPM"}, indicating how \code{loadings} should be interpreted.}
 
 \item{...}{Additional arguments are not allowed.}
 }
@@ -26,8 +31,9 @@ interpretation of \code{loadings}.
 \description{
 Write a textual interpretation of the values in \code{loadings}. This can be used
 to check if time-varying random-intercept loadings have been correctly
-specified for lavaan data generation. Time-varying random-intercept loadings
-are not supported for Mplus.
+specified for lavaan data generation, or if accumulating-factor loadings have
+been correctly specified for the DPM. Time-varying loadings are not supported
+for Mplus.
 }
 \examples{
 # Same random-intercept loadings for A and B

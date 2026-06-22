@@ -81,6 +81,89 @@ icheck_T <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env
   }
 }
 
+#' Check \code{model} Argument
+#'
+#' @noRd
+icheck_model <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (!is.character(x) || length(x) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a character string of length 1:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!x %in% c("RICLPM", "DPM")) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be either 'RICLPM' or 'DPM':",
+        x = paste0("Your {.arg {arg}} is '", x, "'.")
+      ),
+      call = call
+    )
+  }
+  x
+}
+
+#' Check \code{time_points} Argument for Model
+#'
+#' @noRd
+icheck_T_model <- function(x, ME, model,
+                           arg = rlang::caller_arg(x),
+                           call = rlang::caller_env()) {
+  if (model == "DPM") {
+    if (!all(is.numeric(x))) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must be a vector of integers:",
+          x = "Not all elements are numeric."
+        ),
+        call = call
+      )
+    }
+    if (!all(is.finite(x))) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must be a vector of finite integers:",
+          x = "Some elements are `NA`, `NaN`, `Inf`, or `-Inf`."
+        ),
+        call = call
+      )
+    }
+    if (!all(x %% 1 == 0)) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must be a vector of integers:",
+          x = "Not all elements are integers."
+        ),
+        call = call
+      )
+    }
+    if (any(x < 2)) {
+      cli::cli_abort(
+        c(
+          "Elements in {.arg {arg}} should be larger than 1:",
+          i = "The DPM needs at least 2 time points.",
+          x = "You've supplied a number of time points smaller than 2."
+        ),
+        call = call
+      )
+    }
+    if (any(x > 15)) {
+      cli::cli_warn(
+        c(
+          "You've supplied a large number of time points:",
+          i = "This can lead to computational problems in estimation. You might want to consider methods for intensive longitudinal data."
+        )
+      )
+    }
+    return(invisible(NULL))
+  }
+
+  icheck_T(x, ME, arg = arg, call = call)
+}
+
 #' Check \code{ICC} Argument
 #'
 #' \code{icheck_ICC()} checks if the \code{ICC} argument represents (a) valid intraclass correlation(s).
@@ -111,6 +194,72 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       )
     )
   }
+}
+
+icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
+                                     constraints, bounds, call = rlang::caller_env()) {
+  if (model != "DPM") {
+    return(invisible(NULL))
+  }
+  if (software != "lavaan") {
+    cli::cli_abort(
+      c(
+        "The DPM is currently only available with `software = 'lavaan'`:",
+        x = paste0("You supplied software = '", software, "'.")
+      ),
+      call = call
+    )
+  }
+  if (!(length(reliability) == 1L && is.numeric(reliability) && reliability == 1)) {
+    cli::cli_abort(
+      c(
+        "{.arg reliability} cannot be used with `model = 'DPM'`:",
+        i = "The DPM does not separate measurement error in this implementation.",
+        x = paste0("You supplied reliability = ", format_reliability(reliability), ".")
+      ),
+      call = call
+    )
+  }
+  if (isTRUE(estimate_ME)) {
+    cli::cli_abort(
+      c(
+        "{.arg estimate_ME} cannot be used with `model = 'DPM'`:",
+        i = "The DPM does not separate measurement error in this implementation."
+      ),
+      call = call
+    )
+  }
+  if (isTRUE(bounds)) {
+    cli::cli_abort(
+      c(
+        "{.arg bounds} cannot be used with `model = 'DPM'` yet:",
+        i = "Bounded DPM estimation needs separate validation and is disabled in this first implementation."
+      ),
+      call = call
+    )
+  }
+
+  constraints <- normalize_constraints(constraints)
+  if (has_constraint(constraints, "ME")) {
+    cli::cli_abort(
+      c(
+        "`constraints = 'ME'` cannot be used with `model = 'DPM'`:",
+        i = "The DPM does not separate measurement error in this implementation."
+      ),
+      call = call
+    )
+  }
+  if ("within" %in% constraints) {
+    cli::cli_abort(
+      c(
+        "`constraints = 'within'` cannot be used with `model = 'DPM'`:",
+        i = "Use `constraints = c('lagged', 'residuals')` if you want both DPM lagged effects and observed-level residuals constrained over time."
+      ),
+      call = call
+    )
+  }
+
+  invisible(NULL)
 }
 
 #' Check Correlation Arguments
@@ -383,6 +532,7 @@ ireliability_condition_value <- function(reliability) {
 #'
 #' @noRd
 icheck_loadings <- function(x, time_points, software, constraints = "none",
+                            model = "RICLPM",
                             arg = rlang::caller_arg(x),
                             t_arg = rlang::caller_arg(time_points),
                             con_arg = rlang::caller_arg(constraints),
@@ -426,6 +576,11 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
     )
   }
   time_points <- as.integer(time_points)
+
+  if (model == "DPM") {
+    icheck_DPM_loadings(x, time_points, constraints, arg, t_arg, con_arg, call)
+    return(invisible(NULL))
+  }
 
   is_numeric_vector <- is.numeric(x) && is.null(dim(x))
   is_numeric_matrix <- is.numeric(x) && is.matrix(x)
@@ -509,7 +664,7 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       call = call
     )
   }
-  if (!has_constraint(constraints, "RI_loadings_free")) {
+  if (!has_constraint(constraints, "loadings_free")) {
     cli::cli_abort(
       c(
         "{.arg {arg}} can only be used when random-intercept loadings are freely estimated:",
@@ -522,7 +677,136 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
   invisible(NULL)
 }
 
-inormalize_loadings <- function(loadings, time_points) {
+icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg, call) {
+  is_numeric_vector <- is.numeric(x) && is.null(dim(x))
+  is_numeric_matrix <- is.numeric(x) && is.matrix(x)
+  if (!is_numeric_vector && !is_numeric_matrix) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a numeric vector or numeric matrix:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (is_numeric_vector && length(x) == 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain at least one value:",
+        x = paste0("Your {.arg {arg}} has length 0.")
+      ),
+      call = call
+    )
+  }
+  if (!all(is.finite(x) | is.na(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite values, except for an optional first-wave NA:",
+        x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
+      ),
+      call = call
+    )
+  }
+
+  expected <- time_points - 1L
+  if (is.matrix(x)) {
+    if (nrow(x) != 2L) {
+      row_label <- if (nrow(x) == 1L) "row" else "rows"
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have 2 rows:",
+          i = "Rows correspond to the accumulating factors for variables A and B.",
+          x = paste0("Your {.arg {arg}} has ", nrow(x), " ", row_label, ".")
+        ),
+        call = call
+      )
+    }
+    if (ncol(x) == time_points) {
+      if (!all(is.na(x[, 1]))) {
+        cli::cli_abort(
+          c(
+            "The first DPM loading column must be `NA` when one column per wave is supplied:",
+            i = "Accumulating factors load on waves 2 through T, not on wave 1."
+          ),
+          call = call
+        )
+      }
+      x <- x[, -1, drop = FALSE]
+    } else if (ncol(x) != expected) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one column for waves 2 through T:",
+          i = "A matrix can also include one explicit first-wave `NA` column.",
+          x = paste0(
+            "Your {.arg {arg}} has ", ncol(x),
+            " columns, but {.arg {t_arg}} = ", time_points, "."
+          )
+        ),
+        call = call
+      )
+    }
+    first_loadings <- x[, 1]
+  } else {
+    if (length(x) == time_points) {
+      if (!is.na(x[1])) {
+        cli::cli_abort(
+          c(
+            "The first DPM loading must be `NA` when one value per wave is supplied:",
+            i = "Accumulating factors load on waves 2 through T, not on wave 1."
+          ),
+          call = call
+        )
+      }
+      x <- x[-1]
+    } else if (length(x) != expected) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one value for waves 2 through T:",
+          i = "A vector can also include an explicit first-wave `NA`.",
+          x = paste0("Your {.arg {arg}} has length ", length(x),
+                     ", but {.arg {t_arg}} = ", time_points, ".")
+        ),
+        call = call
+      )
+    }
+    first_loadings <- x[1]
+  }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite values after the optional first-wave NA:",
+        x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!all(first_loadings == 1)) {
+    cli::cli_abort(
+      c(
+        "The first DPM accumulating-factor loading must be 1:",
+        i = "This is the wave-2 loading, because accumulating factors do not load on wave 1.",
+        x = paste0("The first usable loading is ", paste(first_loadings, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+  if (!has_constraint(constraints, "loadings_free")) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} can only be used when accumulating-factor loadings are freely estimated:",
+        i = "Use `constraints = 'loadings_free'` or include `'loadings_free'` in a constraint vector.",
+        x = paste0("You supplied {.arg {arg}}, but {.arg {con_arg}} = ", format_constraints(constraints), ".")
+      ),
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
+inormalize_loadings <- function(loadings, time_points, model = "RICLPM") {
+  if (model == "DPM") {
+    return(inormalize_DPM_loadings(loadings, time_points))
+  }
   if (is.null(loadings)) {
     return(matrix(1, nrow = 2, ncol = time_points))
   }
@@ -530,6 +814,22 @@ inormalize_loadings <- function(loadings, time_points) {
     return(loadings)
   }
   rbind(loadings, loadings)
+}
+
+inormalize_DPM_loadings <- function(loadings, time_points) {
+  if (is.null(loadings)) {
+    return(matrix(1, nrow = 2, ncol = time_points - 1L))
+  }
+  if (is.matrix(loadings)) {
+    if (ncol(loadings) == time_points) {
+      return(unname(loadings[, -1, drop = FALSE]))
+    }
+    return(unname(loadings))
+  }
+  if (length(loadings) == time_points) {
+    loadings <- loadings[-1]
+  }
+  unname(rbind(loadings, loadings))
 }
 
 format_object_type <- function(x) {
@@ -717,7 +1017,7 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
 
   valid_constraints <- c(
     "none", "lagged", "residuals", "within", "stationarity", "ME",
-    "RI_loadings_free"
+    "RI_loadings_free", "loadings_free"
   )
   if (!all(x %in% valid_constraints)) {
     cli::cli_abort(
@@ -856,7 +1156,8 @@ icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
 #' \code{icheck_N()} checks if the \code{sample_size} argument represents valid sample size(s) given the specified constraints, number of time points, and estimation of measurement error.
 #'
 #' @noRd
-icheck_N <- function(x, t, constraints = "none", ME = FALSE, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+icheck_N <- function(x, t, constraints = "none", ME = FALSE, model = "RICLPM",
+                     arg = rlang::caller_arg(x), call = rlang::caller_env()) {
   if (!all(is.numeric(x))) {
     cli::cli_abort(
       c(
@@ -881,7 +1182,7 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, arg = rlang::caller
       )
     )
   }
-  n_parameters <- count_parameters(2, t, constraints, ME)
+  n_parameters <- count_parameters(2, t, constraints, ME, model = model)
   if (!all(x > n_parameters)) {
     cli::cli_abort(
       c(
@@ -988,7 +1289,7 @@ icheck_bounds <- function(bounds, constraints, software,
   }
   constraints_for_bounds <- setdiff(
     normalize_constraints(constraints),
-    c("none", "RI_loadings_free")
+    c("none", "RI_loadings_free", "loadings_free")
   )
   if (bounds && length(constraints_for_bounds) > 0) {
     cli::cli_abort(
@@ -1010,7 +1311,7 @@ icheck_bounds <- function(bounds, constraints, software,
 
 icheck_constraints_software <- function(constraints, software) {
   constraints <- normalize_constraints(constraints)
-  if (software == "Mplus" && has_constraint(constraints, "RI_loadings_free")) {
+  if (software == "Mplus" && has_constraint(constraints, "loadings_free")) {
     cli::cli_abort(
       c(
         "Free random-intercept loadings are not available for Mplus:",
@@ -1061,6 +1362,9 @@ normalize_constraints_for_software <- function(constraints, software) {
 
 has_constraint <- function(constraints, constraint) {
   constraints <- normalize_constraints(constraints)
+  if (constraint == "loadings_free") {
+    return(any(constraints %in% c("loadings_free", "RI_loadings_free")))
+  }
   if (constraint == "lagged") {
     return(any(constraints %in% c("lagged", "within", "stationarity")))
   }
@@ -1161,6 +1465,9 @@ normalize_intraclass_correlation_value <- function(x) {
   if (identical(x, "ICC")) {
     return("intraclass_correlation")
   }
+  if (identical(x, "AF_proportion")) {
+    return("intraclass_correlation")
+  }
   x
 }
 
@@ -1197,6 +1504,9 @@ iargument_display_name <- function(object = NULL, call = NULL, primary, alternat
 
 
 iicc_value_name <- function(object = NULL, call = NULL) {
+  if (!is.null(object) && identical(object$session$model, "DPM")) {
+    return("AF_proportion")
+  }
   iargument_display_name(
     object = object,
     call = call,
@@ -1207,6 +1517,9 @@ iicc_value_name <- function(object = NULL, call = NULL) {
 
 
 iicc_table_name <- function(object = NULL, call = NULL) {
+  if (!is.null(object) && identical(object$session$model, "DPM")) {
+    return("AF proportion")
+  }
   if (identical(iicc_value_name(object = object, call = call), "ICC")) {
     return("ICC")
   }
