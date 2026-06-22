@@ -304,6 +304,58 @@ icheck_rel <- function(x, time_points = NULL, software = "lavaan",
   invisible(NULL)
 }
 
+icheck_reliability_matrix_call <- function(expr, env, arg = "reliability", call = rlang::caller_env()) {
+  if (!is.call(expr) || !identical(as.character(expr[[1]]), "matrix")) {
+    return(invisible(NULL))
+  }
+
+  args <- as.list(expr)[-1]
+  arg_names <- names(args)
+  if (is.null(arg_names)) {
+    arg_names <- rep("", length(args))
+  }
+
+  data_expr <- if ("data" %in% arg_names) {
+    args[[which(arg_names == "data")[1]]]
+  } else if (length(args) >= 1L) {
+    args[[1]]
+  } else {
+    NULL
+  }
+  nrow_expr <- if ("nrow" %in% arg_names) {
+    args[[which(arg_names == "nrow")[1]]]
+  } else if (length(args) >= 2L && arg_names[2] == "") {
+    args[[2]]
+  } else {
+    NULL
+  }
+
+  if (is.null(data_expr) || is.null(nrow_expr)) {
+    return(invisible(NULL))
+  }
+
+  data <- tryCatch(eval(data_expr, env), error = function(e) NULL)
+  nrow <- tryCatch(eval(nrow_expr, env), error = function(e) NULL)
+  if (is.null(data) || is.null(nrow) || length(nrow) != 1L || !is.numeric(nrow) ||
+      is.na(nrow) || !is.finite(nrow) || nrow <= 0) {
+    return(invisible(NULL))
+  }
+
+  if (length(data) %% nrow != 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} appears to be created from rows with different lengths:",
+        x = paste0("The data supplied to {.fn matrix} has length ", length(data),
+                   ", which cannot be split evenly over ", nrow, " rows."),
+        i = "Give both variables the same number of reliability values before creating the matrix."
+      ),
+      call = call
+    )
+  }
+
+  invisible(NULL)
+}
+
 inormalize_reliability <- function(reliability, time_points) {
   if (is.matrix(reliability)) {
     return(unname(reliability))
@@ -321,7 +373,7 @@ ireliability_condition_value <- function(reliability) {
   if (length(unique(c(reliability))) == 1L) {
     return(unique(c(reliability)))
   }
-  "structured"
+  "time-varying"
 }
 
 #' Check \code{loadings} Argument

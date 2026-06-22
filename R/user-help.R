@@ -5,7 +5,8 @@
 #' @inheritParams powRICLPM
 #' @param ... Additional arguments are not allowed.
 #'
-#' @return No return value, called for side effects.
+#' @return Invisibly returns \code{NULL}. The function is used for printing an
+#'   interpretation of \code{lagged_effects}.
 #' @export
 #'
 #' @examples
@@ -107,7 +108,8 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #'
 #' Write a textual interpretation of the values in `loadings`. This can be used
 #' to check if time-varying random-intercept loadings have been correctly
-#' specified for lavaan data generation.
+#' specified for lavaan data generation. Time-varying random-intercept loadings
+#' are not supported for Mplus.
 #'
 #' @param loadings A \code{numeric} vector or matrix specifying
 #'   random-intercept loadings in the lavaan data-generating model. A vector of
@@ -119,7 +121,8 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #'   of time points. If omitted, this is inferred from \code{loadings}.
 #' @param ... Additional arguments are not allowed.
 #'
-#' @return No return value, called for side effects.
+#' @return Invisibly returns \code{NULL}. The function is used for printing an
+#'   interpretation of \code{loadings}.
 #' @export
 #'
 #' @examples
@@ -225,7 +228,8 @@ iwrite_loadings_check <- function(loadings, time_points) {
 #'
 #' Write a textual interpretation of the values in `reliability`. This can be
 #' used to check if time-varying reliabilities have been correctly specified for
-#' lavaan data generation.
+#' lavaan data generation. Vector and matrix reliability specifications are not
+#' supported for Mplus.
 #'
 #' @param reliability A \code{numeric} value, vector, or matrix specifying
 #'   reliability in the lavaan data-generating model. A single value is applied
@@ -237,7 +241,8 @@ iwrite_loadings_check <- function(loadings, time_points) {
 #'   \code{reliability} is a vector or matrix.
 #' @param ... Additional arguments are not allowed.
 #'
-#' @return No return value, called for side effects.
+#' @return Invisibly returns \code{NULL}. The function is used for printing an
+#'   interpretation of \code{reliability}.
 #' @export
 #'
 #' @examples
@@ -249,6 +254,8 @@ iwrite_loadings_check <- function(loadings, time_points) {
 #' reliability2 <- matrix(c(.8, .8, .8, .8, .7, .75, .8, .85), nrow = 2, byrow = TRUE)
 #' check_reliability(reliability2, time_points = 4)
 check_reliability <- function(reliability = NULL, time_points = NULL, ...) {
+  reliability_expr <- substitute(reliability)
+  time_points_missing <- missing(time_points)
   dots <- list(...)
   if (length(dots) > 0) {
     dot_names <- names(dots)
@@ -270,7 +277,16 @@ check_reliability <- function(reliability = NULL, time_points = NULL, ...) {
     )
   }
 
+  icheck_reliability_matrix_call(
+    expr = reliability_expr,
+    env = parent.frame(),
+    call = rlang::caller_env()
+  )
+
   if (missing(time_points) || is.null(time_points)) {
+    if (!time_points_missing && is.null(time_points)) {
+      cli::cli_alert_info("`time_points = NULL` was supplied, so the number of time points is inferred from `reliability`. You can omit `time_points` for the same behavior.")
+    }
     time_points <- iinfer_reliability_time_points(reliability)
   }
 

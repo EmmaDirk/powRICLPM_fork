@@ -40,6 +40,8 @@ Compatible options can be combined in a character vector. For example, `constrai
 ## Time-varying random-intercept loadings
 By default, all random-intercept loadings in the `lavaan` data-generating model are fixed to 1. In some applications, researchers may want to generate data where the random intercepts load differently across waves. Researchers can specify these time-varying loadings by passing a vector or a matrix to the `loadings` argument.
 
+With all random-intercept loadings fixed to 1, `intraclass_correlation` can be interpreted as the proportion of true score variance at the between-unit level at every wave. This interpretation changes when time-varying random-intercept loadings are used. Because the first loading is fixed to 1, `intraclass_correlation` is still the ICC at the first wave. Later loadings can then be interpreted relative to those first-wave between-unit differences. For example, a loading of `.9` at the second wave means that the between-unit differences are `.9` times as large on the score scale at that wave. On the variance scale, this contributes `.9^2 = .81` times the first-wave random-intercept variance, so the supplied value is no longer a wave-invariant ICC.
+
 When a vector is passed, the same loading pattern is used for the random intercept of A and the random intercept of B. The first loading must always be 1:
 
 ```{r loading-vector}

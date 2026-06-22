@@ -136,7 +136,7 @@ icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_
   if (length(reliability) > 1) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a single number:",
+        "{.arg {arg}} must be a single reliability value or label:",
         "x" = "Your {.arg {arg}} is of length {length(reliability)}."
       ),
       call = call

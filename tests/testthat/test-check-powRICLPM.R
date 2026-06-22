@@ -178,6 +178,10 @@ test_that("check_reliability() writes reliability interpretation", {
 
   expect_error(check_reliability(), "must be supplied")
   expect_error(check_reliability(reliability_vector, time_points = 3), "length 4.*time_points.*= 3")
+  suppressWarnings(expect_error(
+    check_reliability(matrix(c(0.8, 0.7, 0.9, 0.85, 0.75), nrow = 2, byrow = TRUE), time_points = 3),
+    "rows with different lengths"
+  ))
   expect_error(check_reliability(list(c(0.8, 0.7, 1))), "numeric vector.*numeric matrix.*list")
   expect_error(check_reliability(data.frame(a = c(0.8, 0.7, 1))), "numeric vector.*numeric matrix.*data frame")
   expect_error(check_reliability(array(c(0.8, 0.7, 1, 0.9), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
@@ -781,7 +785,7 @@ test_that("reliability updates lavaan measurement-error syntax", {
   )
   condition_vector <- conditions_vector[[1]]
   expected_vector_ME <- matrix(c(0.5, 6 / 7, 0, 0.5, 6 / 7, 0), nrow = 2, byrow = TRUE)
-  expect_equal(condition_vector$reliability, "structured")
+  expect_equal(condition_vector$reliability, "time-varying")
   expect_equal(condition_vector$reliability_matrix, matrix(c(0.8, 0.7, 1, 0.8, 0.7, 1), nrow = 2, byrow = TRUE))
   expect_equal(condition_vector$ME_var, expected_vector_ME)
   expect_true(grepl("A2~~0.857142857142857*A2", condition_vector$pop_synt, fixed = TRUE))
@@ -818,7 +822,7 @@ test_that("reliability updates lavaan measurement-error syntax", {
   expected_matrix_ME <- ((1 - reliability_matrix) * 2) / reliability_matrix
   expected_A_start <- mean(expected_matrix_ME[1, ])
   expected_B_start <- mean(expected_matrix_ME[2, ])
-  expect_equal(condition_matrix$reliability, "structured")
+  expect_equal(condition_matrix$reliability, "time-varying")
   expect_equal(condition_matrix$reliability_matrix, reliability_matrix)
   expect_equal(condition_matrix$ME_var, expected_matrix_ME)
   expect_true(grepl("A2~~0.857142857142857*A2", condition_matrix$pop_synt, fixed = TRUE))

@@ -61,7 +61,7 @@ test_that("summary.powRICLPM labels intraclass correlation from the selected arg
   expect_equal(colnames(table_parameter)[3], "Intraclass correlation")
 })
 
-test_that("summary.powRICLPM handles structured reliability condition labels", {
+test_that("summary.powRICLPM handles time-varying reliability condition labels", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   out <- powRICLPM(
     target_power = 0.8,
@@ -76,7 +76,7 @@ test_that("summary.powRICLPM handles structured reliability condition labels", {
     seed = 1234
   )
 
-  expect_equal(give(out, "conditions")$reliability, "structured")
+  expect_equal(give(out, "conditions")$reliability, "time-varying")
 
   table_condition <- summary(
     out,

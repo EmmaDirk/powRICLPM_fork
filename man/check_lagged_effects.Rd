@@ -17,7 +17,8 @@ check_Phi(lagged_effects = NULL, Phi = NULL)
 \item{...}{Additional arguments are not allowed.}
 }
 \value{
-No return value, called for side effects.
+Invisibly returns \code{NULL}. The function is used for printing an
+interpretation of \code{lagged_effects}.
 }
 \description{
 Write a textual interpretation of the values in \code{lagged_effects}. This can be used to check if \code{lagged_effects} has been correctly specified.

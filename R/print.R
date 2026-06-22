@@ -38,6 +38,7 @@ print.powRICLPM <- function(x, ...) {
       col.names = c("Condition", "Sample size", "Time points", icc_table_label, "Reliability")
     )
   )
+  iprint_reliability_tables(x$conditions)
 }
 
 

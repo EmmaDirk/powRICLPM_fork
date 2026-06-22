@@ -548,7 +548,7 @@ test_that("time-varying reliability lavaan paths run", {
     )
   )
 
-  expect_equal(out_vector$conditions[[1]]$reliability, "structured")
+  expect_equal(out_vector$conditions[[1]]$reliability, "time-varying")
   expect_true(grepl("A2~~0.857142857142857*A2", out_vector$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_true(grepl("B3~~0*B3", out_vector$conditions[[1]]$pop_synt, fixed = TRUE))
 
@@ -569,7 +569,7 @@ test_that("time-varying reliability lavaan paths run", {
     )
   )
 
-  expect_equal(out_matrix$conditions[[1]]$reliability, "structured")
+  expect_equal(out_matrix$conditions[[1]]$reliability, "time-varying")
   expect_true(grepl("A2~~0.857142857142857*A2", out_matrix$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_true(grepl("B2~~0.352941176470588*B2", out_matrix$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_true(grepl("A2~~start(0.857142857142857)*A2", out_matrix$conditions[[1]]$est_synt, fixed = TRUE))

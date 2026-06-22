@@ -9,7 +9,7 @@
 #' @param search_step A positive \code{integer}, denoting an increment in sample size.
 #' @param sample_size (optional) An \code{integer} (vector), indicating specific sample sizes at which to evaluate power, rather than specifying a range using the \code{search_*} arguments.
 #' @param time_points An \code{integer} (vector) with elements at least larger than 3, indicating number of time points.
-#' @param intraclass_correlation A \code{double} (vector) with elements between 0 and 1, denoting the proportion of (true score) variance at the between-unit level. When measurement error is included in the data generating model, the intraclass correlation is computed as the variance of the random intercept factor divided by the true score variance (i.e., controlled for measurement error).
+#' @param intraclass_correlation A \code{double} (vector) with elements between 0 and 1, denoting the proportion of (true score) variance at the between-unit level. When measurement error is included in the data generating model, the intraclass correlation is computed as the variance of the random intercept factor divided by the true score variance (i.e., controlled for measurement error). When time-varying random-intercept loadings are supplied through \code{loadings}, this value remains the ICC at the first wave because the first loading is fixed to 1. Later loadings are interpreted relative to those first-wave between-unit differences: for example, a loading of 0.9 means the between-unit differences are 0.9 times as large on the score scale, and contribute \eqn{0.9^2} times the first-wave random-intercept variance.
 #' @param RI_cor A \code{double} between 0 and 1, denoting the correlation between random intercepts.
 #' @param lagged_effects A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.
 #' @param within_cor A \code{double} between 0 and 1, denoting the correlation between the within-unit components.
@@ -33,7 +33,7 @@
 #'
 #' @details A rationale for the power analysis strategy implemented in this package can be found in Mulder (2023).
 #'
-#' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"} so that the estimation model also frees the corresponding random-intercept loadings.}
+#' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"} so that the estimation model also frees the corresponding random-intercept loadings. With time-varying loadings, \code{intraclass_correlation} still gives the ICC at the first wave because the first loading is fixed to 1. Later loadings describe how strongly those first-wave between-unit differences carry into each later wave; for example, a loading of 0.9 means the between-unit differences are 0.9 times as large on the score scale, and contribute \eqn{0.9^2} times the first-wave random-intercept variance. Consequently, the supplied value is not a wave-invariant ICC.}
 #'
 #' \subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. With the default \code{estimator = NA}, the estimator is maximum likelihood (\code{ML}) for normally generated data and robust maximum likelihood (\code{MLR}) when skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. The population parameter values are used as starting values.
 #'
@@ -158,6 +158,7 @@ powRICLPM <- function(
 
   # Get call
   call_powRICLPM <- match.call()
+  reliability_expr <- call_powRICLPM$reliability
 
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
@@ -208,6 +209,13 @@ powRICLPM <- function(
   estimator <- icheck_estimator(estimator, skewness, kurtosis)
   save_path <- icheck_path(save_path, software)
   icheck_software(software, skewness, kurtosis)
+  if (!is.null(reliability_expr)) {
+    icheck_reliability_matrix_call(
+      expr = reliability_expr,
+      env = parent.frame(),
+      call = rlang::caller_env()
+    )
+  }
   icheck_rel(reliability, time_points, software)
   icheck_loadings(loadings, time_points, software, constraints)
   icheck_constraints_software(constraints, software)

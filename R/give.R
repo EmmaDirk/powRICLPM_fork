@@ -10,7 +10,7 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation, and reliability. Structured reliability specifications are shown with a compact label.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation, and reliability. Time-varying reliability specifications are shown with a compact label.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, or \code{reliability}: The same conditions \code{data.frame}.
 #'   \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
 #'   \item \code{results}: The average estimate (\code{average}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
@@ -79,6 +79,41 @@ give_powRICLPM_conditions <- function(object) {
   return(d)
 }
 
+ireliability_is_time_varying <- function(condition) {
+  !is.null(condition$reliability_matrix) &&
+    length(unique(c(condition$reliability_matrix))) > 1L
+}
+
+ireliability_table <- function(condition) {
+  d <- data.frame(
+    Variable = c("A", "B"),
+    condition$reliability_matrix,
+    check.names = FALSE
+  )
+  colnames(d) <- c("Variable", paste0("Occ ", seq_len(ncol(condition$reliability_matrix))))
+  d
+}
+
+iprint_reliability_tables <- function(conditions) {
+  time_varying <- which(vapply(conditions, ireliability_is_time_varying, logical(1)))
+  if (length(time_varying) == 0L) {
+    return(invisible(NULL))
+  }
+
+  cat("\nReliability specification for time-varying condition(s):\n")
+  for (condition_index in time_varying) {
+    cat("\nCondition ", condition_index, ":\n", sep = "")
+    print(
+      knitr::kable(
+        ireliability_table(conditions[[condition_index]]),
+        format = "simple",
+        align = c("l", rep("r", conditions[[condition_index]]$time_points))
+      )
+    )
+  }
+  invisible(NULL)
+}
+
 give_powRICLPM_estimation_problems <- function(object) {
 
   # Combine sample sizes and simulated power across conditions
@@ -98,12 +133,30 @@ give_powRICLPM_estimation_problems <- function(object) {
 }
 
 give_powRICLPM_results <- function(object, parameter = NULL) {
+  if (is.null(parameter)) {
+    cli::cli_abort(
+      c(
+        "No {.arg parameter} was specified:",
+        i = "{.code give(object, 'results')} needs to know which parameter to extract.",
+        i = "Use {.code give(object, 'names')} to see available parameter names."
+      )
+    )
+  }
 
   # Combine simulation results across experimental conditions
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
 
     # Extract and round estimates per condition
     estimates <- condition$estimates[condition$estimates$parameter == parameter, -1]
+    if (nrow(estimates) == 0L) {
+      cli::cli_abort(
+        c(
+          "The requested {.arg parameter} was not found:",
+          x = paste0("No results are available for parameter `", parameter, "`."),
+          i = "Use {.code give(object, 'names')} to see available parameter names."
+        )
+      )
+    }
     estimates <- round(estimates, digits = 3)
 
     # Combine extracted info in data frame

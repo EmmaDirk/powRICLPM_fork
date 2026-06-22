@@ -20,12 +20,14 @@ of time points. If omitted, this is inferred from \code{loadings}.}
 \item{...}{Additional arguments are not allowed.}
 }
 \value{
-No return value, called for side effects.
+Invisibly returns \code{NULL}. The function is used for printing an
+interpretation of \code{loadings}.
 }
 \description{
 Write a textual interpretation of the values in \code{loadings}. This can be used
 to check if time-varying random-intercept loadings have been correctly
-specified for lavaan data generation.
+specified for lavaan data generation. Time-varying random-intercept loadings
+are not supported for Mplus.
 }
 \examples{
 # Same random-intercept loadings for A and B

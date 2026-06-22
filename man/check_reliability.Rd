@@ -20,12 +20,14 @@ of time points. If omitted, this is inferred from \code{reliability} when
 \item{...}{Additional arguments are not allowed.}
 }
 \value{
-No return value, called for side effects.
+Invisibly returns \code{NULL}. The function is used for printing an
+interpretation of \code{reliability}.
 }
 \description{
 Write a textual interpretation of the values in \code{reliability}. This can be
 used to check if time-varying reliabilities have been correctly specified for
-lavaan data generation.
+lavaan data generation. Vector and matrix reliability specifications are not
+supported for Mplus.
 }
 \examples{
 # Same reliability for A and B over time

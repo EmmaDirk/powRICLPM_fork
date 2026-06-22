@@ -164,6 +164,7 @@ summary.powRICLPM <- function(
     colnames(replications_df) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Error", "Not converged", "Inadmissible")
     version <- utils::packageVersion("powRICLPM")
     print.summary.powRICLPM(replications_df, powRICLPM_version = version)
+    iprint_reliability_tables(object$conditions)
   }
 }
 
