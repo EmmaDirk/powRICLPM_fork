@@ -20,6 +20,14 @@ test_that("icheck_model() and DPM time-points work", {
   expect_null(icheck_T_model(2, ME = FALSE, model = "DPM"))
   expect_error(icheck_T_model(2, ME = FALSE, model = "RICLPM"), "RI-CLPM")
   expect_error(icheck_model("CLPM"), "RICLPM.*DPM")
+  expect_error(icheck_model("dpm"), "RICLPM.*DPM.*dpm")
+  expect_error(icheck_model(c("RICLPM", "DPM")), "length 1")
+  expect_error(icheck_model(NA_character_), "RICLPM.*DPM.*NA")
+  expect_error(icheck_model(TRUE), "character string")
+  expect_error(icheck_T_model("4", ME = FALSE, model = "DPM"), "integers")
+  expect_error(icheck_T_model(NA_real_, ME = FALSE, model = "DPM"), "finite")
+  expect_error(icheck_T_model(2.5, ME = FALSE, model = "DPM"), "integers")
+  expect_error(icheck_T_model(1, ME = FALSE, model = "DPM"), "larger than 1")
 })
 
 test_that("icheck_ICC() works", {
@@ -44,6 +52,8 @@ test_that("icheck_lagged_effects() works", {
 
   expect_null(icheck_lagged_effects(m1))
   expect_error(icheck_lagged_effects("m1"))
+  expect_error(icheck_lagged_effects(data.frame(A = c(.3, .2), B = c(.15, .2))), "matrix")
+  expect_error(icheck_lagged_effects(c(.3, .2, .15, .2)), "matrix")
   expect_error(icheck_lagged_effects(m2))
 })
 
@@ -155,13 +165,47 @@ test_that("check_loadings() writes loading interpretation", {
 })
 
 test_that("check_loadings() writes DPM loading interpretation", {
-  expect_output(
-    check_loadings(c(1, 0.8), model = "DPM"),
-    "AF_A loads on A2 and AF_B loads on B2 with 1"
+  loading_matrix <- matrix(
+    c(NA, 1, 0.8, 1.1, NA, 1, 1.2, 0.9),
+    nrow = 2,
+    byrow = TRUE
   )
+
   expect_output(
     check_loadings(c(NA, 1, 0.8), model = "DPM"),
     "AF_A loads on A3 and AF_B loads on B3 with 0.8"
+  )
+  expect_output(
+    check_loadings(loading_matrix, model = "DPM"),
+    "AF_B loads on B4 with 0.9"
+  )
+  expect_output(
+    check_loadings(loading_matrix, time_points = 4, model = "DPM"),
+    "AF_A loads on A4 with 1.1"
+  )
+  expect_error(
+    check_loadings(c(1, 0.8), model = "DPM"),
+    "first DPM loading must be `NA`"
+  )
+  expect_error(
+    check_loadings(c(NA, 0.8, 1), model = "DPM"),
+    "second DPM loading must be 1"
+  )
+  expect_error(
+    check_loadings(c(NA, 1, Inf), model = "DPM"),
+    "finite values after the required first-wave NA"
+  )
+  expect_error(
+    check_loadings(c(NA, 1, 0.8), time_points = 4, model = "DPM"),
+    "one value per time point"
+  )
+  expect_error(
+    check_loadings(matrix(c(NA, 1, 0.8, 1, NA, 1, 0.8, 1), nrow = 2, byrow = TRUE), time_points = 3, model = "DPM"),
+    "one column per time point"
+  )
+  expect_error(
+    check_loadings(loading_matrix, model = "dpm"),
+    "RICLPM.*DPM.*dpm"
   )
 })
 
@@ -309,7 +353,6 @@ test_that("icheck_loadings() works", {
 })
 
 test_that("icheck_loadings() supports DPM loading specifications", {
-  expect_null(icheck_loadings(c(1, .8), 3, "lavaan", "loadings_free", model = "DPM"))
   expect_null(icheck_loadings(c(NA, 1, .8), 3, "lavaan", "loadings_free", model = "DPM"))
   expect_null(icheck_loadings(
     matrix(c(NA, 1, .8, NA, 1, 1.2), nrow = 2, byrow = TRUE),
@@ -321,15 +364,51 @@ test_that("icheck_loadings() supports DPM loading specifications", {
 
   expect_error(
     icheck_loadings(c(.8, 1), 3, "lavaan", "loadings_free", model = "DPM"),
-    "wave-2 loading"
+    "one value per time point.*first value must be `NA`"
   )
   expect_error(
-    icheck_loadings(c(1, .8), 3, "lavaan", "none", model = "DPM"),
+    icheck_loadings(c(NA, 1, .8), 3, "lavaan", "none", model = "DPM"),
     "loadings_free"
   )
   expect_error(
     icheck_loadings(c(1, 1, .8), 3, "lavaan", "loadings_free", model = "DPM"),
     "first DPM loading must be `NA`"
+  )
+  expect_error(
+    icheck_loadings(c(NA, .8, 1), 3, "lavaan", "loadings_free", model = "DPM"),
+    "second DPM loading must be 1"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(1, 1, .8, NA, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
+    "first DPM loading column must be `NA`"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(NA, 1, .8, NA, 1), nrow = 1, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
+    "must have 2 rows"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(NA, 1, .8, NA, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
+    "one column per time point"
+  )
+  expect_error(
+    icheck_loadings(c(NA, 1, NA), 3, "lavaan", "loadings_free", model = "DPM"),
+    "finite values after the required first-wave NA"
+  )
+  expect_error(
+    icheck_loadings(c(NaN, 1, .8), 3, "lavaan", "loadings_free", model = "DPM"),
+    "first DPM loading must be `NA`"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(NA, 1, .8, 0, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
+    "first DPM loading column must be `NA`"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(NaN, 1, .8, NA, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
+    "first DPM loading column must be `NA`"
+  )
+  expect_error(
+    icheck_loadings(c(NA, 1, .8), c(3, 4), "lavaan", "loadings_free", model = "DPM"),
+    "one value of.*time_points"
   )
 })
 
@@ -489,11 +568,38 @@ test_that("icheck_bounds() works", {
 
 test_that("DPM compatibility checks reject unsupported options", {
   expect_null(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "none", FALSE))
-  expect_error(icheck_DPM_compatibility("DPM", .8, FALSE, "lavaan", "none", FALSE), "reliability")
-  expect_error(icheck_DPM_compatibility("DPM", 1, TRUE, "lavaan", "none", FALSE), "estimate_ME")
+  expect_error(icheck_DPM_compatibility("DPM", .8, FALSE, "lavaan", "none", FALSE), "does not separate measurement error")
+  expect_error(icheck_DPM_compatibility("DPM", c(1, 1), FALSE, "lavaan", "none", FALSE), "reliability")
+  expect_error(icheck_DPM_compatibility("DPM", 1, TRUE, "lavaan", "none", FALSE), "does not separate measurement error")
   expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "Mplus", "none", FALSE), "lavaan")
   expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "within", FALSE), "within")
-  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "none", TRUE), "bounds")
+  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "none", TRUE), "Bounded estimation is not yet available for the DPM")
+  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "ME", FALSE), "does not separate measurement error")
+  expect_null(icheck_DPM_compatibility("RICLPM", .8, TRUE, "Mplus", "ME", TRUE))
+})
+
+test_that("DPM alias checks guide common RI-CLPM and DPM mixups", {
+  expect_null(icheck_DPM_aliases(0.2, NULL, NULL, NULL, NULL))
+  expect_error(
+    icheck_DPM_aliases(NULL, NULL, NULL, NULL, NULL),
+    "AF_proportion.*must be specified.*NULL"
+  )
+  expect_error(
+    icheck_DPM_aliases(0.2, 0.5, NULL, NULL, NULL),
+    "intraclass_correlation.*not valid.*DPM.*AF_proportion"
+  )
+  expect_error(
+    icheck_DPM_aliases(0.2, NULL, 0.5, NULL, NULL),
+    "ICC.*not valid.*DPM.*AF_proportion"
+  )
+  expect_error(
+    icheck_DPM_aliases(0.2, NULL, NULL, 0.3, NULL),
+    "RI_cor.*not valid.*DPM.*AF_cor"
+  )
+  expect_error(
+    icheck_DPM_aliases(0.2, NULL, NULL, NULL, 0.3),
+    "within_cor.*not valid.*DPM.*wave_cor"
+  )
 })
 
 test_that("icheck_software() works", {

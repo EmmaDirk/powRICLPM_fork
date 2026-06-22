@@ -70,3 +70,39 @@ test_that("give() labels DPM proportion conditions", {
   expect_equal(names(give(object, "conditions"))[3], "AF_proportion")
   expect_equal(names(give(object, "AF_proportion"))[3], "AF_proportion")
 })
+
+test_that("give() notes free-loading anchor for condition tables", {
+  object_dpm <- list(
+    conditions = list(list(
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.2,
+      reliability = 1,
+      constraints = "loadings_free"
+    )),
+    session = list(
+      model = "DPM",
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object_dpm) <- c("powRICLPM", "list")
+
+  object_riclpm <- list(
+    conditions = list(list(
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      reliability = 1,
+      constraints = "RI_loadings_free"
+    )),
+    session = list(
+      model = "RICLPM",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object_riclpm) <- c("powRICLPM", "list")
+
+  expect_message(give(object_dpm, "conditions"), "AF_proportion.*wave 2")
+  expect_message(give(object_riclpm, "conditions"), "ICC.*wave 1")
+  expect_silent(inote_condition_loading_anchor(object_dpm, "AF_A=~A3"))
+})

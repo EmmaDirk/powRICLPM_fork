@@ -401,6 +401,171 @@ test_that("powRICLPM validation errors use user-facing alias names", {
   )
 })
 
+test_that("powRICLPM validation errors use DPM-specific argument names", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  expect_error(
+    powRICLPM(
+      model = "dpm",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "RICLPM.*DPM.*dpm"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "AF_proportion.*must be specified.*NULL"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "AF_cor.*NULL"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      reps = 1
+    ),
+    "wave_cor.*NULL"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      intraclass_correlation = 0.5,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "intraclass_correlation.*not valid.*DPM.*AF_proportion"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      within_cor = 0.3,
+      reps = 1
+    ),
+    "within_cor.*not valid.*DPM.*wave_cor"
+  )
+  expect_error(
+    powRICLPM(
+      model = "DPM",
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "RI_cor.*not valid.*DPM.*AF_cor"
+  )
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "model.*defaults to.*RICLPM.*model = 'DPM'"
+  )
+  expect_error(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      reps = 1
+    ),
+    "model.*defaults to.*RICLPM.*AF_cor"
+  )
+})
+
+test_that("powRICLPM validation errors catch common DPM loading mistakes", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  base <- list(
+    model = "DPM",
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    AF_proportion = 0.2,
+    AF_cor = 0.3,
+    lagged_effects = lagged_effects,
+    wave_cor = 0.3,
+    reps = 1,
+    seed = 123456,
+    constraints = "loadings_free"
+  )
+
+  expect_error(
+    do.call(powRICLPM, c(base, list(loadings = c(1, 0.8)))),
+    "one value per time point.*first value must be `NA`"
+  )
+  expect_error(
+    do.call(powRICLPM, c(base, list(loadings = c(NA, 0.8, 1)))),
+    "second DPM loading must be 1"
+  )
+  expect_error(
+    do.call(powRICLPM, c(base, list(loadings = c(NaN, 1, 0.8)))),
+    "first DPM loading must be `NA`"
+  )
+  expect_error(
+    do.call(powRICLPM, c(base, list(loadings = c(NA, 1, Inf)))),
+    "finite values after the required first-wave NA"
+  )
+  expect_error(
+    do.call(powRICLPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 1, 1, 1.2), nrow = 2, byrow = TRUE)))),
+    "first DPM loading column must be `NA`"
+  )
+})
+
 test_that("conflicting argument aliases error", {
   expect_error(
     powRICLPM(

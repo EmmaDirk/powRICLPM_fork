@@ -12,9 +12,9 @@ random-intercept loadings in the lavaan data-generating model. A vector of
 length \code{time_points} is applied to both variables. A matrix must have
 two rows, one for each variable, and one column per time point. The first
 loading must be 1, so later values are interpreted relative to the first
-occasion. For \code{model = "DPM"}, vectors or matrices specify waves 2
-through T and may optionally include an explicit first-wave \code{NA}; the
-wave-2 loading must be 1.}
+occasion. For \code{model = "DPM"}, vectors or matrices must include one
+value per time point, with an explicit first-wave \code{NA}; the wave-2
+loading must be 1.}
 
 \item{time_points}{(optional) A single \code{integer} indicating the number
 of time points. If omitted, this is inferred from \code{loadings}.}

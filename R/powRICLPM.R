@@ -39,7 +39,7 @@
 #'
 #' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"} or \code{constraints = "loadings_free"} so that the estimation model also frees the corresponding random-intercept loadings. With time-varying loadings, \code{intraclass_correlation} still gives the ICC at the first wave because the first loading is fixed to 1. Later loadings describe how strongly those first-wave between-unit differences carry into each later wave; for example, a loading of 0.9 means the between-unit differences are 0.9 times as large on the score scale, and contribute \eqn{0.9^2} times the first-wave random-intercept variance. Consequently, the supplied value is not a wave-invariant ICC.
 #'
-#' For \code{model = "DPM"}, the accumulating factors load on waves 2 through T and covary with the first wave. The DPM uses \code{AF_proportion} as the accumulating-factor variance and \code{wave_cor} as the target observed wave-level correlation. Residual variances and covariances are computed from the DPM stationarity equations so the observed variables have variance 1 across waves when the requested values are admissible. DPM \code{loadings} therefore have one value per wave from wave 2 onward; alternatively, vectors or matrices may include an explicit first-wave \code{NA}. The wave-2 loading is fixed to 1.}
+#' For \code{model = "DPM"}, the accumulating factors load on waves 2 through T and covary with the first wave. The DPM uses \code{AF_proportion} as the accumulating-factor variance and \code{wave_cor} as the target observed wave-level correlation. Residual variances and covariances are computed from the DPM stationarity equations so the observed variables have variance 1 across waves when the requested values are admissible. DPM \code{loadings} must include one value per wave, with an explicit first-wave \code{NA}. The wave-2 loading is fixed to 1.}
 #'
 #' \subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. With the default \code{estimator = NA}, the estimator is maximum likelihood (\code{ML}) for normally generated data and robust maximum likelihood (\code{MLR}) when skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. The population parameter values are used as starting values.
 #'
@@ -171,6 +171,10 @@ powRICLPM <- function(
   reliability_expr <- call_powRICLPM$reliability
   model <- icheck_model(model)
 
+  if (model == "DPM") {
+    icheck_DPM_aliases(AF_proportion, intraclass_correlation, ICC,
+                       RI_cor, within_cor)
+  }
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {
     iabort_renamed_argument_conflict("intraclass_correlation", "ICC")
   }
@@ -191,9 +195,16 @@ powRICLPM <- function(
   if (model == "RICLPM" && (!is.null(AF_proportion) || !is.null(AF_cor) || !is.null(wave_cor))) {
     cli::cli_abort(
       c(
-        "DPM-specific arguments require `model = 'DPM'`:",
-        i = "Use `intraclass_correlation`, `RI_cor`, and `within_cor` for the RI-CLPM.",
-        x = "You supplied at least one of `AF_proportion`, `AF_cor`, or `wave_cor`."
+        "These arguments look like a DPM setup, but `model` defaults to `'RICLPM'`:",
+        i = "Use `model = 'DPM'` with `AF_proportion`, `AF_cor`, and `wave_cor`.",
+        i = "For the RI-CLPM, use `intraclass_correlation`, `RI_cor`, and `within_cor`.",
+        x = paste0(
+          "DPM argument(s) supplied: ",
+          paste(c("AF_proportion", "AF_cor", "wave_cor")[
+            !vapply(list(AF_proportion, AF_cor, wave_cor), is.null, logical(1))
+          ], collapse = ", "),
+          "."
+        )
       )
     )
   }

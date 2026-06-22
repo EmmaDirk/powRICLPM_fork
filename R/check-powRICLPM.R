@@ -196,6 +196,56 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
   }
 }
 
+icheck_DPM_aliases <- function(AF_proportion, intraclass_correlation, ICC,
+                               RI_cor, within_cor,
+                               call = rlang::caller_env()) {
+  if (is.null(AF_proportion)) {
+    cli::cli_abort(
+      c(
+        "`AF_proportion` must be specified for `model = 'DPM'`:",
+        x = "`AF_proportion` is `NULL`."
+      ),
+      call = call
+    )
+  }
+  if (!is.null(intraclass_correlation) || !is.null(ICC)) {
+    supplied <- c(
+      if (!is.null(intraclass_correlation)) "intraclass_correlation",
+      if (!is.null(ICC)) "ICC"
+    )
+    cli::cli_abort(
+      c(
+        "`intraclass_correlation` and `ICC` are not valid for `model = 'DPM'`:",
+        i = "Use `AF_proportion` for the DPM accumulating-factor proportion.",
+        i = "If you meant to run an RI-CLPM, omit `model = 'DPM'`.",
+        x = paste0("You supplied: ", paste(supplied, collapse = ", "), ".")
+      ),
+      call = call
+    )
+  }
+  if (!is.null(RI_cor)) {
+    cli::cli_abort(
+      c(
+        "`RI_cor` is not valid for `model = 'DPM'`:",
+        i = "Use `AF_cor` for the DPM accumulating-factor correlation.",
+        i = "If you meant to run an RI-CLPM, omit `model = 'DPM'`."
+      ),
+      call = call
+    )
+  }
+  if (!is.null(within_cor)) {
+    cli::cli_abort(
+      c(
+        "`within_cor` is not valid for `model = 'DPM'`:",
+        i = "Use `wave_cor` for the DPM observed wave-level correlation.",
+        i = "If you meant to run an RI-CLPM, omit `model = 'DPM'`."
+      ),
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
 icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
                                      constraints, bounds, call = rlang::caller_env()) {
   if (model != "DPM") {
@@ -214,7 +264,7 @@ icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
     cli::cli_abort(
       c(
         "{.arg reliability} cannot be used with `model = 'DPM'`:",
-        i = "The DPM does not separate measurement error in this implementation.",
+        i = "The DPM does not separate measurement error.",
         x = paste0("You supplied reliability = ", format_reliability(reliability), ".")
       ),
       call = call
@@ -224,7 +274,7 @@ icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
     cli::cli_abort(
       c(
         "{.arg estimate_ME} cannot be used with `model = 'DPM'`:",
-        i = "The DPM does not separate measurement error in this implementation."
+        i = "The DPM does not separate measurement error."
       ),
       call = call
     )
@@ -232,8 +282,8 @@ icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
   if (isTRUE(bounds)) {
     cli::cli_abort(
       c(
-        "{.arg bounds} cannot be used with `model = 'DPM'` yet:",
-        i = "Bounded DPM estimation needs separate validation and is disabled in this first implementation."
+        "{.arg bounds} cannot be used with `model = 'DPM'`:",
+        i = "Bounded estimation is not yet available for the DPM."
       ),
       call = call
     )
@@ -244,7 +294,7 @@ icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
     cli::cli_abort(
       c(
         "`constraints = 'ME'` cannot be used with `model = 'DPM'`:",
-        i = "The DPM does not separate measurement error in this implementation."
+        i = "The DPM does not separate measurement error."
       ),
       call = call
     )
@@ -701,14 +751,13 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
   if (!all(is.finite(x) | is.na(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must contain only finite values, except for an optional first-wave NA:",
+        "{.arg {arg}} must contain only finite values, except for the required first-wave NA:",
         x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
       ),
       call = call
     )
   }
 
-  expected <- time_points - 1L
   if (is.matrix(x)) {
     if (nrow(x) != 2L) {
       row_label <- if (nrow(x) == 1L) "row" else "rows"
@@ -721,22 +770,11 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
         call = call
       )
     }
-    if (ncol(x) == time_points) {
-      if (!all(is.na(x[, 1]))) {
-        cli::cli_abort(
-          c(
-            "The first DPM loading column must be `NA` when one column per wave is supplied:",
-            i = "Accumulating factors load on waves 2 through T, not on wave 1."
-          ),
-          call = call
-        )
-      }
-      x <- x[, -1, drop = FALSE]
-    } else if (ncol(x) != expected) {
+    if (ncol(x) != time_points) {
       cli::cli_abort(
         c(
-          "{.arg {arg}} must have one column for waves 2 through T:",
-          i = "A matrix can also include one explicit first-wave `NA` column.",
+          "{.arg {arg}} must have one column per time point for `model = 'DPM'`:",
+          i = "The first column must be `NA` because accumulating factors do not load on wave 1.",
           x = paste0(
             "Your {.arg {arg}} has ", ncol(x),
             " columns, but {.arg {t_arg}} = ", time_points, "."
@@ -745,36 +783,47 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
         call = call
       )
     }
-    first_loadings <- x[, 1]
-  } else {
-    if (length(x) == time_points) {
-      if (!is.na(x[1])) {
-        cli::cli_abort(
-          c(
-            "The first DPM loading must be `NA` when one value per wave is supplied:",
-            i = "Accumulating factors load on waves 2 through T, not on wave 1."
-          ),
-          call = call
-        )
-      }
-      x <- x[-1]
-    } else if (length(x) != expected) {
+    if (!all(is.na(x[, 1]) & !is.nan(x[, 1]))) {
       cli::cli_abort(
         c(
-          "{.arg {arg}} must have one value for waves 2 through T:",
-          i = "A vector can also include an explicit first-wave `NA`.",
+          "The first DPM loading column must be `NA`:",
+          i = "Accumulating factors load on waves 2 through T, not on wave 1.",
+          x = paste0("The first column is ", format_loadings(x[, 1]), ".")
+        ),
+        call = call
+      )
+    }
+    x <- x[, -1, drop = FALSE]
+    first_loadings <- x[, 1]
+  } else {
+    if (length(x) != time_points) {
+      cli::cli_abort(
+        c(
+          "{.arg {arg}} must have one value per time point for `model = 'DPM'`:",
+          i = "The first value must be `NA` because accumulating factors do not load on wave 1.",
           x = paste0("Your {.arg {arg}} has length ", length(x),
                      ", but {.arg {t_arg}} = ", time_points, ".")
         ),
         call = call
       )
     }
+    if (!is.na(x[1]) || is.nan(x[1])) {
+      cli::cli_abort(
+        c(
+          "The first DPM loading must be `NA`:",
+          i = "Accumulating factors load on waves 2 through T, not on wave 1.",
+          x = paste0("The first value is ", x[1], ".")
+        ),
+        call = call
+      )
+    }
+    x <- x[-1]
     first_loadings <- x[1]
   }
   if (!all(is.finite(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must contain only finite values after the optional first-wave NA:",
+        "{.arg {arg}} must contain only finite values after the required first-wave NA:",
         x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
       ),
       call = call
@@ -783,9 +832,9 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
   if (!all(first_loadings == 1)) {
     cli::cli_abort(
       c(
-        "The first DPM accumulating-factor loading must be 1:",
-        i = "This is the wave-2 loading, because accumulating factors do not load on wave 1.",
-        x = paste0("The first usable loading is ", paste(first_loadings, collapse = ", "), ".")
+        "The second DPM loading must be 1:",
+        i = "The first loading must be `NA`; the second loading is the wave-2 loading.",
+        x = paste0("The second loading is ", paste(first_loadings, collapse = ", "), ".")
       ),
       call = call
     )

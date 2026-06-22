@@ -117,9 +117,9 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
 #'   length \code{time_points} is applied to both variables. A matrix must have
 #'   two rows, one for each variable, and one column per time point. The first
 #'   loading must be 1, so later values are interpreted relative to the first
-#'   occasion. For \code{model = "DPM"}, vectors or matrices specify waves 2
-#'   through T and may optionally include an explicit first-wave \code{NA}; the
-#'   wave-2 loading must be 1.
+#'   occasion. For \code{model = "DPM"}, vectors or matrices must include one
+#'   value per time point, with an explicit first-wave \code{NA}; the wave-2
+#'   loading must be 1.
 #' @param time_points (optional) A single \code{integer} indicating the number
 #'   of time points. If omitted, this is inferred from \code{loadings}.
 #' @param model A \code{character} string, either \code{"RICLPM"} or
@@ -186,13 +186,7 @@ check_loadings <- function(loadings = NULL, time_points = NULL, model = "RICLPM"
 
 iinfer_loadings_time_points <- function(loadings, model = "RICLPM") {
   if (is.matrix(loadings)) {
-    if (model == "DPM" && !all(is.na(loadings[, 1]))) {
-      return(ncol(loadings) + 1L)
-    }
     return(ncol(loadings))
-  }
-  if (model == "DPM" && !is.na(loadings[1])) {
-    return(length(loadings) + 1L)
   }
   length(loadings)
 }

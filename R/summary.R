@@ -152,6 +152,7 @@ summary.powRICLPM <- function(
       replications = summary_replications
     )
 
+    inote_condition_loading_anchor(object, results)
     print.summary.powRICLPM.condition(summary_list)
     invisible(results)
 
@@ -162,6 +163,7 @@ summary.powRICLPM <- function(
     replications_df <- give_powRICLPM_estimation_problems(object)
     parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
     colnames(parameter_summary) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
+    inote_condition_loading_anchor(object, parameter_summary)
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter)
     invisible(parameter_summary)
 
@@ -172,6 +174,7 @@ summary.powRICLPM <- function(
     replications_df <- give_powRICLPM_estimation_problems(object)
     colnames(replications_df) <- c("Sample size", "Time points", icc_table_label, "Reliability", "Error", "Not converged", "Inadmissible")
     version <- utils::packageVersion("powRICLPM")
+    inote_condition_loading_anchor(object, replications_df)
     print.summary.powRICLPM(replications_df, powRICLPM_version = version)
     iprint_reliability_tables(object$conditions)
   }

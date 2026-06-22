@@ -63,6 +63,7 @@ give <- function(from, what, parameter = NULL) {
       out <- give_powRICLPM_MCSE_parameter(object = from, parameter = parameter)
   }
 
+  inote_condition_loading_anchor(from, out)
   ilabel_icc_column(out, icc_column_label)
 }
 
@@ -111,6 +112,36 @@ iprint_reliability_tables <- function(conditions) {
         format = "simple",
         align = c("l", rep("r", conditions[[condition_index]]$time_points))
       )
+    )
+  }
+  invisible(NULL)
+}
+
+ihas_free_loadings <- function(condition) {
+  if (is.null(condition$constraints)) {
+    return(FALSE)
+  }
+  has_constraint(condition$constraints, "loadings_free")
+}
+
+inote_condition_loading_anchor <- function(object, output = NULL) {
+  if (!inherits(object, "powRICLPM")) {
+    return(invisible(NULL))
+  }
+  if (is.character(output)) {
+    return(invisible(NULL))
+  }
+  uses_free_loadings <- any(vapply(object$conditions, ihas_free_loadings, logical(1)))
+  if (!uses_free_loadings) {
+    return(invisible(NULL))
+  }
+  if (identical(object$session$model, "DPM")) {
+    cli::cli_alert_info(
+      "With DPM free loadings, `AF_proportion` is anchored at wave 2, where the accumulating-factor loading is fixed to 1."
+    )
+  } else {
+    cli::cli_alert_info(
+      "With free random-intercept loadings, `intraclass_correlation`/`ICC` is anchored at wave 1, where the random-intercept loading is fixed to 1."
     )
   }
   invisible(NULL)
