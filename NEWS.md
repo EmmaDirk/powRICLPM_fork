@@ -1,7 +1,7 @@
 # powRICLPM 0.2.1
 
 ## Minor improvements and fixes
-* Added lavaan-only support for `model = "DPM"` to generate and estimate the dynamic panel model with accumulating factors, observed-level lagged effects, DPM stationarity equations, DPM-specific argument aliases (`AF_proportion`, `AF_cor`, `wave_cor`), and `constraints = "loadings_free"` for freely estimated accumulating-factor loadings.
+* Added `powDPM()` for lavaan-only power analysis of the dynamic panel model with accumulating factors, observed-level lagged effects, DPM stationarity equations, DPM-specific arguments (`AF_proportion`, `AF_cor`, `wave_cor`), and `constraints = "loadings_free"` for freely estimated accumulating-factor loadings.
 * Added a lavaan-only `loadings` argument to `powRICLPM()` for specifying time-varying random-intercept loadings in the data-generating model. The first occasion must be fixed to 1, and later loadings can vary over time and across variables. Supplying `loadings` requires `constraints = "RI_loadings_free"` so the estimation model frees the corresponding random-intercept loadings.
 * Added `check_loadings()` to help users check how a loading vector or matrix maps onto the random-intercept loadings used in the data-generating model.
 * Changed `reliability` so vectors now specify lavaan data-generating reliabilities over time rather than multiple experimental conditions. Matrix input can specify reliabilities separately for variables A and B over time. Use separate `powRICLPM()` calls to compare multiple reliability patterns.

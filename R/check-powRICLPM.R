@@ -106,64 +106,6 @@ icheck_model <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env
   x
 }
 
-#' Check \code{time_points} Argument for Model
-#'
-#' @noRd
-icheck_T_model <- function(x, ME, model,
-                           arg = rlang::caller_arg(x),
-                           call = rlang::caller_env()) {
-  if (model == "DPM") {
-    if (!all(is.numeric(x))) {
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must be a vector of integers:",
-          x = "Not all elements are numeric."
-        ),
-        call = call
-      )
-    }
-    if (!all(is.finite(x))) {
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must be a vector of finite integers:",
-          x = "Some elements are `NA`, `NaN`, `Inf`, or `-Inf`."
-        ),
-        call = call
-      )
-    }
-    if (!all(x %% 1 == 0)) {
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must be a vector of integers:",
-          x = "Not all elements are integers."
-        ),
-        call = call
-      )
-    }
-    if (any(x < 2)) {
-      cli::cli_abort(
-        c(
-          "Elements in {.arg {arg}} should be larger than 1:",
-          i = "The DPM needs at least 2 time points to be identified.",
-          x = "You've supplied a number of time points smaller than 2."
-        ),
-        call = call
-      )
-    }
-    if (any(x > 15)) {
-      cli::cli_warn(
-        c(
-          "You've supplied a large number of time points:",
-          i = "This can lead to computational problems in estimation. You might want to consider methods for intensive longitudinal data."
-        )
-      )
-    }
-    return(invisible(NULL))
-  }
-
-  icheck_T(x, ME, arg = arg, call = call)
-}
-
 #' Check \code{ICC} Argument
 #'
 #' \code{icheck_ICC()} checks if the \code{ICC} argument represents (a) valid intraclass correlation(s).
@@ -194,123 +136,6 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       )
     )
   }
-}
-
-icheck_DPM_aliases <- function(AF_proportion, intraclass_correlation, ICC,
-                               RI_cor, within_cor,
-                               call = rlang::caller_env()) {
-  if (!is.null(intraclass_correlation) || !is.null(ICC)) {
-    supplied <- c(
-      if (!is.null(intraclass_correlation)) "intraclass_correlation",
-      if (!is.null(ICC)) "ICC"
-    )
-    cli::cli_abort(
-      c(
-        "`intraclass_correlation` and `ICC` are not valid for `model = 'DPM'`:",
-        i = "Use `AF_proportion` for the DPM accumulating-factor proportion.",
-        i = "If you meant to run an RI-CLPM, use `model = 'RICLPM'`.",
-        x = paste0("You supplied: ", paste(supplied, collapse = ", "), ".")
-      ),
-      call = call
-    )
-  }
-  if (!is.null(RI_cor)) {
-    cli::cli_abort(
-      c(
-        "`RI_cor` is not valid for `model = 'DPM'`:",
-        i = "Use `AF_cor` for the DPM accumulating-factor correlation.",
-        i = "If you meant to run an RI-CLPM, use `model = 'RICLPM'`."
-      ),
-      call = call
-    )
-  }
-  if (!is.null(within_cor)) {
-    cli::cli_abort(
-      c(
-        "`within_cor` is not valid for `model = 'DPM'`:",
-        i = "Use `wave_cor` for the DPM observed wave-level correlation.",
-        i = "If you meant to run an RI-CLPM, use `model = 'RICLPM'`."
-      ),
-      call = call
-    )
-  }
-  if (is.null(AF_proportion)) {
-    cli::cli_abort(
-      c(
-        "`AF_proportion` must be specified for `model = 'DPM'`:",
-        i = "The DPM uses `AF_proportion` instead of `intraclass_correlation` or `ICC`.",
-        x = "`AF_proportion` is `NULL`."
-      ),
-      call = call
-    )
-  }
-  invisible(NULL)
-}
-
-icheck_DPM_compatibility <- function(model, reliability, estimate_ME, software,
-                                     constraints, bounds, call = rlang::caller_env()) {
-  if (model != "DPM") {
-    return(invisible(NULL))
-  }
-  if (software != "lavaan") {
-    cli::cli_abort(
-      c(
-        "The DPM is currently only available with `software = 'lavaan'`:",
-        x = paste0("You supplied software = '", software, "'.")
-      ),
-      call = call
-    )
-  }
-  if (!(length(reliability) == 1L && is.numeric(reliability) && reliability == 1)) {
-    cli::cli_abort(
-      c(
-        "{.arg reliability} cannot be used with `model = 'DPM'`:",
-        i = "The DPM does not separate measurement error.",
-        x = paste0("You supplied reliability = ", format_reliability(reliability), ".")
-      ),
-      call = call
-    )
-  }
-  if (isTRUE(estimate_ME)) {
-    cli::cli_abort(
-      c(
-        "{.arg estimate_ME} cannot be used with `model = 'DPM'`:",
-        i = "The DPM does not separate measurement error."
-      ),
-      call = call
-    )
-  }
-  if (isTRUE(bounds)) {
-    cli::cli_abort(
-      c(
-        "{.arg bounds} cannot be used with `model = 'DPM'`:",
-        i = "Bounded estimation is not yet available for the DPM."
-      ),
-      call = call
-    )
-  }
-
-  constraints <- normalize_constraints(constraints)
-  if (has_constraint(constraints, "ME")) {
-    cli::cli_abort(
-      c(
-        "`constraints = 'ME'` cannot be used with `model = 'DPM'`:",
-        i = "The DPM does not separate measurement error."
-      ),
-      call = call
-    )
-  }
-  if ("within" %in% constraints) {
-    cli::cli_abort(
-      c(
-        "`constraints = 'within'` cannot be used with `model = 'DPM'`:",
-        i = "Use `constraints = c('lagged', 'residuals')` if you want both DPM lagged effects and observed-level residuals constrained over time."
-      ),
-      call = call
-    )
-  }
-
-  invisible(NULL)
 }
 
 #' Check Correlation Arguments
@@ -738,131 +563,6 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
   invisible(NULL)
 }
 
-icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg, call) {
-  is_numeric_vector <- is.numeric(x) && is.null(dim(x))
-  is_numeric_matrix <- is.numeric(x) && is.matrix(x)
-  if (!is_numeric_vector && !is_numeric_matrix) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} must be a numeric vector or numeric matrix:",
-        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
-      ),
-      call = call
-    )
-  }
-  if (is_numeric_vector && length(x) == 0L) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} must contain at least one value:",
-        x = paste0("Your {.arg {arg}} has length 0.")
-      ),
-      call = call
-    )
-  }
-  if (!all(is.finite(x) | is.na(x))) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} must contain only finite values, except for the required first-wave NA:",
-        x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
-      ),
-      call = call
-    )
-  }
-
-  if (is.matrix(x)) {
-    if (nrow(x) != 2L) {
-      row_label <- if (nrow(x) == 1L) "row" else "rows"
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must have 2 rows:",
-          i = "Rows correspond to the accumulating factors for variables A and B.",
-          x = paste0("Your {.arg {arg}} has ", nrow(x), " ", row_label, ".")
-        ),
-        call = call
-      )
-    }
-    if (ncol(x) != time_points) {
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must have one column per time point for `model = 'DPM'`:",
-          i = "The first column must be `NA` because accumulating factors do not load on wave 1.",
-          x = paste0(
-            "Your {.arg {arg}} has ", ncol(x),
-            " columns, but {.arg {t_arg}} = ", time_points, "."
-          )
-        ),
-        call = call
-      )
-    }
-    if (!all(is.na(x[, 1]) & !is.nan(x[, 1]))) {
-      cli::cli_abort(
-        c(
-          "The first DPM loading column must be `NA`:",
-          i = "Accumulating factors load on waves 2 through T, not on wave 1.",
-          x = paste0("The first column is ", format_loadings(x[, 1]), ".")
-        ),
-        call = call
-      )
-    }
-    x <- x[, -1, drop = FALSE]
-    first_loadings <- x[, 1]
-  } else {
-    if (length(x) != time_points) {
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must have one value per time point for `model = 'DPM'`:",
-          i = "The first value must be `NA` because accumulating factors do not load on wave 1.",
-          x = paste0("Your {.arg {arg}} has length ", length(x),
-                     ", but {.arg {t_arg}} = ", time_points, ".")
-        ),
-        call = call
-      )
-    }
-    if (!is.na(x[1]) || is.nan(x[1])) {
-      cli::cli_abort(
-        c(
-          "The first DPM loading must be `NA`:",
-          i = "Accumulating factors load on waves 2 through T, not on wave 1.",
-          x = paste0("The first value is ", x[1], ".")
-        ),
-        call = call
-      )
-    }
-    x <- x[-1]
-    first_loadings <- x[1]
-  }
-  if (!all(is.finite(x))) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} must contain only finite values after the required first-wave NA:",
-        x = paste0("Your {.arg {arg}} contains: ", format_loadings(x), ".")
-      ),
-      call = call
-    )
-  }
-  if (!all(first_loadings == 1)) {
-    cli::cli_abort(
-      c(
-        "The second DPM loading must be 1:",
-        i = "The first loading must be `NA`; the second loading is the wave-2 loading.",
-        x = paste0("The second loading is ", paste(first_loadings, collapse = ", "), ".")
-      ),
-      call = call
-    )
-  }
-  if (!has_constraint(constraints, "loadings_free")) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} can only be used when accumulating-factor loadings are freely estimated:",
-        i = "Use `constraints = 'loadings_free'` or include `'loadings_free'` in a constraint vector.",
-        x = paste0("You supplied {.arg {arg}}, but {.arg {con_arg}} = ", format_constraints(constraints), ".")
-      ),
-      call = call
-    )
-  }
-  invisible(NULL)
-}
-
 inormalize_loadings <- function(loadings, time_points, model = "RICLPM") {
   if (model == "DPM") {
     return(inormalize_DPM_loadings(loadings, time_points))
@@ -874,22 +574,6 @@ inormalize_loadings <- function(loadings, time_points, model = "RICLPM") {
     return(loadings)
   }
   rbind(loadings, loadings)
-}
-
-inormalize_DPM_loadings <- function(loadings, time_points) {
-  if (is.null(loadings)) {
-    return(matrix(1, nrow = 2, ncol = time_points - 1L))
-  }
-  if (is.matrix(loadings)) {
-    if (ncol(loadings) == time_points) {
-      return(unname(loadings[, -1, drop = FALSE]))
-    }
-    return(unname(loadings))
-  }
-  if (length(loadings) == time_points) {
-    loadings <- loadings[-1]
-  }
-  unname(rbind(loadings, loadings))
 }
 
 format_object_type <- function(x) {
@@ -1199,13 +883,28 @@ icheck_path <- function(x, software, arg = rlang::caller_arg(x), call = rlang::c
 #' \code{icheck_Psi()} checks if \code{Psi} represents a valid variance-covariance matrix.
 #'
 #' @noRd
-icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(), model = "RICLPM") {
   if (!is_PD(x)) {
+    matrix_message <- if (identical(model, "DPM")) {
+      "The residual variance-covariance matrix for observed DPM residuals (Psi) must be positive definite:"
+    } else {
+      "The residual variance-covariance matrix for within-components (Psi) must be positive definite:"
+    }
+    computed_from <- if (identical(model, "DPM")) {
+      "It is computed from the specified `lagged_effects`, `wave_cor`, `AF_proportion`, `AF_cor`, and `loadings` arguments."
+    } else {
+      "It is computed from the specified `lagged_effects` and `within_cor` arguments."
+    }
+    retry_hint <- if (identical(model, "DPM")) {
+      "Psi is not positive definite. Try smaller values for `lagged_effects`, `wave_cor`, or `AF_proportion`?"
+    } else {
+      "Psi is not positive definite. Try smaller values for `lagged_effects` and `within_cor`?"
+    }
     cli::cli_abort(
       c(
-        "The residual variance-covariance matrix for within-components (Psi) must be positive definite:",
-        i = "It is computed from the specified `lagged_effects` and `within_cor` arguments.",
-        x = "Psi is not positive definite. Try smaller values for `lagged_effects` and `within_cor`?"
+        matrix_message,
+        i = computed_from,
+        x = retry_hint
       )
     )
   }

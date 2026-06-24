@@ -30,6 +30,33 @@ create_conditions <- function(
   save_path,
   software
 ) {
+  if (identical(model, "DPM")) {
+    return(create_conditions_DPM(
+      model = model,
+      target_power = target_power,
+      sample_size = sample_size,
+      time_points = time_points,
+      intraclass_correlation = intraclass_correlation,
+      RI_cor = RI_cor,
+      lagged_effects = lagged_effects,
+      within_cor = within_cor,
+      Psi = Psi,
+      reliability = reliability,
+      loadings = loadings,
+      skewness = skewness,
+      kurtosis = kurtosis,
+      estimate_ME = estimate_ME,
+      significance_criterion = significance_criterion,
+      reps = reps,
+      bootstrap_reps = bootstrap_reps,
+      seed = seed,
+      constraints = constraints,
+      bounds = bounds,
+      estimator = estimator,
+      save_path = save_path,
+      software = software
+    ))
+  }
 
   ICC <- intraclass_correlation
   constraints <- normalize_constraints_for_software(constraints, software)
@@ -65,27 +92,6 @@ create_conditions <- function(
   conditions$condition_id <- 1:nrow(conditions)
   conditions$RI_var <- sapply(conditions$ICC, compute_RI_var)
   conditions$RI_cov <- mapply(compute_RI_cov, conditions$RI_cor, conditions$RI_var)
-  conditions$AF_var <- sapply(conditions$ICC, compute_AF_var)
-  conditions$AF_cov <- mapply(compute_AF_cov, conditions$RI_cor, conditions$AF_var)
-  conditions$DPM_values <- Map(
-    function(lagged_effects, wave_cor, AF_var, AF_cov, loadings) {
-      if (model != "DPM") {
-        return(NULL)
-      }
-      compute_DPM_values(
-        lagged_effects = lagged_effects,
-        wave_cor = wave_cor,
-        AF_var = AF_var,
-        AF_cov = AF_cov,
-        loadings = loadings
-      )
-    },
-    conditions$lagged_effects,
-    conditions$within_cor,
-    conditions$AF_var,
-    conditions$AF_cov,
-    conditions$loadings
-  )
   conditions$ME_var <- Map(compute_ME_var, conditions$RI_var, conditions$reliability_matrix)
 
   # Create list of conditions
@@ -96,7 +102,6 @@ create_conditions <- function(
     condition$loadings <- condition$loadings[[1]]
     condition$reliability_matrix <- condition$reliability_matrix[[1]]
     condition$ME_var <- condition$ME_var[[1]]
-    condition$DPM_values <- condition$DPM_values[[1]]
     condition
   })
 

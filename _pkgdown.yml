@@ -60,6 +60,7 @@ reference:
   - title: "Run Power Analysis"
     contents:
       - powRICLPM
+      - powDPM
   - title: "Summarize Results"
     contents:
       - plot.powRICLPM

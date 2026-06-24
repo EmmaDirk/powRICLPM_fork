@@ -401,26 +401,24 @@ test_that("powRICLPM validation errors use user-facing alias names", {
   )
 })
 
-test_that("powRICLPM validation errors use DPM-specific argument names", {
+test_that("powDPM validation errors use DPM-specific argument names", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
   expect_error(
-    powRICLPM(
-      model = "dpm",
+    powDPM(
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
-      AF_proportion = 0.2,
+      AF_proportion = "0.2",
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
       wave_cor = 0.3,
       reps = 1
     ),
-    "RICLPM.*DPM.*dpm"
+    "AF_proportion"
   )
   expect_error(
-    powRICLPM(
-      model = "DPM",
+    powDPM(
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
@@ -429,25 +427,10 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
       wave_cor = 0.3,
       reps = 1
     ),
-    "AF_proportion.*must be specified.*NULL"
+    "AF_proportion.*missing"
   )
   expect_error(
-    powRICLPM(
-      model = "DPM",
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      intraclass_correlation = 0.5,
-      AF_cor = 0.3,
-      lagged_effects = lagged_effects,
-      wave_cor = 0.3,
-      reps = 1
-    ),
-    "model = 'RICLPM'"
-  )
-  expect_error(
-    powRICLPM(
-      model = "DPM",
+    powDPM(
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
@@ -456,11 +439,10 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
       wave_cor = 0.3,
       reps = 1
     ),
-    "AF_cor.*NULL"
+    "AF_cor.*missing"
   )
   expect_error(
-    powRICLPM(
-      model = "DPM",
+    powDPM(
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
@@ -469,56 +451,10 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
       lagged_effects = lagged_effects,
       reps = 1
     ),
-    "wave_cor.*NULL"
+    "wave_cor.*missing"
   )
   expect_error(
-    powRICLPM(
-      model = "DPM",
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      AF_proportion = 0.2,
-      intraclass_correlation = 0.5,
-      AF_cor = 0.3,
-      lagged_effects = lagged_effects,
-      wave_cor = 0.3,
-      reps = 1
-    ),
-    "model = 'RICLPM'"
-  )
-  expect_error(
-    powRICLPM(
-      model = "DPM",
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      AF_proportion = 0.2,
-      AF_cor = 0.3,
-      lagged_effects = lagged_effects,
-      wave_cor = 0.3,
-      within_cor = 0.3,
-      reps = 1
-    ),
-    "within_cor.*not valid.*DPM.*wave_cor"
-  )
-  expect_error(
-    powRICLPM(
-      model = "DPM",
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      AF_proportion = 0.2,
-      AF_cor = 0.3,
-      RI_cor = 0.3,
-      lagged_effects = lagged_effects,
-      wave_cor = 0.3,
-      reps = 1
-    ),
-    "RI_cor.*not valid.*DPM.*AF_cor"
-  )
-  expect_error(
-    powRICLPM(
-      model = "DPM",
+    powDPM(
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
@@ -533,8 +469,7 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
   )
   expect_warning(
     expect_error(
-      powRICLPM(
-        model = "DPM",
+      powDPM(
         target_power = 0.8,
         sample_size = 1000,
         time_points = 3,
@@ -549,36 +484,30 @@ test_that("powRICLPM validation errors use DPM-specific argument names", {
     ),
     NA
   )
-  expect_error(
-    powRICLPM(
+
+  out <- suppressWarnings(
+    powDPM(
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
-      AF_proportion = 0.2,
+      AF_proportion = c(0.1, 0.2),
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
       wave_cor = 0.3,
-      reps = 1
-    ),
-    "model.*defaults to.*RICLPM.*model = 'DPM'"
+      reps = 1,
+      seed = 123456
+    )
   )
-  expect_error(
-    powRICLPM(
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      AF_cor = 0.3,
-      lagged_effects = lagged_effects,
-      reps = 1
-    ),
-    "model.*defaults to.*RICLPM.*AF_cor"
-  )
+  expect_equal(out$session$model, "DPM")
+  expect_equal(out$conditions[[1]]$ICC, 0.1)
+  expect_equal(out$conditions[[2]]$ICC, 0.2)
+  expect_length(out$conditions, 2)
+  expect_equal(out$session$argument_names$intraclass_correlation, "AF_proportion")
 })
 
-test_that("powRICLPM validation errors catch common DPM loading mistakes", {
+test_that("powDPM validation errors catch common DPM loading mistakes", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   base <- list(
-    model = "DPM",
     target_power = 0.8,
     sample_size = 1000,
     time_points = 3,
@@ -592,23 +521,23 @@ test_that("powRICLPM validation errors catch common DPM loading mistakes", {
   )
 
   expect_error(
-    do.call(powRICLPM, c(base, list(loadings = c(1, 0.8)))),
+    do.call(powDPM, c(base, list(loadings = c(1, 0.8)))),
     "one value per time point.*first value must be `NA`"
   )
   expect_error(
-    do.call(powRICLPM, c(base, list(loadings = c(NA, 0.8, 1)))),
+    do.call(powDPM, c(base, list(loadings = c(NA, 0.8, 1)))),
     "second DPM loading must be 1"
   )
   expect_error(
-    do.call(powRICLPM, c(base, list(loadings = c(NaN, 1, 0.8)))),
+    do.call(powDPM, c(base, list(loadings = c(NaN, 1, 0.8)))),
     "first DPM loading must be `NA`"
   )
   expect_error(
-    do.call(powRICLPM, c(base, list(loadings = c(NA, 1, Inf)))),
+    do.call(powDPM, c(base, list(loadings = c(NA, 1, Inf)))),
     "finite values, except for the required first-wave NA"
   )
   expect_error(
-    do.call(powRICLPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 1, 1, 1.2), nrow = 2, byrow = TRUE)))),
+    do.call(powDPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 1, 1, 1.2), nrow = 2, byrow = TRUE)))),
     "first DPM loading column must be `NA`"
   )
 })

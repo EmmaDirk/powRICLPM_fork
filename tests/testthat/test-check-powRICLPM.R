@@ -14,20 +14,14 @@ test_that("icheck_T() works", {
   expect_error(icheck_T(c(3, 4), ME = TRUE))
 })
 
-test_that("icheck_model() and DPM time-points work", {
+test_that("icheck_model() works", {
   expect_equal(icheck_model("RICLPM"), "RICLPM")
   expect_equal(icheck_model("DPM"), "DPM")
-  expect_null(icheck_T_model(2, ME = FALSE, model = "DPM"))
-  expect_error(icheck_T_model(2, ME = FALSE, model = "RICLPM"), "RI-CLPM")
   expect_error(icheck_model("CLPM"), "RICLPM.*DPM")
   expect_error(icheck_model("dpm"), "RICLPM.*DPM.*dpm")
   expect_error(icheck_model(c("RICLPM", "DPM")), "length 1")
   expect_error(icheck_model(NA_character_), "RICLPM.*DPM.*NA")
   expect_error(icheck_model(TRUE), "character string")
-  expect_error(icheck_T_model("4", ME = FALSE, model = "DPM"), "integers")
-  expect_error(icheck_T_model(NA_real_, ME = FALSE, model = "DPM"), "finite")
-  expect_error(icheck_T_model(2.5, ME = FALSE, model = "DPM"), "integers")
-  expect_error(icheck_T_model(1, ME = FALSE, model = "DPM"), "identified")
 })
 
 test_that("icheck_ICC() works", {
@@ -572,50 +566,6 @@ test_that("icheck_bounds() works", {
   expect_error(icheck_bounds("TRUE", "none", "Mplus"))
   expect_error(icheck_bounds(TRUE, "lagged", "lavaan"))
   expect_error(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
-})
-
-test_that("DPM compatibility checks reject unsupported options", {
-  expect_null(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "none", FALSE))
-  expect_error(icheck_DPM_compatibility("DPM", .8, FALSE, "lavaan", "none", FALSE), "does not separate measurement error")
-  expect_error(icheck_DPM_compatibility("DPM", c(1, 1), FALSE, "lavaan", "none", FALSE), "reliability")
-  expect_error(icheck_DPM_compatibility("DPM", 1, TRUE, "lavaan", "none", FALSE), "does not separate measurement error")
-  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "Mplus", "none", FALSE), "lavaan")
-  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "within", FALSE), "within")
-  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "none", TRUE), "Bounded estimation is not yet available for the DPM")
-  expect_error(icheck_DPM_compatibility("DPM", 1, FALSE, "lavaan", "ME", FALSE), "does not separate measurement error")
-  expect_null(icheck_DPM_compatibility("RICLPM", .8, TRUE, "Mplus", "ME", TRUE))
-})
-
-test_that("DPM alias checks guide common RI-CLPM and DPM mixups", {
-  expect_null(icheck_DPM_aliases(0.2, NULL, NULL, NULL, NULL))
-  expect_error(
-    icheck_DPM_aliases(NULL, NULL, NULL, NULL, NULL),
-    "AF_proportion.*must be specified.*NULL"
-  )
-  expect_error(
-    icheck_DPM_aliases(NULL, 0.5, NULL, NULL, NULL),
-    "model = 'RICLPM'"
-  )
-  expect_error(
-    icheck_DPM_aliases(NULL, NULL, NULL, 0.3, NULL),
-    "RI_cor.*not valid.*DPM.*AF_cor"
-  )
-  expect_error(
-    icheck_DPM_aliases(0.2, 0.5, NULL, NULL, NULL),
-    "model = 'RICLPM'"
-  )
-  expect_error(
-    icheck_DPM_aliases(0.2, NULL, 0.5, NULL, NULL),
-    "ICC.*not valid.*DPM.*AF_proportion"
-  )
-  expect_error(
-    icheck_DPM_aliases(0.2, NULL, NULL, 0.3, NULL),
-    "RI_cor.*not valid.*DPM.*AF_cor"
-  )
-  expect_error(
-    icheck_DPM_aliases(0.2, NULL, NULL, NULL, 0.3),
-    "within_cor.*not valid.*DPM.*wave_cor"
-  )
 })
 
 test_that("icheck_software() works", {
