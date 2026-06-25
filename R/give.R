@@ -10,8 +10,8 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Time-varying reliability specifications are shown with a compact label.
-#'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is not available for DPM objects.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown with a compact variable-specific label.
+#'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
 #'   \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
 #'   \item \code{results}: The average estimate (\code{average}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 #'   \item \code{names}: The parameter names in the condition with the least parameters (i.e., parameter names that apply to each experimental condition).
@@ -66,11 +66,12 @@ give <- function(from, what, parameter = NULL) {
       )
     )
   }
-  if (iis_DPM_object(from) && identical(what, "reliability")) {
+  if (iis_DPM_object(from) && identical(what, "reliability") &&
+      !iDPM_has_reliability_conditions(from)) {
     cli::cli_abort(
       c(
         "`reliability` is not available for DPM objects:",
-        i = "The DPM does not separate measurement error, so reliability is not part of the DPM simulation conditions.",
+        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
         i = "Use `give(object, 'conditions')` or `give(object, 'AF_proportion')` to inspect DPM conditions."
       )
     )
@@ -110,7 +111,7 @@ give_powRICLPM_conditions <- function(object) {
   return(d)
 }
 
-ireliability_is_time_varying <- function(condition) {
+ireliability_is_variable_specific <- function(condition) {
   !is.null(condition$reliability_matrix) &&
     length(unique(c(condition$reliability_matrix))) > 1L
 }
@@ -126,13 +127,13 @@ ireliability_table <- function(condition) {
 }
 
 iprint_reliability_tables <- function(conditions) {
-  time_varying <- which(vapply(conditions, ireliability_is_time_varying, logical(1)))
-  if (length(time_varying) == 0L) {
+  variable_specific <- which(vapply(conditions, ireliability_is_variable_specific, logical(1)))
+  if (length(variable_specific) == 0L) {
     return(invisible(NULL))
   }
 
-  cat("\nReliability specification for time-varying condition(s):\n")
-  for (condition_index in time_varying) {
+  cat("\nReliability specification for variable-specific condition(s):\n")
+  for (condition_index in variable_specific) {
     cat("\nCondition ", condition_index, ":\n", sep = "")
     print(
       knitr::kable(
@@ -147,6 +148,16 @@ iprint_reliability_tables <- function(conditions) {
 
 iis_DPM_object <- function(object) {
   identical(object$session$model, "DPM")
+}
+
+iDPM_has_reliability_conditions <- function(object) {
+  if (!iis_DPM_object(object)) {
+    return(TRUE)
+  }
+  isTRUE(object$session$estimate_ME) ||
+    any(vapply(object$conditions, function(condition) {
+      !is.null(condition$ME_var) && any(condition$ME_var != 0)
+    }, logical(1)))
 }
 
 imodel_display_name <- function(object) {
@@ -188,6 +199,9 @@ iexperimental_condition_label <- function(n) {
 
 idrop_DPM_reliability_column <- function(object, x) {
   if (!iis_DPM_object(object) || !is.data.frame(x) || !"reliability" %in% names(x)) {
+    return(x)
+  }
+  if (iDPM_has_reliability_conditions(object)) {
     return(x)
   }
   x$reliability <- NULL

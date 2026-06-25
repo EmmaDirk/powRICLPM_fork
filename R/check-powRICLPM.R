@@ -249,47 +249,6 @@ icheck_rel <- function(x, time_points = NULL, software = "lavaan",
     )
   }
 
-  time_varying_reliability <- is.matrix(x) || length(x) > 1L
-  if (software == "Mplus" && time_varying_reliability) {
-    cli::cli_abort(
-      c(
-        "Time-varying reliability is only available with `software = 'lavaan'`:",
-        x = "Vector or matrix reliability specifications are not available for Mplus."
-      ),
-      call = call
-    )
-  }
-
-  if (!time_varying_reliability) {
-    return(invisible(NULL))
-  }
-
-  if (length(time_points) != 1) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} can only be used with one value of {.arg {t_arg}}:",
-        i = "If you want to compare power for multiple values of {.arg {t_arg}} while using time-varying reliability, use multiple {.fun powRICLPM} calls.",
-        x = paste0("length({.arg {t_arg}}) = ", length(time_points), ".")
-      ),
-      call = call
-    )
-  }
-
-  if (!is.numeric(time_points) ||
-      is.na(time_points) ||
-      !is.finite(time_points) ||
-      time_points %% 1 != 0 ||
-      time_points < 1) {
-    cli::cli_abort(
-      c(
-        "{.arg {t_arg}} must be one positive whole number when using time-varying {.arg {arg}}:",
-        x = paste0("{.arg {t_arg}} = ", format_scalar_value(time_points), ".")
-      ),
-      call = call
-    )
-  }
-  time_points <- as.integer(time_points)
-
   if (is.matrix(x)) {
     if (nrow(x) != 2L) {
       row_label <- if (nrow(x) == 1L) "row" else "rows"
@@ -302,28 +261,6 @@ icheck_rel <- function(x, time_points = NULL, software = "lavaan",
         call = call
       )
     }
-    if (ncol(x) != time_points) {
-      cli::cli_abort(
-        c(
-          "{.arg {arg}} must have one column per time point:",
-          i = "Columns correspond to time points.",
-          x = paste0(
-            "Your {.arg {arg}} has ", ncol(x),
-            " columns, but {.arg {t_arg}} = ", time_points, "."
-          )
-        ),
-        call = call
-      )
-    }
-  } else if (length(x) != time_points) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} must have one value per time point:",
-        x = paste0("Your {.arg {arg}} has length ", length(x),
-                   ", but {.arg {t_arg}} = ", time_points, ".")
-      ),
-      call = call
-    )
   }
 
   invisible(NULL)
@@ -383,22 +320,48 @@ icheck_reliability_matrix_call <- function(expr, env, arg = "reliability", call 
 
 inormalize_reliability <- function(reliability, time_points) {
   if (is.matrix(reliability)) {
-    return(unname(reliability))
+    return(unname(matrix(
+      reliability[, 1],
+      nrow = 2,
+      ncol = time_points
+    )))
   }
-  if (length(reliability) == 1L) {
-    return(unname(matrix(reliability, nrow = 2, ncol = time_points)))
-  }
-  unname(rbind(reliability, reliability))
+  unname(matrix(reliability[1], nrow = 2, ncol = time_points))
 }
 
 ireliability_condition_value <- function(reliability) {
-  if (length(reliability) == 1L && is.null(dim(reliability))) {
-    return(reliability)
+  ireliability_conditions(reliability)$reliability
+}
+
+ireliability_conditions <- function(reliability) {
+  if (is.matrix(reliability)) {
+    specs <- lapply(seq_len(ncol(reliability)), function(i) {
+      reliability[, i, drop = FALSE]
+    })
+    values <- vapply(specs, ireliability_condition_label, character(1))
+    return(data.frame(
+      reliability = values,
+      reliability_spec = I(specs),
+      stringsAsFactors = FALSE
+    ))
   }
-  if (length(unique(c(reliability))) == 1L) {
-    return(unique(c(reliability)))
-  }
-  "time-varying"
+
+  data.frame(
+    reliability = reliability,
+    reliability_spec = I(as.list(reliability)),
+    stringsAsFactors = FALSE
+  )
+}
+
+ireliability_condition_label <- function(reliability) {
+  paste0(
+    "A=", format_reliability_value(reliability[1, 1]),
+    ", B=", format_reliability_value(reliability[2, 1])
+  )
+}
+
+format_reliability_value <- function(x) {
+  format(x, trim = TRUE, scientific = FALSE)
 }
 
 #' Check \code{loadings} Argument
@@ -886,7 +849,7 @@ icheck_path <- function(x, software, arg = rlang::caller_arg(x), call = rlang::c
 icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(), model = "RICLPM") {
   if (!is_PD(x)) {
     matrix_message <- if (identical(model, "DPM")) {
-      "The residual variance-covariance matrix for observed DPM residuals (Psi) must be positive definite:"
+      "The residual variance-covariance matrix for DPM process residuals (Psi) must be positive definite:"
     } else {
       "The residual variance-covariance matrix for within-components (Psi) must be positive definite:"
     }
@@ -941,7 +904,33 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, model = "RICLPM",
       )
     )
   }
-  n_parameters <- count_parameters(2, t, constraints, ME, model = model)
+  n_parameters_by_time <- vapply(
+    t,
+    count_parameters,
+    numeric(1),
+    k = 2,
+    constraints = constraints,
+    est_ME = ME,
+    model = model
+  )
+  n_information_by_time <- vapply(t, count_distinct_information, numeric(1), k = 2)
+  if (identical(model, "DPM") && any(n_parameters_by_time > n_information_by_time)) {
+    i <- which(n_parameters_by_time > n_information_by_time)[1]
+    cli::cli_abort(
+      c(
+        "The specified model is not identified from the available covariance information:",
+        i = paste0(
+          "With ", t[i], " time points, the model estimates ",
+          n_parameters_by_time[i], " parameters from ",
+          n_information_by_time[i], " distinct variance-covariance elements."
+        ),
+        x = "Add more time points or impose additional constraints."
+      ),
+      call = call
+    )
+  }
+
+  n_parameters <- max(n_parameters_by_time)
   if (!all(x > n_parameters)) {
     cli::cli_abort(
       c(

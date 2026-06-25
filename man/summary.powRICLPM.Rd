@@ -31,7 +31,7 @@
 
 \item{AF_proportion}{(optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.}
 
-\item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is not available for DPM objects.}
+\item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is available for DPM objects when measurement error is part of the DPM conditions.}
 
 \item{ICC}{Alternative name for \code{intraclass_correlation}.}
 }
@@ -44,7 +44,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \details{
 \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 \itemize{
-\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple RI-CLPM conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
+\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
 \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 }

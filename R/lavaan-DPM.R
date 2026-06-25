@@ -1,32 +1,50 @@
 create_lavaan_DPM <- function(condition) {
   name_var <- LETTERS[1:2]
   name_obs <- sapply(name_var, paste0, 1:condition[["time_points"]])
+  name_true <- sapply(name_var, function(x) {
+    paste0("t", x, 1:condition[["time_points"]])
+  })
   name_AF <- paste0("AF_", name_var)
+  pop_uses_true_scores <- iDPM_uses_measurement_error(condition)
+  pop_process <- if (pop_uses_true_scores) name_true else name_obs
+  est_process <- if (isTRUE(condition[["estimate_ME"]])) name_true else name_obs
 
   pop_tab <- rbind(
-    pop_DPM_AF(condition, name_AF, name_obs),
+    if (pop_uses_true_scores) {
+      DPM_true_score_measurement(name_true, name_obs)
+    },
+    pop_DPM_AF(condition, name_AF, pop_process),
     pop_DPM_AF_var(condition, name_AF),
     pop_DPM_AF_cov(condition, name_AF),
-    pop_DPM_baseline_var(condition, name_obs),
-    pop_DPM_baseline_cov(condition, name_obs),
-    pop_DPM_AF_baseline_cov(condition, name_AF, name_obs),
-    pop_DPM_lagged(condition, name_obs),
-    pop_DPM_residual_var(condition, name_obs),
-    pop_DPM_residual_cov(condition, name_obs)
+    pop_DPM_baseline_var(condition, pop_process),
+    pop_DPM_baseline_cov(condition, pop_process),
+    pop_DPM_AF_baseline_cov(condition, name_AF, pop_process),
+    pop_DPM_lagged(condition, pop_process),
+    pop_DPM_residual_var(condition, pop_process),
+    pop_DPM_residual_cov(condition, pop_process),
+    if (pop_uses_true_scores) {
+      pop_ME(condition, name_obs)
+    }
   )
   rownames(pop_tab) <- NULL
   pop_synt <- lavaan_table_to_syntax(pop_tab)
 
   est_tab <- rbind(
-    est_DPM_AF(condition, name_AF, name_obs),
+    if (isTRUE(condition[["estimate_ME"]])) {
+      DPM_true_score_measurement(name_true, name_obs)
+    },
+    est_DPM_AF(condition, name_AF, est_process),
     est_DPM_AF_var(condition, name_AF),
     est_DPM_AF_cov(condition, name_AF),
-    est_DPM_baseline_var(condition, name_obs),
-    est_DPM_baseline_cov(condition, name_obs),
-    est_DPM_AF_baseline_cov(condition, name_AF, name_obs),
-    est_DPM_lagged(condition, name_obs),
-    est_DPM_residual_var(condition, name_obs),
-    est_DPM_residual_cov(condition, name_obs),
+    est_DPM_baseline_var(condition, est_process),
+    est_DPM_baseline_cov(condition, est_process),
+    est_DPM_AF_baseline_cov(condition, name_AF, est_process),
+    est_DPM_lagged(condition, est_process),
+    est_DPM_residual_var(condition, est_process),
+    est_DPM_residual_cov(condition, est_process),
+    if (isTRUE(condition[["estimate_ME"]])) {
+      create_estimate_ME(condition, name_obs)
+    },
     if (has_constraint(condition[["constraints"]], "stationarity")) {
       DPM_stationarity_constraints(condition)
     }
@@ -45,6 +63,7 @@ create_lavaan_DPM <- function(condition) {
     AF_var = condition[["AF_var"]],
     AF_cov = condition[["AF_cov"]],
     DPM_values = condition[["DPM_values"]],
+    ME_var = condition[["ME_var"]],
     pop_synt = pop_synt,
     pop_tab = pop_tab,
     est_synt = est_synt,
@@ -66,6 +85,20 @@ lavaan_table_to_syntax <- function(tab) {
     paste0(tab[, 1], tab[, 2], tab[, 3], tab[, 4], tab[, 5]),
     collapse = "\n"
   )
+}
+
+iDPM_uses_measurement_error <- function(condition) {
+  isTRUE(condition[["estimate_ME"]]) || any(condition[["ME_var"]] != 0)
+}
+
+DPM_true_score_measurement <- function(name_true, name_obs) {
+  lhs <- c(name_true)
+  op <- "=~"
+  pv <- "1"
+  con <- "*"
+  rhs <- c(name_obs)
+  free <- FALSE
+  cbind.data.frame(lhs, op, pv, con, rhs, free, stringsAsFactors = FALSE)
 }
 
 pop_DPM_AF <- function(condition, name_AF, name_obs) {

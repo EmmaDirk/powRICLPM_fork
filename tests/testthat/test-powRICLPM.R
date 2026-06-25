@@ -409,6 +409,19 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       target_power = 0.8,
       sample_size = 1000,
       time_points = 3,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reps = 1
+    ),
+    "at least 4 time points"
+  )
+  expect_error(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
       AF_proportion = "0.2",
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
@@ -421,7 +434,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
     powDPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
       wave_cor = 0.3,
@@ -433,7 +446,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
     powDPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       AF_proportion = 0.2,
       lagged_effects = lagged_effects,
       wave_cor = 0.3,
@@ -445,7 +458,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
     powDPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       AF_proportion = 0.2,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
@@ -457,7 +470,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
     powDPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       AF_proportion = 0.2,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
@@ -465,14 +478,14 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       reps = 1,
       constraints = "ME"
     ),
-    "DPM does not separate measurement error"
+    "estimate_ME = TRUE"
   )
   expect_warning(
     expect_error(
       powDPM(
         target_power = 0.8,
         sample_size = 1000,
-        time_points = 3,
+        time_points = 4,
         AF_proportion = 0.2,
         AF_cor = 0.3,
         lagged_effects = lagged_effects,
@@ -480,16 +493,47 @@ test_that("powDPM validation errors use DPM-specific argument names", {
         constraints = "ME",
         reps = 1
       ),
-      "DPM does not separate measurement error"
+      "estimate_ME = TRUE"
     ),
     NA
   )
+  expect_error(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.3,
+      reliability = 0.8,
+      estimate_ME = TRUE,
+      reps = 1
+    ),
+    "not identified.*39 parameters.*36 distinct"
+  )
+  dpm_psi_error <- tryCatch(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      AF_proportion = 0.4,
+      AF_cor = 0.2,
+      lagged_effects = matrix(c(0.4, 0.1, 0.2, 0.3), ncol = 2, byrow = TRUE),
+      wave_cor = 0.1,
+      reps = 1
+    ),
+    error = function(e) e
+  )
+  expect_s3_class(dpm_psi_error, "error")
+  expect_match(conditionMessage(dpm_psi_error), "wave_cor.*AF_proportion.*AF_cor")
+  expect_false(grepl("within_cor", conditionMessage(dpm_psi_error), fixed = TRUE))
 
   out <- suppressWarnings(
     powDPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       AF_proportion = c(0.1, 0.2),
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
@@ -505,12 +549,80 @@ test_that("powDPM validation errors use DPM-specific argument names", {
   expect_equal(out$session$argument_names$intraclass_correlation, "AF_proportion")
 })
 
+test_that("simple identified powDPM results feed give, summary, and plot", {
+  lagged_effects <- matrix(c(0.4, 0.1, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out <- suppressWarnings(
+    powDPM(
+      target_power = 0.8,
+      sample_size = c(600, 800),
+      time_points = 4,
+      AF_proportion = 0.2,
+      AF_cor = 0.2,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.1,
+      reps = 2,
+      seed = 123456
+    )
+  )
+
+  dpm_results <- give(out, "results", parameter = "B2~A1")
+  dpm_uncertainty <- give(out, "uncertainty", parameter = "B2~A1")
+  dpm_summary <- summary(out, parameter = "B2~A1")
+
+  expect_false(anyNA(dpm_results[, c("SEAvg", "accuracy", "coverage", "power")]))
+  expect_false(anyNA(dpm_uncertainty[, c("MCSE_SEAvg", "MCSE_accuracy", "MCSE_coverage", "MCSE_power")]))
+  expect_false(anyNA(dpm_summary[, c("SEAvg", "Accuracy", "Cover", "Power")]))
+  expect_warning(
+    plot(out, parameter = "B2~A1"),
+    NA
+  )
+})
+
+test_that("powDPM supports measurement error on latent true scores", {
+  lagged_effects <- matrix(c(0.4, 0.1, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out <- suppressWarnings(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 900,
+      time_points = 4,
+      AF_proportion = 0.2,
+      AF_cor = 0.2,
+      lagged_effects = lagged_effects,
+      wave_cor = 0.1,
+      reliability = c(0.8, 0.9),
+      estimate_ME = TRUE,
+      constraints = c("stationarity", "ME"),
+      reps = 2,
+      seed = 123456
+    )
+  )
+
+  expect_true(out$session$estimate_ME)
+  expect_equal(give(out, "conditions")$reliability, c(0.8, 0.9))
+  expect_equal(out$conditions[[1]]$ME_var, matrix(0.25, nrow = 2, ncol = 4))
+  expect_true(grepl("tA1=~1*A1", out$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("AF_A=~1*tA2", out$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("tB2~0.2*tA1", out$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("A1~~0.25*A1", out$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("A1~~MEvarA*start(0.25)*A1", out$conditions[[1]]$est_synt, fixed = TRUE))
+
+  expect_true("tB2~tA1" %in% give(out, "names"))
+  dpm_me_summary <- summary(out, parameter = "tB2~tA1")
+  expect_false(anyNA(dpm_me_summary[, c("SEAvg", "Accuracy", "Cover", "Power")]))
+  expect_warning(
+    plot(out, parameter = "tB2~tA1"),
+    NA
+  )
+})
+
 test_that("powDPM validation errors catch common DPM loading mistakes", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   base <- list(
     target_power = 0.8,
     sample_size = 1000,
-    time_points = 3,
+    time_points = 4,
     AF_proportion = 0.2,
     AF_cor = 0.3,
     lagged_effects = lagged_effects,
@@ -525,19 +637,19 @@ test_that("powDPM validation errors catch common DPM loading mistakes", {
     "one value per time point.*first value must be `NA`"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = c(NA, 0.8, 1)))),
+    do.call(powDPM, c(base, list(loadings = c(NA, 0.8, 1, 1)))),
     "second DPM loading must be 1"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = c(NaN, 1, 0.8)))),
+    do.call(powDPM, c(base, list(loadings = c(NaN, 1, 0.8, 0.7)))),
     "first DPM loading must be `NA`"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = c(NA, 1, Inf)))),
+    do.call(powDPM, c(base, list(loadings = c(NA, 1, Inf, 0.7)))),
     "finite values, except for the required first-wave NA"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 1, 1, 1.2), nrow = 2, byrow = TRUE)))),
+    do.call(powDPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 0.7, 1, 1, 1.2, 0.9), nrow = 2, byrow = TRUE)))),
     "first DPM loading column must be `NA`"
   )
 })
@@ -671,7 +783,7 @@ test_that("power analysis for the STARTS model works", {
   )
 })
 
-test_that("time-varying reliability lavaan paths run", {
+test_that("reliability scenario paths run", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
   out_vector <- suppressWarnings(
@@ -689,11 +801,13 @@ test_that("time-varying reliability lavaan paths run", {
     )
   )
 
-  expect_equal(out_vector$conditions[[1]]$reliability, "time-varying")
-  expect_true(grepl("A2~~0.857142857142857*A2", out_vector$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("B3~~0*B3", out_vector$conditions[[1]]$pop_synt, fixed = TRUE))
+  expect_equal(length(out_vector$conditions), 3)
+  expect_equal(unname(vapply(out_vector$conditions, function(x) x$reliability, numeric(1))), c(0.8, 0.7, 1))
+  expect_equal(out_vector$conditions[[2]]$reliability_matrix, matrix(0.7, nrow = 2, ncol = 3))
+  expect_true(grepl("A2~~0.857142857142857*A2", out_vector$conditions[[2]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0.857142857142857*B3", out_vector$conditions[[2]]$pop_synt, fixed = TRUE))
 
-  reliability_matrix <- matrix(c(0.8, 0.7, 1, 0.9, 0.85, 0.75), nrow = 2, byrow = TRUE)
+  reliability_matrix <- matrix(c(0.8, 0.7, 0.9, 0.85), nrow = 2, byrow = TRUE)
   out_matrix <- suppressWarnings(
     powRICLPM(
       target_power = 0.8,
@@ -703,18 +817,23 @@ test_that("time-varying reliability lavaan paths run", {
       RI_cor = 0.3,
       lagged_effects = lagged_effects,
       within_cor = 0.3,
-      reliability = cbind(reliability_matrix, c(0.9, 1)),
+      reliability = reliability_matrix,
       estimate_ME = TRUE,
       reps = 1,
       seed = 123456
     )
   )
 
-  expect_equal(out_matrix$conditions[[1]]$reliability, "time-varying")
-  expect_true(grepl("A2~~0.857142857142857*A2", out_matrix$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("B2~~0.352941176470588*B2", out_matrix$conditions[[1]]$pop_synt, fixed = TRUE))
-  expect_true(grepl("A2~~start(0.857142857142857)*A2", out_matrix$conditions[[1]]$est_synt, fixed = TRUE))
-  expect_true(grepl("B2~~start(0.352941176470588)*B2", out_matrix$conditions[[1]]$est_synt, fixed = TRUE))
+  expect_equal(length(out_matrix$conditions), 2)
+  expect_equal(
+    unname(vapply(out_matrix$conditions, function(x) x$reliability, character(1))),
+    c("A=0.8, B=0.9", "A=0.7, B=0.85")
+  )
+  expect_equal(out_matrix$conditions[[2]]$reliability_matrix, matrix(c(0.7, 0.85), nrow = 2, ncol = 4))
+  expect_true(grepl("A2~~0.857142857142857*A2", out_matrix$conditions[[2]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("B2~~0.352941176470588*B2", out_matrix$conditions[[2]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("A2~~start(0.857142857142857)*A2", out_matrix$conditions[[2]]$est_synt, fixed = TRUE))
+  expect_true(grepl("B2~~start(0.352941176470588)*B2", out_matrix$conditions[[2]]$est_synt, fixed = TRUE))
 })
 
 test_that("bounded estimation for STARTS model in powRICLPM() works", {
@@ -817,23 +936,24 @@ test_that("power analysis for the STARTS model using Mplus works", {
     )
   )
 
-  expect_error(
-    powRICLPM(
-      target_power = 0.8,
-      sample_size = c(2000),
-      time_points = 4,
-      ICC = .5,
-      RI_cor = 0.3,
-      lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
-      within_cor = 0.3,
-      reliability = c(.85, .8, .9, 1),
-      estimate_ME = TRUE,
-      reps = 2,
-      seed = 1234,
-      software = "Mplus",
-      save_path = tempdir()
-    ),
-    "Time-varying reliability.*lavaan"
+  vector_reliability_save_path <- tempfile()
+  dir.create(vector_reliability_save_path)
+  powRICLPM(
+    target_power = 0.8,
+    sample_size = c(2000),
+    time_points = 4,
+    ICC = .5,
+    RI_cor = 0.3,
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reliability = c(.85, .8),
+    estimate_ME = TRUE,
+    reps = 2,
+    seed = 1234,
+    software = "Mplus",
+    save_path = vector_reliability_save_path
   )
+  expect_true(file.exists(file.path(vector_reliability_save_path, "Condition1.inp")))
+  expect_true(file.exists(file.path(vector_reliability_save_path, "Condition2.inp")))
 
 })

@@ -1,14 +1,14 @@
 #' Plot Results From \code{powRICLPM} Object
 #'
 #' @description
-#' Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance or accumulating-factor proportion, and shaped by reliability when applicable. For DPM objects, the default is no shape mapping. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.
+#' Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance or accumulating-factor proportion, and shaped by reliability when applicable. For DPM objects without measurement error, the default is no shape mapping. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.
 #'
 #' @param x A \code{powRICLPM} object.
 #' @param y (optional) A \code{character} string, specifying which outcome is plotted on the y-axis (see "Details").
 #' @param ... (don't use)
 #' @param parameter Character string of length 1, denoting the parameter to visualize the results for.
 #' @param color_by Character string of length 1, denoting what variable to map to color (see "Details").
-#' @param shape_by Character string of length 1, denoting what variable to map to point shapes (see "Details"). Use \code{"none"} to omit shape mapping. \code{"reliability"} is not available for DPM objects.
+#' @param shape_by Character string of length 1, denoting what variable to map to point shapes (see "Details"). Use \code{"none"} to omit shape mapping. \code{"reliability"} is available for DPM objects when measurement error is part of the DPM conditions.
 #' @param facet_by Character string of length 1, denoting what variable to facet by (see "Details").
 #'
 #' @details
@@ -31,7 +31,7 @@
 #'    \item \code{time_points}: Time points.
 #'    \item \code{intraclass_correlation} or \code{ICC}: Intraclass correlation.
 #'    \item \code{AF_proportion}: Accumulating-factor proportion for the DPM.
-#'    \item \code{reliability}: Item-reliability, when applicable. This is not available for DPM objects.
+#'    \item \code{reliability}: Item-reliability, when applicable.
 #'    \item \code{none}: No shape mapping.
 #' }
 #' }
@@ -77,7 +77,7 @@ plot.powRICLPM <- function(
   if (missing(facet_by)) {
     facet_by <- iicc_value_name(object = x)
   }
-  if (missing(shape_by) && iis_DPM_object(x)) {
+  if (missing(shape_by) && iis_DPM_object(x) && !iDPM_has_reliability_conditions(x)) {
     shape_by <- "none"
   }
 
@@ -109,11 +109,12 @@ plot.powRICLPM <- function(
       )
     )
   }
-  if (iis_DPM_object(x) && any(mapping_choices == "reliability")) {
+  if (iis_DPM_object(x) && any(mapping_choices == "reliability") &&
+      !iDPM_has_reliability_conditions(x)) {
     cli::cli_abort(
       c(
         "`reliability` is not available for DPM plots:",
-        i = "The DPM does not separate measurement error, so reliability is not part of the DPM simulation conditions.",
+        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
         i = "Use `shape_by = 'none'` or map aesthetics to another simulation condition."
       )
     )

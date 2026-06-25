@@ -9,13 +9,13 @@ check_reliability(reliability = NULL, time_points = NULL, ...)
 \arguments{
 \item{reliability}{A \code{numeric} value, vector, or matrix specifying
 reliability in the lavaan data-generating model. A single value is applied
-to both variables at every time point. A vector of length
-\code{time_points} is applied to both variables. A matrix must have two
-rows, one for each variable, and one column per time point.}
+to both variables at every time point. A vector supplies multiple
+reliability conditions, with each value applied to both variables at every
+time point. A matrix must have two rows, one for each variable, and one
+column per reliability condition.}
 
 \item{time_points}{(optional) A single \code{integer} indicating the number
-of time points. If omitted, this is inferred from \code{reliability} when
-\code{reliability} is a vector or matrix.}
+of time points. Reliability values are applied to every time point.}
 
 \item{...}{Additional arguments are not allowed.}
 }
@@ -25,16 +25,15 @@ interpretation of \code{reliability}.
 }
 \description{
 Write a textual interpretation of the values in \code{reliability}. This can be
-used to check if time-varying reliabilities have been correctly specified for
-lavaan data generation. Vector and matrix reliability specifications are not
-supported for Mplus.
+used to check if reliability conditions have been correctly specified for
+data generation.
 }
 \examples{
-# Same reliability for A and B over time
-reliability1 <- c(.8, .7, .9, .85)
+# Compare multiple reliabilities for A and B
+reliability1 <- c(.8, .7, .9)
 check_reliability(reliability1)
 
-# Different reliabilities for A and B
-reliability2 <- matrix(c(.8, .8, .8, .8, .7, .75, .8, .85), nrow = 2, byrow = TRUE)
+# Compare reliability conditions that differ between A and B
+reliability2 <- matrix(c(.8, .9, .7, .85), nrow = 2, byrow = TRUE)
 check_reliability(reliability2, time_points = 4)
 }

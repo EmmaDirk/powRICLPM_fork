@@ -237,18 +237,17 @@ iwrite_loadings_check <- function(loadings, time_points, model = "RICLPM") {
 #' Check Interpretation of Reliability
 #'
 #' Write a textual interpretation of the values in `reliability`. This can be
-#' used to check if time-varying reliabilities have been correctly specified for
-#' lavaan data generation. Vector and matrix reliability specifications are not
-#' supported for Mplus.
+#' used to check if reliability conditions have been correctly specified for
+#' data generation.
 #'
 #' @param reliability A \code{numeric} value, vector, or matrix specifying
 #'   reliability in the lavaan data-generating model. A single value is applied
-#'   to both variables at every time point. A vector of length
-#'   \code{time_points} is applied to both variables. A matrix must have two
-#'   rows, one for each variable, and one column per time point.
+#'   to both variables at every time point. A vector supplies multiple
+#'   reliability conditions, with each value applied to both variables at every
+#'   time point. A matrix must have two rows, one for each variable, and one
+#'   column per reliability condition.
 #' @param time_points (optional) A single \code{integer} indicating the number
-#'   of time points. If omitted, this is inferred from \code{reliability} when
-#'   \code{reliability} is a vector or matrix.
+#'   of time points. Reliability values are applied to every time point.
 #' @param ... Additional arguments are not allowed.
 #'
 #' @return Invisibly returns \code{NULL}. The function is used for printing an
@@ -256,12 +255,12 @@ iwrite_loadings_check <- function(loadings, time_points, model = "RICLPM") {
 #' @export
 #'
 #' @examples
-#' # Same reliability for A and B over time
-#' reliability1 <- c(.8, .7, .9, .85)
+#' # Compare multiple reliabilities for A and B
+#' reliability1 <- c(.8, .7, .9)
 #' check_reliability(reliability1)
 #'
-#' # Different reliabilities for A and B
-#' reliability2 <- matrix(c(.8, .8, .8, .8, .7, .75, .8, .85), nrow = 2, byrow = TRUE)
+#' # Compare reliability conditions that differ between A and B
+#' reliability2 <- matrix(c(.8, .9, .7, .85), nrow = 2, byrow = TRUE)
 #' check_reliability(reliability2, time_points = 4)
 check_reliability <- function(reliability = NULL, time_points = NULL, ...) {
   reliability_expr <- substitute(reliability)
@@ -295,9 +294,27 @@ check_reliability <- function(reliability = NULL, time_points = NULL, ...) {
 
   if (missing(time_points) || is.null(time_points)) {
     if (!time_points_missing && is.null(time_points)) {
-      cli::cli_alert_info("`time_points = NULL` was supplied, so the number of time points is inferred from `reliability`. You can omit `time_points` for the same behavior.")
+      cli::cli_alert_info("`time_points = NULL` was supplied, so reliability is interpreted as applying to every time point. You can omit `time_points` for the same behavior.")
     }
-    time_points <- iinfer_reliability_time_points(reliability)
+    time_points <- 1L
+  } else if (length(time_points) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg time_points} must be one positive whole number:",
+        x = paste0("length({.arg time_points}) = ", length(time_points), ".")
+      )
+    )
+  } else if (!is.numeric(time_points) ||
+             is.na(time_points) ||
+             !is.finite(time_points) ||
+             time_points %% 1 != 0 ||
+             time_points < 1) {
+    cli::cli_abort(
+      c(
+        "{.arg time_points} must be one positive whole number:",
+        x = paste0("{.arg time_points} = ", format_scalar_value(time_points), ".")
+      )
+    )
   }
 
   icheck_rel(reliability, time_points, software = "lavaan")
@@ -305,59 +322,37 @@ check_reliability <- function(reliability = NULL, time_points = NULL, ...) {
   invisible(NULL)
 }
 
-iinfer_reliability_time_points <- function(reliability) {
-  if (is.matrix(reliability)) {
-    return(ncol(reliability))
-  }
-  length(reliability)
-}
-
 iwrite_reliability_check <- function(reliability, time_points) {
-  reliability_matrix <- inormalize_reliability(reliability, time_points)
-  same_reliability <- identical(reliability_matrix[1, ], reliability_matrix[2, ])
+  reliability_conditions <- ireliability_conditions(reliability)
 
-  if (length(reliability) == 1L && is.null(dim(reliability))) {
-    writeLines(
-      rlang::format_error_bullets(c(
-        "According to `reliability`, the reliabilities in the data-generating model are:",
-        "*" = paste0("Variables A and B have reliability ", reliability, " at every time point.")
-      ))
-    )
-    return(invisible(NULL))
-  }
-
-  if (same_reliability) {
-    reliability_lines <- paste0(
-      "A",
-      seq_len(time_points),
-      " and B",
-      seq_len(time_points),
-      " have reliability ",
-      reliability_matrix[1, ],
-      "."
+  reliability_lines <- vapply(seq_len(nrow(reliability_conditions)), function(i) {
+    reliability_matrix <- inormalize_reliability(
+      reliability_conditions$reliability_spec[[i]],
+      time_points[1]
     )
 
-    writeLines(
-      rlang::format_error_bullets(c(
-        "According to `reliability`, the reliabilities in the data-generating model are:",
-        stats::setNames(reliability_lines, rep("*", length(reliability_lines)))
-      ))
-    )
-    return(invisible(NULL))
-  }
-
-  A_lines <- paste0("A", seq_len(time_points), " has reliability ", reliability_matrix[1, ], ".")
-  B_lines <- paste0("B", seq_len(time_points), " has reliability ", reliability_matrix[2, ], ".")
+    if (identical(reliability_matrix[1, ], reliability_matrix[2, ])) {
+      paste0(
+        "Condition ", i, ": Variables A and B have reliability ",
+        reliability_matrix[1, 1],
+        " at every time point."
+      )
+    } else {
+      paste0(
+        "Condition ", i, ": Variable A has reliability ",
+        reliability_matrix[1, 1],
+        " and variable B has reliability ",
+        reliability_matrix[2, 1],
+        " at every time point."
+      )
+    }
+  }, character(1))
 
   writeLines(
     rlang::format_error_bullets(c(
       "According to `reliability`, the reliabilities in the data-generating model are:",
-      stats::setNames(A_lines, rep("*", length(A_lines)))
+      stats::setNames(reliability_lines, rep("*", length(reliability_lines)))
     ))
   )
-  writeLines("")
-  writeLines(rlang::format_error_bullets(
-    stats::setNames(B_lines, rep("*", length(B_lines)))
-  ))
   invisible(NULL)
 }

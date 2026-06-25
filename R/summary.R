@@ -10,7 +10,7 @@
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
 #' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
 #' @param AF_proportion (optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.
-#' @param reliability (optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is not available for DPM objects.
+#' @param reliability (optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is available for DPM objects when measurement error is part of the DPM conditions.
 #' @param ICC Alternative name for \code{intraclass_correlation}.
 #'
 #' @return No return value, called for side effects.
@@ -18,7 +18,7 @@
 #' @details
 #' \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 #' \itemize{
-#'   \item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple RI-CLPM conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
+#'   \item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
 #'   \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 #'   \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 #' }
@@ -107,11 +107,12 @@ summary.powRICLPM <- function(
   if (!is.null(sample_size)) {icheck_sample_size_summary(sample_size, object)}
   if (!is.null(time_points)) {icheck_time_points_summary(time_points, object)}
   if (!is.null(ICC)) {icheck_ICC_summary(ICC, object)}
-  if (iis_DPM_object(object) && !is.null(reliability)) {
+  if (iis_DPM_object(object) && !is.null(reliability) &&
+      !iDPM_has_reliability_conditions(object)) {
     cli::cli_abort(
       c(
         "`reliability` is not available for DPM summaries:",
-        i = "The DPM does not separate measurement error, so reliability is not part of the DPM simulation conditions.",
+        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
         i = "Select DPM conditions with `sample_size`, `time_points`, and `AF_proportion`."
       )
     )
@@ -192,7 +193,7 @@ summary.powRICLPM <- function(
     parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
     parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
     parameter_col_names <- c("Sample size", "Time points", icc_table_label)
-    if (!iis_DPM_object(object)) {
+    if (!iis_DPM_object(object) || iDPM_has_reliability_conditions(object)) {
       parameter_col_names <- c(parameter_col_names, "Reliability")
     }
     colnames(parameter_summary) <- c(parameter_col_names, "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
@@ -207,7 +208,7 @@ summary.powRICLPM <- function(
     replications_df <- give_powRICLPM_estimation_problems(object)
     replications_df <- idrop_DPM_reliability_column(object, replications_df)
     replications_col_names <- c("Sample size", "Time points", icc_table_label)
-    if (!iis_DPM_object(object)) {
+    if (!iis_DPM_object(object) || iDPM_has_reliability_conditions(object)) {
       replications_col_names <- c(replications_col_names, "Reliability")
     }
     colnames(replications_df) <- c(replications_col_names, "Error", "Not converged", "Inadmissible")

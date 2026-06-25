@@ -15,6 +15,8 @@ powDPM(
   AF_cor,
   lagged_effects = NULL,
   wave_cor,
+  reliability = 1,
+  estimate_ME = FALSE,
   loadings = NULL,
   skewness = 0,
   kurtosis = 0,
@@ -39,15 +41,19 @@ powDPM(
 
 \item{sample_size}{(optional) An \code{integer} (vector), indicating specific sample sizes at which to evaluate power, rather than specifying a range using the \code{search_*} arguments.}
 
-\item{time_points}{An \code{integer} (vector), indicating number of time points. The RI-CLPM needs at least 3 waves, and STARTS estimation needs at least 4 waves.}
+\item{time_points}{An \code{integer} (vector), indicating number of time points. The DPM needs at least 4 waves.}
 
-\item{AF_proportion}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of observed variance attributed to the accumulating factors in the DPM.}
+\item{AF_proportion}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of DPM true-score variance attributed to the accumulating factors.}
 
 \item{AF_cor}{A \code{double} between -1 and 1, denoting the correlation between accumulating factors in the DPM.}
 
 \item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
 
 \item{wave_cor}{A \code{double} between -1 and 1, denoting the observed wave-level correlation in the DPM.}
+
+\item{reliability}{(optional) A \code{numeric} value, vector, or matrix with elements larger than 0.1 and at most 1, denoting the reliability of the observed variables in the DPM data-generating model.}
+
+\item{estimate_ME}{(optional) A \code{logical}, denoting if measurement error variance should be estimated in the DPM.}
 
 \item{loadings}{(optional) A \code{numeric} vector or matrix specifying accumulating-factor loadings for the DPM in the \pkg{lavaan} data-generating model. DPM loadings must include one value per wave, with an explicit first-wave \code{NA}. The wave-2 loading is fixed to 1.}
 
@@ -84,10 +90,19 @@ function uses the same lavaan simulation and summary machinery as
 \details{
 The accumulating factors load on waves 2 through T and covary with the first
 wave. The DPM uses \code{AF_proportion} as the accumulating-factor variance
-and \code{wave_cor} as the target observed wave-level correlation. Residual
+and \code{wave_cor} as the target true-score wave-level correlation. Residual
 variances and covariances are computed from the DPM stationarity equations so
-the observed variables have variance 1 across waves when the requested values
-are admissible.
+the DPM true-score variables have variance 1 across waves when the requested
+values are admissible. When measurement error is included, observed variables
+are single-indicator measurements of latent true-score variables named
+\code{tA1}, \code{tA2}, ..., \code{tB1}, \code{tB2}, and so on.
+The \code{reliability} argument controls the generated measurement error
+variance. Setting \code{estimate_ME = TRUE} estimates those measurement error
+variances in the DPM. As with the STARTS model, DPMs with estimated
+measurement error may be prone to empirical under-identification,
+non-convergence, or inadmissible solutions even when the model is formally
+identified. Constraints such as \code{constraints = "ME"} or
+\code{constraints = "stationarity"} can reduce model complexity.
 }
 \examples{
 lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
@@ -96,7 +111,7 @@ lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 out <- powDPM(
   target_power = 0.8,
   sample_size = 500,
-  time_points = 3,
+  time_points = 4,
   AF_proportion = 0.2,
   AF_cor = 0.3,
   lagged_effects = lagged_effects,

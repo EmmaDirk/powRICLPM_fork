@@ -29,12 +29,12 @@ icheck_T_DPM <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env
       call = call
     )
   }
-  if (any(x < 2)) {
+  if (any(x < 4)) {
     cli::cli_abort(
       c(
-        "Elements in {.arg {arg}} should be larger than 1:",
-        i = "The DPM needs at least 2 time points to be identified.",
-        x = "You've supplied a number of time points smaller than 2."
+        "Elements in {.arg {arg}} should be larger than 3:",
+        i = "The DPM needs at least 4 time points to be identified.",
+        x = "You've supplied a number of time points smaller than 4."
       ),
       call = call
     )
@@ -52,20 +52,11 @@ icheck_T_DPM <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env
 
 icheck_DPM_constraints <- function(constraints, call = rlang::caller_env()) {
   constraints <- normalize_constraints(constraints)
-  if (has_constraint(constraints, "ME")) {
-    cli::cli_abort(
-      c(
-        "`constraints = 'ME'` cannot be used with `powDPM()`:",
-        i = "The DPM does not separate measurement error."
-      ),
-      call = call
-    )
-  }
   if ("within" %in% constraints) {
     cli::cli_abort(
       c(
         "`constraints = 'within'` cannot be used with `powDPM()`:",
-        i = "Use `constraints = c('lagged', 'residuals')` if you want both DPM lagged effects and observed-level residuals constrained over time."
+        i = "Use `constraints = c('lagged', 'residuals')` if you want both DPM lagged effects and process residuals constrained over time."
       ),
       call = call
     )

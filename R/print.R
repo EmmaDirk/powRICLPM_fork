@@ -27,7 +27,7 @@ print.powRICLPM <- function(x, ...) {
   df_conditions <- cbind(condition = 1:length(x$conditions), df_conditions)
   df_conditions <- idrop_DPM_reliability_column(x, df_conditions)
   condition_col_names <- c("Condition", "Sample size", "Time points", icc_table_label)
-  if (!iis_DPM_object(x)) {
+  if (!iis_DPM_object(x) || iDPM_has_reliability_conditions(x)) {
     condition_col_names <- c(condition_col_names, "Reliability")
   }
 

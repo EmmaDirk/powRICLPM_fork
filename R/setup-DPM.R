@@ -33,6 +33,7 @@ create_conditions_DPM <- function(
 ) {
   AF_proportion <- intraclass_correlation
   constraints <- normalize_constraints_for_software(constraints, software)
+  reliability_conditions <- ireliability_conditions(reliability)
 
   conditions <- expand.grid(
     sample_size = sample_size,
@@ -40,27 +41,36 @@ create_conditions_DPM <- function(
     ICC = AF_proportion,
     RI_cor = RI_cor,
     within_cor = within_cor,
-    reliability = 1,
     skewness = skewness,
     kurtosis = kurtosis,
     significance_criterion = significance_criterion,
-    estimate_ME = FALSE,
+    estimate_ME = estimate_ME,
     model = model,
     stringsAsFactors = FALSE
   )
+  conditions <- conditions[rep(seq_len(nrow(conditions)), each = nrow(reliability_conditions)), , drop = FALSE]
+  conditions <- cbind(
+    conditions,
+    reliability_conditions[rep(seq_len(nrow(reliability_conditions)), times = nrow(conditions) / nrow(reliability_conditions)), , drop = FALSE]
+  )
+  rownames(conditions) <- NULL
 
   conditions$constraints <- I(replicate(nrow(conditions), constraints, simplify = FALSE))
   conditions$lagged_effects <- replicate(nrow(conditions), lagged_effects, simplify = FALSE)
   conditions$loadings <- I(lapply(conditions$time_points, function(time_points) {
     inormalize_loadings(loadings, time_points, model)
   }))
-  conditions$reliability_matrix <- I(lapply(conditions$time_points, function(time_points) {
-    inormalize_reliability(1, time_points)
-  }))
+  conditions$reliability_matrix <- I(Map(function(reliability, time_points) {
+    inormalize_reliability(reliability, time_points)
+  }, conditions$reliability_spec, conditions$time_points))
+  conditions$reliability_spec <- NULL
 
   conditions$condition_id <- 1:nrow(conditions)
   conditions$AF_var <- sapply(conditions$ICC, compute_AF_var)
   conditions$AF_cov <- mapply(compute_AF_cov, conditions$RI_cor, conditions$AF_var)
+  conditions$ME_var <- lapply(conditions$reliability_matrix, function(reliability_matrix) {
+    compute_ME_var(0, reliability_matrix)
+  })
   conditions$DPM_values <- Map(
     compute_DPM_values,
     lagged_effects = conditions$lagged_effects,
@@ -76,6 +86,7 @@ create_conditions_DPM <- function(
     condition$constraints <- condition$constraints[[1]]
     condition$loadings <- condition$loadings[[1]]
     condition$reliability_matrix <- condition$reliability_matrix[[1]]
+    condition$ME_var <- condition$ME_var[[1]]
     condition$DPM_values <- condition$DPM_values[[1]]
     condition
   })

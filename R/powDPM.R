@@ -7,19 +7,31 @@
 #' \code{AF_proportion}, \code{AF_cor}, and \code{wave_cor}.
 #'
 #' @inheritParams powRICLPM
-#' @param AF_proportion A \code{double} (vector) with elements between 0 and 1, denoting the proportion of observed variance attributed to the accumulating factors in the DPM.
+#' @param time_points An \code{integer} (vector), indicating number of time points. The DPM needs at least 4 waves.
+#' @param AF_proportion A \code{double} (vector) with elements between 0 and 1, denoting the proportion of DPM true-score variance attributed to the accumulating factors.
 #' @param AF_cor A \code{double} between -1 and 1, denoting the correlation between accumulating factors in the DPM.
 #' @param wave_cor A \code{double} between -1 and 1, denoting the observed wave-level correlation in the DPM.
+#' @param reliability (optional) A \code{numeric} value, vector, or matrix with elements larger than 0.1 and at most 1, denoting the reliability of the observed variables in the DPM data-generating model.
+#' @param estimate_ME (optional) A \code{logical}, denoting if measurement error variance should be estimated in the DPM.
 #' @param loadings (optional) A \code{numeric} vector or matrix specifying accumulating-factor loadings for the DPM in the \pkg{lavaan} data-generating model. DPM loadings must include one value per wave, with an explicit first-wave \code{NA}. The wave-2 loading is fixed to 1.
 #' @param Phi Alternative name for \code{lagged_effects}.
 #'
 #' @details
 #' The accumulating factors load on waves 2 through T and covary with the first
 #' wave. The DPM uses \code{AF_proportion} as the accumulating-factor variance
-#' and \code{wave_cor} as the target observed wave-level correlation. Residual
+#' and \code{wave_cor} as the target true-score wave-level correlation. Residual
 #' variances and covariances are computed from the DPM stationarity equations so
-#' the observed variables have variance 1 across waves when the requested values
-#' are admissible.
+#' the DPM true-score variables have variance 1 across waves when the requested
+#' values are admissible. When measurement error is included, observed variables
+#' are single-indicator measurements of latent true-score variables named
+#' \code{tA1}, \code{tA2}, ..., \code{tB1}, \code{tB2}, and so on.
+#' The \code{reliability} argument controls the generated measurement error
+#' variance. Setting \code{estimate_ME = TRUE} estimates those measurement error
+#' variances in the DPM. As with the STARTS model, DPMs with estimated
+#' measurement error may be prone to empirical under-identification,
+#' non-convergence, or inadmissible solutions even when the model is formally
+#' identified. Constraints such as \code{constraints = "ME"} or
+#' \code{constraints = "stationarity"} can reduce model complexity.
 #'
 #' @return
 #' An object of class \code{powRICLPM}, upon which \code{summary()},
@@ -40,7 +52,7 @@
 #' out <- powDPM(
 #'   target_power = 0.8,
 #'   sample_size = 500,
-#'   time_points = 3,
+#'   time_points = 4,
 #'   AF_proportion = 0.2,
 #'   AF_cor = 0.3,
 #'   lagged_effects = lagged_effects,
@@ -62,6 +74,8 @@ powDPM <- function(
     AF_cor,
     lagged_effects = NULL,
     wave_cor,
+    reliability = 1,
+    estimate_ME = FALSE,
     loadings = NULL,
     skewness = 0,
     kurtosis = 0,
@@ -98,11 +112,22 @@ powDPM <- function(
     significance_criterion <- icheck_alpha(alpha)
   }
 
+  reliability_expr <- call_powDPM$reliability
+  if (!is.null(reliability_expr)) {
+    icheck_reliability_matrix_call(
+      expr = reliability_expr,
+      env = parent.frame(),
+      call = rlang::caller_env()
+    )
+  }
+
   icheck_target(target_power)
   icheck_T_DPM(time_points)
   icheck_ICC(AF_proportion, arg = argument_names$intraclass_correlation)
   icheck_cor(AF_cor, arg = argument_names$RI_cor)
   icheck_cor(wave_cor, arg = argument_names$within_cor)
+  icheck_rel(reliability, time_points, "lavaan")
+  icheck_ME(estimate_ME)
   icheck_lagged_effects(lagged_effects, arg = argument_names$lagged_effects)
   icheck_moment(skewness)
   icheck_moment(kurtosis)
@@ -112,7 +137,7 @@ powDPM <- function(
   if (is.character(constraints)) {
     icheck_DPM_constraints(constraints)
   }
-  icheck_constraints(constraints, ME = FALSE)
+  icheck_constraints(constraints, ME = estimate_ME)
   icheck_loadings(loadings, time_points, "lavaan", constraints, model = "DPM")
 
   if (!is.null(bootstrap_reps)) {
@@ -140,7 +165,7 @@ powDPM <- function(
     icheck_sample_size_search(search_lower, search_upper, search_step)
     sample_size <- seq(search_lower, search_upper, search_step)
   }
-  icheck_N(sample_size, time_points, constraints, ME = FALSE, model = "DPM")
+  icheck_N(sample_size, time_points, constraints, ME = estimate_ME, model = "DPM")
   seed <- icheck_seed(seed)
 
   cli::cli_alert_success("Argument checking complete.")
@@ -158,11 +183,11 @@ powDPM <- function(
     lagged_effects = lagged_effects,
     within_cor = wave_cor,
     Psi = NULL,
-    reliability = 1,
+    reliability = reliability,
     loadings = loadings,
     skewness = skewness,
     kurtosis = kurtosis,
-    estimate_ME = FALSE,
+    estimate_ME = estimate_ME,
     significance_criterion = significance_criterion,
     reps = reps,
     bootstrap_reps = bootstrap_reps,

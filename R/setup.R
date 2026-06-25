@@ -61,6 +61,8 @@ create_conditions <- function(
   ICC <- intraclass_correlation
   constraints <- normalize_constraints_for_software(constraints, software)
 
+  reliability_conditions <- ireliability_conditions(reliability)
+
   # Create data.frame with rows as experimental conditions
   conditions <- expand.grid(
     sample_size = sample_size,
@@ -68,7 +70,6 @@ create_conditions <- function(
     ICC = ICC,
     RI_cor = RI_cor,
     within_cor = within_cor,
-    reliability = ireliability_condition_value(reliability),
     skewness = skewness,
     kurtosis = kurtosis,
     significance_criterion = significance_criterion,
@@ -76,6 +77,12 @@ create_conditions <- function(
     model = model,
     stringsAsFactors = FALSE
   )
+  conditions <- conditions[rep(seq_len(nrow(conditions)), each = nrow(reliability_conditions)), , drop = FALSE]
+  conditions <- cbind(
+    conditions,
+    reliability_conditions[rep(seq_len(nrow(reliability_conditions)), times = nrow(conditions) / nrow(reliability_conditions)), , drop = FALSE]
+  )
+  rownames(conditions) <- NULL
 
   # Add matrix input to conditions
   conditions$constraints <- I(replicate(nrow(conditions), constraints, simplify = FALSE))
@@ -84,9 +91,10 @@ create_conditions <- function(
   conditions$loadings <- I(lapply(conditions$time_points, function(time_points) {
     inormalize_loadings(loadings, time_points, model)
   }))
-  conditions$reliability_matrix <- I(lapply(conditions$time_points, function(time_points) {
+  conditions$reliability_matrix <- I(Map(function(reliability, time_points) {
     inormalize_reliability(reliability, time_points)
-  }))
+  }, conditions$reliability_spec, conditions$time_points))
+  conditions$reliability_spec <- NULL
 
   # Compute and add additional parameters per condition
   conditions$condition_id <- 1:nrow(conditions)

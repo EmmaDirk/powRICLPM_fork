@@ -25,7 +25,7 @@
 
 \item{color_by}{Character string of length 1, denoting what variable to map to color (see "Details").}
 
-\item{shape_by}{Character string of length 1, denoting what variable to map to point shapes (see "Details"). Use \code{"none"} to omit shape mapping. \code{"reliability"} is not available for DPM objects.}
+\item{shape_by}{Character string of length 1, denoting what variable to map to point shapes (see "Details"). Use \code{"none"} to omit shape mapping. \code{"reliability"} is available for DPM objects when measurement error is part of the DPM conditions.}
 
 \item{facet_by}{Character string of length 1, denoting what variable to facet by (see "Details").}
 }
@@ -33,7 +33,7 @@
 A \code{ggplot2} object.
 }
 \description{
-Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance or accumulating-factor proportion, and shaped by reliability when applicable. For DPM objects, the default is no shape mapping. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.
+Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance or accumulating-factor proportion, and shaped by reliability when applicable. For DPM objects without measurement error, the default is no shape mapping. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.
 }
 \details{
 \subsection{Mapping Options}{The following outcomes can be plotted on the y-axis:
@@ -55,7 +55,7 @@ The following variables can be mapped to color, shape, and facet:
 \item \code{time_points}: Time points.
 \item \code{intraclass_correlation} or \code{ICC}: Intraclass correlation.
 \item \code{AF_proportion}: Accumulating-factor proportion for the DPM.
-\item \code{reliability}: Item-reliability, when applicable. This is not available for DPM objects.
+\item \code{reliability}: Item-reliability, when applicable.
 \item \code{none}: No shape mapping.
 }
 }

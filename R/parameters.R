@@ -30,6 +30,13 @@ count_parameters <- function(k, time_points, constraints, est_ME, model = "RICLP
     if (has_constraint(constraints, "loadings_free")) {
       n_parameters <- n_parameters + (k * max(time_points_max - 2, 0))
     }
+    if (est_ME) {
+      n_parameters <- n_parameters + k * time_points_max
+    }
+    if (est_ME && (has_constraint(constraints, "ME") ||
+                   has_constraint(constraints, "stationarity"))) {
+      n_parameters <- n_parameters - (k * (time_points_max - 1))
+    }
     return(n_parameters)
   }
 
@@ -50,11 +57,21 @@ count_parameters <- function(k, time_points, constraints, est_ME, model = "RICLP
   if (has_constraint(constraints, "stationarity")) {
     n_parameters <- n_parameters - ((time_points_max - 1) * k)
   }
-  if (has_constraint(constraints, "ME")) {
+  if (est_ME && (has_constraint(constraints, "ME") ||
+                 has_constraint(constraints, "stationarity"))) {
     n_parameters <- n_parameters - ((time_points_max - 1) * k)
   }
   if (has_constraint(constraints, "loadings_free")) {
     n_parameters <- n_parameters + (k * (time_points_max - 1))
   }
   return(n_parameters)
+}
+
+
+#' Count distinct variance-covariance elements
+#'
+#' @noRd
+count_distinct_information <- function(k, time_points) {
+  n_observed <- k * time_points
+  n_observed * (n_observed + 1) / 2
 }
