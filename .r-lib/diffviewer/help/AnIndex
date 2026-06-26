@@ -1,0 +1,5 @@
+diffviewer-package	diffviewer-package
+diffviewer	diffviewer-package
+visual_diff	visual_diff
+visual_diff_output	visual_diff_output
+visual_diff_render	visual_diff_output

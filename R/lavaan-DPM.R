@@ -56,9 +56,14 @@ create_lavaan_DPM <- function(condition) {
     sample_size = condition[["sample_size"]],
     model = condition[["model"]],
     time_points = condition[["time_points"]],
-    ICC = condition[["ICC"]],
+    AF_proportion = condition[["AF_proportion"]],
+    AF_cor = condition[["AF_cor"]],
+    dynamics_cor = condition[["dynamics_cor"]],
+    lagged_effects = condition[["lagged_effects"]],
     reliability = condition[["reliability"]],
     reliability_matrix = condition[["reliability_matrix"]],
+    estimate_ME = condition[["estimate_ME"]],
+    generated_ME = any(condition[["ME_var"]] != 0),
     loadings = condition[["loadings"]],
     AF_var = condition[["AF_var"]],
     AF_cov = condition[["AF_cov"]],
@@ -68,7 +73,10 @@ create_lavaan_DPM <- function(condition) {
     pop_tab = pop_tab,
     est_synt = est_synt,
     est_tab = est_tab,
-    estimate_ME = condition[["estimate_ME"]],
+    constraints = condition[["constraints"]],
+    bounds = condition[["bounds"]],
+    estimator = condition[["estimator"]],
+    misspecification = condition[["misspecification"]],
     skewness = condition[["skewness"]],
     kurtosis = condition[["kurtosis"]],
     significance_criterion = condition[["significance_criterion"]],
@@ -117,7 +125,7 @@ est_DPM_AF <- function(condition, name_AF, name_obs) {
   con <- rep("*", times = length(lhs))
   rhs <- c(unlist(name_obs[-1, , drop = FALSE]))
 
-  if (has_constraint(condition[["constraints"]], "loadings_free")) {
+  if (has_constraint(condition[["constraints"]], "AF_loadings_free")) {
     loading_prefixes <- c("lx", "ly")
     pv <- unlist(lapply(seq_along(loading_prefixes), function(i) {
       loadings <- condition[["loadings"]][i, ]
@@ -206,7 +214,7 @@ pop_DPM_baseline_cov <- function(condition, name_obs) {
   lhs <- name_obs[1, 1]
   rhs <- name_obs[1, 2]
   op <- "~~"
-  pv <- condition[["within_cor"]]
+  pv <- condition[["dynamics_cor"]]
   con <- "*"
   free <- FALSE
   cbind.data.frame(lhs, op, pv, con, rhs, free, stringsAsFactors = FALSE)
@@ -218,9 +226,9 @@ est_DPM_baseline_cov <- function(condition, name_obs) {
   op <- "~~"
   con <- "*"
   if (has_constraint(condition[["constraints"]], "stationarity")) {
-    pv <- paste0("wc*start(", condition[["within_cor"]], ")")
+    pv <- paste0("wc*start(", condition[["dynamics_cor"]], ")")
   } else {
-    pv <- paste0("start(", condition[["within_cor"]], ")")
+    pv <- paste0("start(", condition[["dynamics_cor"]], ")")
   }
   free <- TRUE
   cbind.data.frame(lhs, op, pv, con, rhs, free, stringsAsFactors = FALSE)
@@ -251,7 +259,7 @@ pop_DPM_lagged <- function(condition, name_obs) {
   lhs <- rep(c(t(name_obs))[-(1:2)], each = 2)
   op <- "~"
   con <- "*"
-  pv <- c(t(condition[["lagged_effects"]][[1]]))
+  pv <- c(t(condition[["lagged_effects"]]))
   free <- FALSE
   rhs <- c(apply(name_obs[-condition[["time_points"]], , drop = FALSE], 1, rep, times = 2))
   cbind.data.frame(lhs, op, pv, con, rhs, free, stringsAsFactors = FALSE)
@@ -261,7 +269,7 @@ est_DPM_lagged <- function(condition, name_obs) {
   lhs <- rep(c(t(name_obs))[-(1:2)], each = 2)
   op <- "~"
   con <- "*"
-  starts <- paste0("start(", c(t(condition[["lagged_effects"]][[1]])), ")")
+  starts <- paste0("start(", c(t(condition[["lagged_effects"]])), ")")
   if (has_constraint(condition[["constraints"]], "lagged")) {
     pv <- paste0(
       rep(c("a", "b", "c", "d"), times = condition[["time_points"]] - 1L),
@@ -342,7 +350,7 @@ est_DPM_residual_cov <- function(condition, name_obs) {
 }
 
 DPM_stationarity_constraints <- function(condition) {
-  if (has_constraint(condition[["constraints"]], "loadings_free")) {
+  if (has_constraint(condition[["constraints"]], "AF_loadings_free")) {
     return(DPM_stationarity_constraints_free_loadings(condition))
   }
   DPM_stationarity_constraints_fixed_loadings(condition)

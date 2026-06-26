@@ -27,7 +27,7 @@ test_that("compute_DPM_values() returns stationary DPM residual values", {
 
   output <- compute_DPM_values(
     lagged_effects = lagged_effects,
-    wave_cor = .2,
+    dynamics_cor = .2,
     AF_var = compute_AF_var(.2),
     AF_cov = compute_AF_cov(.3, compute_AF_var(.2)),
     loadings = loadings

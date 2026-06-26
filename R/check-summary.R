@@ -116,7 +116,7 @@ icheck_ICC_summary <- function(ICC, object, arg = rlang::caller_arg(ICC), call =
     )
   }
 
-  ICCs <- lapply(object$conditions, function(x) {x$ICC})
+  ICCs <- lapply(object$conditions, icondition_proportion)
 
   if (!any(ICC == ICCs)) {
     cli::cli_abort(
@@ -165,7 +165,7 @@ imatch_condition_summary <- function(object, sample_size, time_points, ICC, reli
   matches <- Filter(function(x) {
     x$sample_size == sample_size &&
       x$time_points == time_points &&
-      x$ICC == ICC &&
+      icondition_proportion(x) == ICC &&
       (is.null(reliability) || as.character(x$reliability) == as.character(reliability))
   }, object$conditions)
 

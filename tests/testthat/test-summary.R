@@ -79,17 +79,20 @@ test_that("summary.powRICLPM labels intraclass correlation from the selected arg
 
 test_that("summary.powRICLPM handles vector reliability conditions", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
-  out <- powRICLPM(
-    target_power = 0.8,
-    sample_size = 500,
-    time_points = 3,
-    intraclass_correlation = 0.4,
-    reliability = c(0.8, 0.9, 1),
-    RI_cor = 0.3,
-    lagged_effects = lagged_effects,
-    within_cor = -0.42,
-    reps = 2,
-    seed = 1234
+  out <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 500,
+      time_points = 4,
+      intraclass_correlation = 0.4,
+      reliability = c(0.8, 0.9, 1),
+      estimate_ME = TRUE,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = -0.42,
+      reps = 2,
+      seed = 1234
+    )
   )
 
   expect_equal(give(out, "conditions")$reliability, c(0.8, 0.9, 1))
@@ -98,7 +101,7 @@ test_that("summary.powRICLPM handles vector reliability conditions", {
     out,
     sample_size = 500,
     intraclass_correlation = 0.4,
-    time_points = 3,
+    time_points = 4,
     reliability = 0.9
   )
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))

@@ -53,21 +53,12 @@ icheck_T <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env
       )
     )
   }
-  if (any(x < 3) && !ME) {
+  if (any(x < 3)) {
     cli::cli_abort(
       c(
         "Elements in {.arg {arg}} should be larger than 2:",
         i = "The RI-CLPM is not identified with fewer than 3 time points.",
         x = "You've supplied a number of time points smaller than 3."
-      )
-    )
-  }
-  if (any(x < 4) && ME) {
-    cli::cli_abort(
-      c(
-        "Elements in {.arg {arg}} should be larger than 3:",
-        i = "If you want to estimate measurement errors in the RI-CLPM, you should have at least 4 waves of data.",
-        x = "You've supplied a number of time points smaller than 4."
       )
     )
   }
@@ -79,6 +70,103 @@ icheck_T <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::caller_env
       )
     )
   }
+}
+
+RICLPM_identification_table <- data.frame(
+  estimate_ME = c(
+    rep(FALSE, 10),
+    rep(TRUE, 20)
+  ),
+  constraints_key = c(
+    "none", "lagged", "residuals", "lagged+residuals", "stationarity",
+    "none", "lagged", "residuals", "lagged+residuals", "stationarity",
+    "none", "none+ME", "lagged", "lagged+ME", "residuals", "residuals+ME",
+    "lagged+residuals", "lagged+residuals+ME", "stationarity", "stationarity+ME",
+    "none", "none+ME", "lagged", "lagged+ME", "residuals", "residuals+ME",
+    "lagged+residuals", "lagged+residuals+ME", "stationarity", "stationarity+ME"
+  ),
+  RI_loadings_free = c(
+    rep(FALSE, 5), rep(TRUE, 5),
+    rep(FALSE, 10), rep(TRUE, 10)
+  ),
+  min_waves = c(
+    3, 3, 3, 3, 3,
+    4, 3, 3, 3, 3,
+    4, 4, 4, 3, 4, 3, 3, 3, 3, 3,
+    5, 4, 4, 4, 4, 4, 4, 3, 4, 3
+  ),
+  stringsAsFactors = FALSE
+)
+
+classify_RICLPM_spec <- function(estimate_ME, constraints) {
+  constraints <- normalize_constraints(constraints)
+  RI_loadings_free <- has_constraint(constraints, "RI_loadings_free")
+  base_constraints <- constraints[!constraints %in% c("RI_loadings_free", "ME")]
+  base_key <- if (length(base_constraints) == 0L || has_constraint(base_constraints, "none")) {
+    "none"
+  } else if (setequal(base_constraints, c("lagged", "residuals"))) {
+    "lagged+residuals"
+  } else if (has_constraint(base_constraints, "within")) {
+    "lagged+residuals"
+  } else if (length(base_constraints) == 1L) {
+    base_constraints
+  } else {
+    paste(sort(base_constraints), collapse = "+")
+  }
+  if (has_constraint(constraints, "ME")) {
+    base_key <- paste0(base_key, "+ME")
+  }
+  list(
+    estimate_ME = isTRUE(estimate_ME),
+    constraints_key = base_key,
+    RI_loadings_free = RI_loadings_free
+  )
+}
+
+lookup_RICLPM_min_waves <- function(estimate_ME, constraints) {
+  spec <- classify_RICLPM_spec(estimate_ME, constraints)
+  row <- RICLPM_identification_table[
+    RICLPM_identification_table$estimate_ME == spec$estimate_ME &
+      RICLPM_identification_table$constraints_key == spec$constraints_key &
+      RICLPM_identification_table$RI_loadings_free == spec$RI_loadings_free,
+    ,
+    drop = FALSE
+  ]
+  if (nrow(row) != 1L) {
+    cli::cli_abort(
+      c(
+        "No RI-CLPM/STARTS identification rule is available for this specification:",
+        x = paste0(
+          "estimate_ME = ", spec$estimate_ME,
+          ", constraints = ", spec$constraints_key,
+          ", RI_loadings_free = ", spec$RI_loadings_free, "."
+        )
+      )
+    )
+  }
+  row$min_waves
+}
+
+icheck_RICLPM_identification <- function(time_points, estimate_ME, constraints,
+                                         call = rlang::caller_env()) {
+  min_waves <- lookup_RICLPM_min_waves(estimate_ME, constraints)
+  if (any(time_points < min_waves)) {
+    supplied <- min(time_points[time_points < min_waves])
+    spec <- classify_RICLPM_spec(estimate_ME, constraints)
+    cli::cli_abort(
+      c(
+        paste0("The requested RI-CLPM/STARTS specification is not identified with ", supplied, " waves."),
+        "Specification:",
+        paste0("- estimated measurement error: ", if (estimate_ME) "yes" else "no"),
+        paste0("- constraints: ", format_constraints(constraints)),
+        paste0("- random-intercept loadings in fitted model: ", if (spec$RI_loadings_free) "free" else "fixed"),
+        paste0("Minimum required waves: ", min_waves),
+        x = "Use more waves or impose valid identifying constraints."
+      ),
+      call = call
+    )
+  }
+  invisible(NULL)
 }
 
 #' Check \code{model} Argument
@@ -513,16 +601,6 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       call = call
     )
   }
-  if (!has_constraint(constraints, "loadings_free")) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} can only be used when random-intercept loadings are freely estimated:",
-        i = "Use `constraints = 'RI_loadings_free'` or include `'RI_loadings_free'` in a constraint vector.",
-        x = paste0("You supplied {.arg {arg}}, but {.arg {con_arg}} = ", format_constraints(constraints), ".")
-      ),
-      call = call
-    )
-  }
   invisible(NULL)
 }
 
@@ -724,7 +802,7 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
 
   valid_constraints <- c(
     "none", "lagged", "residuals", "within", "stationarity", "ME",
-    "RI_loadings_free", "loadings_free"
+    "RI_loadings_free"
   )
   if (!all(x %in% valid_constraints)) {
     cli::cli_abort(
@@ -854,12 +932,12 @@ icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       "The residual variance-covariance matrix for within-components (Psi) must be positive definite:"
     }
     computed_from <- if (identical(model, "DPM")) {
-      "It is computed from the specified `lagged_effects`, `wave_cor`, `AF_proportion`, `AF_cor`, and `loadings` arguments."
+      "It is computed from the specified `lagged_effects`, `dynamics_cor`, `AF_proportion`, `AF_cor`, and `loadings` arguments."
     } else {
       "It is computed from the specified `lagged_effects` and `within_cor` arguments."
     }
     retry_hint <- if (identical(model, "DPM")) {
-      "Psi is not positive definite. Try smaller values for `lagged_effects`, `wave_cor`, or `AF_proportion`?"
+      "Psi is not positive definite. Try smaller values for `lagged_effects`, `dynamics_cor`, or `AF_proportion`?"
     } else {
       "Psi is not positive definite. Try smaller values for `lagged_effects` and `within_cor`?"
     }
@@ -1035,18 +1113,6 @@ icheck_bounds <- function(bounds, constraints, software,
       )
     )
   }
-  constraints_for_bounds <- setdiff(
-    normalize_constraints(constraints),
-    c("none", "RI_loadings_free", "loadings_free")
-  )
-  if (bounds && length(constraints_for_bounds) > 0) {
-    cli::cli_abort(
-      c(
-        "Bounded estimation can only be used without equality or time-invariance constraints on the estimation model:",
-        x = paste0("You've placed the following constraints on the estimation model: ", format_constraints(constraints), ".")
-      )
-    )
-  }
   if (bounds && software == "Mplus") {
     cli::cli_abort(
       c(
@@ -1110,8 +1176,11 @@ normalize_constraints_for_software <- function(constraints, software) {
 
 has_constraint <- function(constraints, constraint) {
   constraints <- normalize_constraints(constraints)
+  if (constraint == "AF_loadings_free") {
+    return(any(constraints == "AF_loadings_free"))
+  }
   if (constraint == "loadings_free") {
-    return(any(constraints %in% c("loadings_free", "RI_loadings_free")))
+    return(any(constraints %in% c("RI_loadings_free", "AF_loadings_free")))
   }
   if (constraint == "lagged") {
     return(any(constraints %in% c("lagged", "within", "stationarity")))
@@ -1129,6 +1198,106 @@ format_constraints <- function(constraints) {
     return(constraints)
   }
   paste0("c(", paste0("'", constraints, "'", collapse = ", "), ")")
+}
+
+
+detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
+                                                       estimate_ME,
+                                                       loadings,
+                                                       constraints) {
+  restrictive_reasons <- character()
+  general_reasons <- character()
+
+  if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
+    restrictive_reasons <- c(
+      restrictive_reasons,
+      "Generated measurement error is ignored in the fitted model."
+    )
+  }
+  if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
+    general_reasons <- c(
+      general_reasons,
+      "Measurement error is estimated although the data-generating model has no measurement error."
+    )
+  }
+
+  generated_RI_loadings_general <- any(loadings != 1)
+  estimated_RI_loadings_free <- has_constraint(constraints, "RI_loadings_free")
+  if (generated_RI_loadings_general && !estimated_RI_loadings_free) {
+    restrictive_reasons <- c(
+      restrictive_reasons,
+      "Generated random-intercept loadings vary but fitted random-intercept loadings are fixed."
+    )
+  }
+  if (!generated_RI_loadings_general && estimated_RI_loadings_free) {
+    general_reasons <- c(
+      general_reasons,
+      "Random-intercept loadings are freely estimated although the data-generating model fixes them to 1."
+    )
+  }
+
+  list(
+    restrictive = length(restrictive_reasons) > 0L,
+    general = length(general_reasons) > 0L,
+    reasons = unique(c(restrictive_reasons, general_reasons)),
+    restrictive_reasons = unique(restrictive_reasons),
+    general_reasons = unique(general_reasons)
+  )
+}
+
+combine_RICLPM_misspecification <- function(records) {
+  restrictive_reasons <- unique(unlist(lapply(records, function(x) {
+    x$restrictive_reasons
+  }), use.names = FALSE))
+  general_reasons <- unique(unlist(lapply(records, function(x) {
+    x$general_reasons
+  }), use.names = FALSE))
+  list(
+    restrictive = length(restrictive_reasons) > 0L,
+    general = length(general_reasons) > 0L,
+    reasons = unique(c(restrictive_reasons, general_reasons)),
+    restrictive_reasons = restrictive_reasons,
+    general_reasons = general_reasons
+  )
+}
+
+confirm_RICLPM_restrictive_misspecification <- function(misspecification,
+                                                        call = rlang::caller_env()) {
+  if (!isTRUE(misspecification$restrictive)) {
+    return(invisible(TRUE))
+  }
+  message <- paste(
+    "The fitted RI-CLPM is more restrictive than the data-generating model.",
+    "",
+    "You are fitting a constrained or simplified model to data generated from a more general model.",
+    "",
+    "Consequences:",
+    "- Power may be overestimated.",
+    "- Bias may occur.",
+    "- Coverage may be poor.",
+    "- Results answer a misspecified-model question, not the correctly specified RI-CLPM question.",
+    "",
+    sep = "\n"
+  )
+  if (!interactive()) {
+    cli::cli_abort(
+      c(
+        message,
+        x = "Restrictive RI-CLPM misspecification requires interactive confirmation.",
+        i = "Run interactively and type `YES` to continue."
+      ),
+      call = call
+    )
+  }
+  cat(message)
+  answer <- readline("Type YES to continue: ")
+  if (!identical(answer, "YES")) {
+    cli::cli_abort(
+      "RI-CLPM misspecification was not confirmed.",
+      call = call
+    )
+  }
+  invisible(TRUE)
 }
 
 

@@ -18,10 +18,10 @@ test_that("basic power analysis using lavaan runs", {
     c(
       "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
       "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
-      "kurtosis", "significance_criterion", "estimates", "MCSEs", "reps",
+      "kurtosis", "significance_criterion", "misspecification", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 20)
+    rep(TRUE, times = 21)
   )
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
@@ -76,7 +76,7 @@ test_that("powRICLPM defaults to MLR for nonnormal lavaan data", {
   expect_equal(out_explicit$session$estimator, "ML")
 })
 
-test_that("lavaan supplied loadings require freed public estimation path", {
+test_that("lavaan supplied fixed loadings can use the fixed public estimation path", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
   out_default <- suppressWarnings(
@@ -95,7 +95,7 @@ test_that("lavaan supplied loadings require freed public estimation path", {
 
   expect_equal(class(out_default), c("powRICLPM", "list"))
 
-  expect_error(
+  out_supplied <- suppressWarnings(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -107,9 +107,10 @@ test_that("lavaan supplied loadings require freed public estimation path", {
       loadings = c(1, 1, 1),
       reps = 1,
       seed = 123456
-    ),
-    "RI_loadings_free"
+    )
   )
+
+  expect_equal(class(out_supplied), c("powRICLPM", "list"))
 
   expect_error(
     powRICLPM(
@@ -163,7 +164,7 @@ test_that("lavaan supplied loadings require freed public estimation path", {
   )
 })
 
-test_that("lavaan custom loadings require freed public estimation path", {
+test_that("lavaan custom loadings can be fitted freely or flagged as restrictive", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
 
@@ -180,7 +181,7 @@ test_that("lavaan custom loadings require freed public estimation path", {
       reps = 1,
       seed = 123456
     ),
-    "RI_loadings_free"
+    "more restrictive"
   )
 
   out_free <- suppressWarnings(
@@ -193,7 +194,7 @@ test_that("lavaan custom loadings require freed public estimation path", {
       lagged_effects = lagged_effects,
       within_cor = 0.3,
       loadings = loadings,
-      constraints = "RI_loadings_free",
+      constraints = c("lagged", "RI_loadings_free"),
       reps = 1,
       seed = 123456
     )
@@ -412,10 +413,10 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       AF_proportion = 0.2,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
-      wave_cor = 0.3,
+      dynamics_cor = 0.3,
       reps = 1
     ),
-    "at least 4 time points"
+    "not identified with 3 waves"
   )
   expect_error(
     powDPM(
@@ -425,7 +426,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       AF_proportion = "0.2",
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
-      wave_cor = 0.3,
+      dynamics_cor = 0.3,
       reps = 1
     ),
     "AF_proportion"
@@ -437,7 +438,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       time_points = 4,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
-      wave_cor = 0.3,
+      dynamics_cor = 0.3,
       reps = 1
     ),
     "AF_proportion.*missing"
@@ -449,7 +450,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       time_points = 4,
       AF_proportion = 0.2,
       lagged_effects = lagged_effects,
-      wave_cor = 0.3,
+      dynamics_cor = 0.3,
       reps = 1
     ),
     "AF_cor.*missing"
@@ -464,7 +465,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       lagged_effects = lagged_effects,
       reps = 1
     ),
-    "wave_cor.*missing"
+    "dynamics_cor.*missing"
   )
   expect_error(
     powDPM(
@@ -474,7 +475,35 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       AF_proportion = 0.2,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
+      dynamics_cor = 0.3,
       wave_cor = 0.3,
+      reps = 1
+    ),
+    "unused argument"
+  )
+  expect_error(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      dynamics_cor = 0.3,
+      Phi = lagged_effects,
+      reps = 1
+    ),
+    "unused argument"
+  )
+  expect_error(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      dynamics_cor = 0.3,
       reps = 1,
       constraints = "ME"
     ),
@@ -489,7 +518,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
         AF_proportion = 0.2,
         AF_cor = 0.3,
         lagged_effects = lagged_effects,
-        wave_cor = 0.3,
+        dynamics_cor = 0.3,
         constraints = "ME",
         reps = 1
       ),
@@ -505,12 +534,12 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       AF_proportion = 0.2,
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
-      wave_cor = 0.3,
+      dynamics_cor = 0.3,
       reliability = 0.8,
       estimate_ME = TRUE,
       reps = 1
     ),
-    "not identified.*39 parameters.*36 distinct"
+    "not identified with 4 waves"
   )
   dpm_psi_error <- tryCatch(
     powDPM(
@@ -520,13 +549,13 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       AF_proportion = 0.4,
       AF_cor = 0.2,
       lagged_effects = matrix(c(0.4, 0.1, 0.2, 0.3), ncol = 2, byrow = TRUE),
-      wave_cor = 0.1,
+      dynamics_cor = 0.1,
       reps = 1
     ),
     error = function(e) e
   )
   expect_s3_class(dpm_psi_error, "error")
-  expect_match(conditionMessage(dpm_psi_error), "wave_cor.*AF_proportion.*AF_cor")
+  expect_match(conditionMessage(dpm_psi_error), "dynamics_cor.*AF_proportion.*AF_cor")
   expect_false(grepl("within_cor", conditionMessage(dpm_psi_error), fixed = TRUE))
 
   out <- suppressWarnings(
@@ -537,16 +566,20 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       AF_proportion = c(0.1, 0.2),
       AF_cor = 0.3,
       lagged_effects = lagged_effects,
-      wave_cor = 0.3,
+      dynamics_cor = 0.3,
       reps = 1,
       seed = 123456
     )
   )
+  expect_s3_class(out, "powDPM")
   expect_equal(out$session$model, "DPM")
-  expect_equal(out$conditions[[1]]$ICC, 0.1)
-  expect_equal(out$conditions[[2]]$ICC, 0.2)
+  expect_equal(out$conditions[[1]]$AF_proportion, 0.1)
+  expect_equal(out$conditions[[2]]$AF_proportion, 0.2)
+  expect_false("ICC" %in% names(out$conditions[[1]]))
+  expect_false("RI_cor" %in% names(out$conditions[[1]]))
+  expect_false("within_cor" %in% names(out$conditions[[1]]))
   expect_length(out$conditions, 2)
-  expect_equal(out$session$argument_names$intraclass_correlation, "AF_proportion")
+  expect_equal(out$session$argument_names$AF_proportion, "AF_proportion")
 })
 
 test_that("simple identified powDPM results feed give, summary, and plot", {
@@ -560,7 +593,7 @@ test_that("simple identified powDPM results feed give, summary, and plot", {
       AF_proportion = 0.2,
       AF_cor = 0.2,
       lagged_effects = lagged_effects,
-      wave_cor = 0.1,
+      dynamics_cor = 0.1,
       reps = 2,
       seed = 123456
     )
@@ -590,7 +623,7 @@ test_that("powDPM supports measurement error on latent true scores", {
       AF_proportion = 0.2,
       AF_cor = 0.2,
       lagged_effects = lagged_effects,
-      wave_cor = 0.1,
+      dynamics_cor = 0.1,
       reliability = c(0.8, 0.9),
       estimate_ME = TRUE,
       constraints = c("stationarity", "ME"),
@@ -626,31 +659,31 @@ test_that("powDPM validation errors catch common DPM loading mistakes", {
     AF_proportion = 0.2,
     AF_cor = 0.3,
     lagged_effects = lagged_effects,
-    wave_cor = 0.3,
+    dynamics_cor = 0.3,
     reps = 1,
     seed = 123456,
-    constraints = "loadings_free"
+    constraints = "AF_loadings_free"
   )
 
   expect_error(
     do.call(powDPM, c(base, list(loadings = c(1, 0.8)))),
-    "one value per time point.*first value must be `NA`"
+    "waves 2 through T"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = c(NA, 0.8, 1, 1)))),
-    "second DPM loading must be 1"
+    do.call(powDPM, c(base, list(loadings = c(0.8, 1, 1)))),
+    "first DPM loading must be 1"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = c(NaN, 1, 0.8, 0.7)))),
-    "first DPM loading must be `NA`"
+    do.call(powDPM, c(base, list(loadings = c(NaN, 0.8, 0.7)))),
+    "finite values"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = c(NA, 1, Inf, 0.7)))),
-    "finite values, except for the required first-wave NA"
+    do.call(powDPM, c(base, list(loadings = c(1, Inf, 0.7)))),
+    "finite values"
   )
   expect_error(
-    do.call(powDPM, c(base, list(loadings = matrix(c(NA, 1, 0.8, 0.7, 1, 1, 1.2, 0.9), nrow = 2, byrow = TRUE)))),
-    "first DPM loading column must be `NA`"
+    do.call(powDPM, c(base, list(loadings = matrix(c(0.8, 0.7, 1, 1.2, 0.9, 1), nrow = 2, byrow = TRUE)))),
+    "first DPM loading must be 1"
   )
 })
 
@@ -708,10 +741,10 @@ test_that("basic power analysis with multiple experimental conditions works", {
     c(
       "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
       "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
-      "kurtosis", "significance_criterion", "estimates", "MCSEs", "reps",
+      "kurtosis", "significance_criterion", "misspecification", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 20)
+    rep(TRUE, times = 21)
   )
 
 })
@@ -790,12 +823,13 @@ test_that("reliability scenario paths run", {
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       ICC = 0.5,
       RI_cor = 0.3,
       lagged_effects = lagged_effects,
       within_cor = 0.3,
       reliability = c(0.8, 0.7, 1),
+      estimate_ME = TRUE,
       reps = 1,
       seed = 123456
     )
@@ -803,7 +837,7 @@ test_that("reliability scenario paths run", {
 
   expect_equal(length(out_vector$conditions), 3)
   expect_equal(unname(vapply(out_vector$conditions, function(x) x$reliability, numeric(1))), c(0.8, 0.7, 1))
-  expect_equal(out_vector$conditions[[2]]$reliability_matrix, matrix(0.7, nrow = 2, ncol = 3))
+  expect_equal(out_vector$conditions[[2]]$reliability_matrix, matrix(0.7, nrow = 2, ncol = 4))
   expect_true(grepl("A2~~0.857142857142857*A2", out_vector$conditions[[2]]$pop_synt, fixed = TRUE))
   expect_true(grepl("B3~~0.857142857142857*B3", out_vector$conditions[[2]]$pop_synt, fixed = TRUE))
 

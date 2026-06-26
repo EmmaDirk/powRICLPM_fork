@@ -1,0 +1,6 @@
+emoji                   Emoji
+ntfy_done               Notify on Completion of a Process
+ntfy_history            Retrieve History of Notifications
+ntfy_send               Send a Notification
+show_emoji              Show an emoji symbol, or find one by name
+tags                    Emoji tags

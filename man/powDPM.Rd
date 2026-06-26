@@ -13,33 +13,27 @@ powDPM(
   time_points,
   AF_proportion,
   AF_cor,
-  lagged_effects = NULL,
-  wave_cor,
+  lagged_effects,
+  dynamics_cor,
   reliability = 1,
   estimate_ME = FALSE,
   loadings = NULL,
   skewness = 0,
   kurtosis = 0,
   significance_criterion = 0.05,
-  alpha = NULL,
   reps = 20,
-  bootstrap_reps = NULL,
   seed = NA,
   constraints = "none",
-  estimator = NA,
-  Phi = NULL
+  bounds = FALSE,
+  estimator = NA
 )
 }
 \arguments{
-\item{target_power}{A numeric value between 0 and 1, denoting the targeted power level.}
+\item{target_power}{A \code{double}, denoting the desired power.}
 
-\item{search_lower}{A positive \code{integer}, denoting the lower bound of a range of sample sizes.}
+\item{search_lower, search_upper, search_step}{Optional sample-size search range.}
 
-\item{search_upper}{A positive \code{integer}, denoting the upper bound of a range of sample sizes.}
-
-\item{search_step}{A positive \code{integer}, denoting an increment in sample size.}
-
-\item{sample_size}{(optional) An \code{integer} (vector), indicating specific sample sizes at which to evaluate power, rather than specifying a range using the \code{search_*} arguments.}
+\item{sample_size}{An \code{integer} (vector), indicating sample size.}
 
 \item{time_points}{An \code{integer} (vector), indicating number of time points. The DPM needs at least 4 waves.}
 
@@ -47,35 +41,29 @@ powDPM(
 
 \item{AF_cor}{A \code{double} between -1 and 1, denoting the correlation between accumulating factors in the DPM.}
 
-\item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+\item{lagged_effects}{A 2 by 2 \code{matrix}, denoting the lagged effects.}
 
-\item{wave_cor}{A \code{double} between -1 and 1, denoting the observed wave-level correlation in the DPM.}
+\item{dynamics_cor}{A \code{double} between -1 and 1, denoting the true-score dynamic-process correlation in the DPM.}
 
 \item{reliability}{(optional) A \code{numeric} value, vector, or matrix with elements larger than 0.1 and at most 1, denoting the reliability of the observed variables in the DPM data-generating model.}
 
 \item{estimate_ME}{(optional) A \code{logical}, denoting if measurement error variance should be estimated in the DPM.}
 
-\item{loadings}{(optional) A \code{numeric} vector or matrix specifying accumulating-factor loadings for the DPM in the \pkg{lavaan} data-generating model. DPM loadings must include one value per wave, with an explicit first-wave \code{NA}. The wave-2 loading is fixed to 1.}
+\item{loadings}{(optional) A \code{numeric} vector or matrix specifying accumulating-factor loadings for waves 2 through T in the DPM data-generating model. The wave-2 loading is fixed to 1.}
 
-\item{skewness}{(optional) A \code{numeric}, denoting the skewness values for the observed variables (see \code{\link[lavaan]{simulateData}}).}
+\item{skewness, kurtosis}{Numeric values used to generate nonnormal data.}
 
-\item{kurtosis}{(optional) A \code{numeric} value, denoting the excess kurtosis values (i.e., compared to the kurtosis of a normal distribution) for the observed variables (see \code{\link[lavaan]{simulateData}}).}
+\item{significance_criterion}{Significance criterion used to compute power and coverage.}
 
-\item{significance_criterion}{(optional) A \code{double}, denoting the significance criterion.}
+\item{reps}{An integer number of Monte Carlo replications.}
 
-\item{alpha}{(don't use) Deprecated, use \code{significance_criterion} instead.}
+\item{seed}{Optional random seed.}
 
-\item{reps}{A positive \code{integer}, denoting the number of Monte Carlo replications to be used during simulations.}
+\item{constraints}{Character vector of DPM constraints. Valid values are \code{"none"}, \code{"lagged"}, \code{"residuals"}, \code{"stationarity"}, \code{"ME"}, and \code{"AF_loadings_free"}.}
 
-\item{bootstrap_reps}{(superseded) Uncertainty regarding simulation estimates is now computed analytically based on Morris et al. (2017). This argument is not used anymore.}
+\item{bounds}{A \code{logical}, denoting if bounded lavaan estimation should be used.}
 
-\item{seed}{An \code{integer} of length 1. If multiple cores are used, a seed will be used to generate a full L'Ecuyer-CMRG seed for all cores.}
-
-\item{constraints}{(optional) A \code{character} vector, specifying the type of constraints that should be imposed on the estimation model (see "Details").}
-
-\item{estimator}{(optional) A \code{character} string of length 1, denoting the estimator to be used. The default \code{NA} uses \code{ML} for normally generated data and \code{MLR} when \code{skewness} or \code{kurtosis} is nonzero (see "Details").}
-
-\item{Phi}{Alternative name for \code{lagged_effects}.}
+\item{estimator}{Lavaan estimator. Defaults to \code{"ML"} or \code{"MLR"} for nonnormal data.}
 }
 \value{
 An object of class \code{powRICLPM}, upon which \code{summary()},
@@ -85,12 +73,12 @@ An object of class \code{powRICLPM}, upon which \code{summary()},
 Perform a Monte Carlo power analysis for the dynamic panel model (DPM). This
 function uses the same lavaan simulation and summary machinery as
 \code{\link{powRICLPM}}, but exposes the DPM-native arguments directly:
-\code{AF_proportion}, \code{AF_cor}, and \code{wave_cor}.
+\code{AF_proportion}, \code{AF_cor}, and \code{dynamics_cor}.
 }
 \details{
 The accumulating factors load on waves 2 through T and covary with the first
 wave. The DPM uses \code{AF_proportion} as the accumulating-factor variance
-and \code{wave_cor} as the target true-score wave-level correlation. Residual
+and \code{dynamics_cor} as the target true-score process correlation. Residual
 variances and covariances are computed from the DPM stationarity equations so
 the DPM true-score variables have variance 1 across waves when the requested
 values are admissible. When measurement error is included, observed variables
@@ -115,7 +103,7 @@ out <- powDPM(
   AF_proportion = 0.2,
   AF_cor = 0.3,
   lagged_effects = lagged_effects,
-  wave_cor = 0.3,
+  dynamics_cor = 0.3,
   reps = 100,
   seed = 1234
 )

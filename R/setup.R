@@ -36,10 +36,10 @@ create_conditions <- function(
       target_power = target_power,
       sample_size = sample_size,
       time_points = time_points,
-      intraclass_correlation = intraclass_correlation,
-      RI_cor = RI_cor,
+      AF_proportion = intraclass_correlation,
+      AF_cor = RI_cor,
       lagged_effects = lagged_effects,
-      within_cor = within_cor,
+      dynamics_cor = within_cor,
       Psi = Psi,
       reliability = reliability,
       loadings = loadings,
@@ -110,6 +110,12 @@ create_conditions <- function(
     condition$loadings <- condition$loadings[[1]]
     condition$reliability_matrix <- condition$reliability_matrix[[1]]
     condition$ME_var <- condition$ME_var[[1]]
+    condition$misspecification <- detect_RICLPM_restrictive_misspecification(
+      reliability_matrix = condition$reliability_matrix,
+      estimate_ME = condition$estimate_ME,
+      loadings = condition$loadings,
+      constraints = condition$constraints
+    )
     condition
   })
 

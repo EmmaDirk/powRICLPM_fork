@@ -11,7 +11,7 @@ test_that("icheck_T() works", {
   expect_error(icheck_T(NA_real_, ME = FALSE), "finite")
   expect_error(icheck_T(c(2, 3), ME = FALSE))
   expect_warning(icheck_T(c(3:30), ME = FALSE))
-  expect_error(icheck_T(c(3, 4), ME = TRUE))
+  expect_null(icheck_T(c(3, 4), ME = TRUE), c(3, 4))
 })
 
 test_that("icheck_model() works", {
@@ -164,13 +164,13 @@ test_that("check_loadings() writes loading interpretation", {
 
 test_that("check_loadings() writes DPM loading interpretation", {
   loading_matrix <- matrix(
-    c(NA, 1, 0.8, 1.1, NA, 1, 1.2, 0.9),
+    c(1, 0.8, 1.1, 1, 1.2, 0.9),
     nrow = 2,
     byrow = TRUE
   )
 
   expect_output(
-    check_loadings(c(NA, 1, 0.8), model = "DPM"),
+    check_loadings(c(1, 0.8), model = "DPM"),
     "AF_A loads on A3 and AF_B loads on B3 with 0.8"
   )
   expect_output(
@@ -182,28 +182,28 @@ test_that("check_loadings() writes DPM loading interpretation", {
     "AF_A loads on A4 with 1.1"
   )
   expect_error(
-    check_loadings(c(1, 0.8), model = "DPM"),
-    "first DPM loading must be `NA`"
+    check_loadings(c(0.8, 1), model = "DPM"),
+    "first DPM loading must be 1"
   )
   expect_error(
-    check_loadings(c(NA, 0.8, 1), model = "DPM"),
-    "second DPM loading must be 1"
+    check_loadings(c(1, NA), model = "DPM"),
+    "finite values"
   )
   expect_error(
-    check_loadings(c(NA, 1, Inf), model = "DPM"),
-    "finite values, except for the required first-wave NA"
+    check_loadings(c(1, Inf), model = "DPM"),
+    "finite values"
   )
   expect_error(
-    check_loadings(c(NA, 1, 0.8), time_points = 4, model = "DPM"),
-    "one value per time point"
+    check_loadings(c(1, 0.8), time_points = 4, model = "DPM"),
+    "waves 2 through T"
   )
   expect_error(
-    check_loadings(c(NA, 1), time_points = 4, model = "DPM"),
-    "length 2.*time_points.*= 4"
+    check_loadings(c(1), time_points = 4, model = "DPM"),
+    "waves 2 through T"
   )
   expect_error(
-    check_loadings(matrix(c(NA, 1, 0.8, 1, NA, 1, 0.8, 1), nrow = 2, byrow = TRUE), time_points = 3, model = "DPM"),
-    "one column per time point"
+    check_loadings(matrix(c(1, 0.8, 1, 0.8), nrow = 2, byrow = TRUE), time_points = 4, model = "DPM"),
+    "waves 2 through T"
   )
   expect_error(
     check_loadings(loading_matrix, model = "dpm"),
@@ -331,76 +331,50 @@ test_that("icheck_loadings() works", {
     icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
     "first column.*RI_A = 1.*RI_B = 0.8.*matrix.*c\\(1, 1\\)"
   )
-  expect_error(
-    icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),
-    "RI_loadings_free"
-  )
-  expect_error(
-    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
-    "in a constraint vector"
-  )
-  expect_error(
-    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
-    "supplied.*loadings.*constraints.*= lagged"
-  )
+  expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"))
+  expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"))
 })
 
 test_that("icheck_loadings() supports DPM loading specifications", {
-  expect_null(icheck_loadings(c(NA, 1, .8), 3, "lavaan", "loadings_free", model = "DPM"))
+  expect_null(icheck_loadings(c(1, .8), 3, "lavaan", "AF_loadings_free", model = "DPM"))
   expect_null(icheck_loadings(
-    matrix(c(NA, 1, .8, NA, 1, 1.2), nrow = 2, byrow = TRUE),
+    matrix(c(1, .8, 1, 1.2), nrow = 2, byrow = TRUE),
     3,
     "lavaan",
-    "loadings_free",
+    "AF_loadings_free",
     model = "DPM"
   ))
 
   expect_error(
-    icheck_loadings(c(.8, 1), 3, "lavaan", "loadings_free", model = "DPM"),
-    "one value per time point.*first value must be `NA`"
+    icheck_loadings(c(1, .8, .7), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "waves 2 through T"
   )
   expect_error(
-    icheck_loadings(c(NA, 1, .8), 3, "lavaan", "none", model = "DPM"),
-    "loadings_free"
+    icheck_loadings(c(.8, 1), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "first DPM loading must be 1"
   )
   expect_error(
-    icheck_loadings(c(1, 1, .8), 3, "lavaan", "loadings_free", model = "DPM"),
-    "first DPM loading must be `NA`"
+    icheck_loadings(matrix(c(.8, 1, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "first DPM loading must be 1"
   )
   expect_error(
-    icheck_loadings(c(NA, .8, 1), 3, "lavaan", "loadings_free", model = "DPM"),
-    "second DPM loading must be 1"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(1, 1, .8, NA, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
-    "first DPM loading column must be `NA`"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(NA, 1, .8, NA, 1), nrow = 1, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
+    icheck_loadings(matrix(c(1, .8, 1, 1.2), nrow = 1, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
     "must have 2 rows"
   )
   expect_error(
-    icheck_loadings(matrix(c(NA, 1, .8, NA, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
-    "one column per time point"
+    icheck_loadings(matrix(c(1, .8, .7, 1, 1.2, .9), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "waves 2 through T"
   )
   expect_error(
-    icheck_loadings(c(NA, 1, NA), 3, "lavaan", "loadings_free", model = "DPM"),
-    "finite values after the required first-wave NA"
+    icheck_loadings(c(1, NA), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "finite values"
   )
   expect_error(
-    icheck_loadings(c(NaN, 1, .8), 3, "lavaan", "loadings_free", model = "DPM"),
-    "first DPM loading must be `NA`"
+    icheck_loadings(matrix(c(NaN, .8, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "finite values"
   )
   expect_error(
-    icheck_loadings(matrix(c(NA, 1, .8, 0, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
-    "first DPM loading column must be `NA`"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(NaN, 1, .8, NA, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "loadings_free", model = "DPM"),
-    "first DPM loading column must be `NA`"
-  )
-  expect_error(
-    icheck_loadings(c(NA, 1, .8), c(3, 4), "lavaan", "loadings_free", model = "DPM"),
+    icheck_loadings(c(1, .8), c(3, 4), "lavaan", "AF_loadings_free", model = "DPM"),
     "one value of.*time_points"
   )
 })
@@ -452,7 +426,6 @@ test_that("icheck_constraints() works", {
 
 test_that("vector constraints validate and preserve within compatibility", {
   expect_null(icheck_constraints(c("lagged", "residuals"), ME = FALSE))
-  expect_null(icheck_constraints("loadings_free", ME = FALSE))
   expect_null(icheck_constraints("RI_loadings_free", ME = FALSE))
   expect_null(icheck_constraints(c("lagged", "RI_loadings_free"), ME = FALSE))
   expect_null(icheck_constraints(c("residuals", "RI_loadings_free"), ME = FALSE))
@@ -477,6 +450,10 @@ test_that("vector constraints validate and preserve within compatibility", {
     icheck_constraints(c("ME", "RI_loadings_free"), ME = FALSE),
     "estimate_ME = TRUE"
   )
+  expect_error(
+    icheck_constraints("loadings_free", ME = FALSE),
+    "invalid constraints"
+  )
 
   expect_error(
     icheck_constraints_software("RI_loadings_free", "Mplus"),
@@ -500,7 +477,7 @@ test_that("constraint helpers interpret legacy within and explicit vectors", {
   expect_true(has_constraint(c("lagged", "residuals"), "residuals"))
   expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "lagged"))
   expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "RI_loadings_free"))
-  expect_true(has_constraint(c("stationarity", "loadings_free"), "loadings_free"))
+  expect_true(has_constraint(c("stationarity", "AF_loadings_free"), "loadings_free"))
   expect_false(has_constraint(c("lagged", "RI_loadings_free"), "residuals"))
 
   expect_equal(format_constraints("within"), "within")
@@ -508,6 +485,75 @@ test_that("constraint helpers interpret legacy within and explicit vectors", {
   expect_equal(
     format_constraints(c("lagged", "RI_loadings_free")),
     "c('lagged', 'RI_loadings_free')"
+  )
+})
+
+test_that("RI-CLPM identification table is enforced", {
+  for (i in seq_len(nrow(RICLPM_identification_table))) {
+    row <- RICLPM_identification_table[i, ]
+    constraints <- if (identical(row$constraints_key, "none")) {
+      "none"
+    } else {
+      strsplit(row$constraints_key, "\\+", fixed = FALSE)[[1]]
+    }
+    constraints <- setdiff(constraints, "ME")
+    if (isTRUE(row$estimate_ME) && grepl("ME", row$constraints_key, fixed = TRUE)) {
+      constraints <- c(constraints, "ME")
+    }
+    if (isTRUE(row$RI_loadings_free)) {
+      constraints <- c(constraints, "RI_loadings_free")
+    }
+
+    expect_null(icheck_RICLPM_identification(
+      row$min_waves,
+      row$estimate_ME,
+      constraints
+    ))
+    expect_error(
+      icheck_RICLPM_identification(row$min_waves - 1, row$estimate_ME, constraints),
+      "not identified"
+    )
+  }
+})
+
+test_that("RI-CLPM misspecification detection distinguishes restrictive cases", {
+  expect_false(detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(1, nrow = 2, ncol = 3),
+    estimate_ME = FALSE,
+    loadings = matrix(1, nrow = 2, ncol = 3),
+    constraints = "none"
+  )$restrictive)
+
+  generated_ME <- detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(0.8, nrow = 2, ncol = 3),
+    estimate_ME = FALSE,
+    loadings = matrix(1, nrow = 2, ncol = 3),
+    constraints = "none"
+  )
+  expect_true(generated_ME$restrictive)
+  expect_match(generated_ME$reasons, "measurement error")
+
+  varying_loadings <- detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(1, nrow = 2, ncol = 3),
+    estimate_ME = FALSE,
+    loadings = matrix(c(1, 0.9, 0.8, 1, 1.1, 1.2), nrow = 2, byrow = TRUE),
+    constraints = "none"
+  )
+  expect_true(varying_loadings$restrictive)
+  expect_match(varying_loadings$reasons, "random-intercept loadings")
+
+  general <- detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(1, nrow = 2, ncol = 3),
+    estimate_ME = TRUE,
+    loadings = matrix(1, nrow = 2, ncol = 3),
+    constraints = "RI_loadings_free"
+  )
+  expect_false(general$restrictive)
+  expect_true(general$general)
+
+  expect_error(
+    confirm_RICLPM_restrictive_misspecification(generated_ME),
+    "more restrictive"
   )
 })
 
@@ -542,16 +588,16 @@ test_that("icheck_N() works", {
     "not identified.*39 parameters.*36 distinct"
   )
   expect_error(
-    icheck_N(1000, 4, constraints = "loadings_free", ME = TRUE, model = "DPM"),
+    icheck_N(1000, 4, constraints = "AF_loadings_free", ME = TRUE, model = "DPM"),
     "not identified.*43 parameters.*36 distinct"
   )
   expect_error(
-    icheck_N(1000, 4, constraints = c("ME", "loadings_free"), ME = TRUE, model = "DPM"),
+    icheck_N(1000, 4, constraints = c("ME", "AF_loadings_free"), ME = TRUE, model = "DPM"),
     "not identified.*37 parameters.*36 distinct"
   )
   expect_null(icheck_N(1000, 4, constraints = "ME", ME = TRUE, model = "DPM"))
   expect_null(icheck_N(
-    1000, 4, constraints = c("stationarity", "loadings_free"),
+    1000, 4, constraints = c("stationarity", "AF_loadings_free"),
     ME = TRUE, model = "DPM"
   ))
 })
@@ -570,10 +616,10 @@ test_that("icheck_sample_size_search() works", {
 test_that("icheck_bounds() works", {
   expect_null(icheck_bounds(TRUE, "none", "lavaan"))
   expect_null(icheck_bounds(TRUE, "RI_loadings_free", "lavaan"))
-  expect_null(icheck_bounds(TRUE, "loadings_free", "lavaan"))
+  expect_null(icheck_bounds(TRUE, "lagged", "lavaan"))
+  expect_null(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
   expect_error(icheck_bounds("TRUE", "none", "Mplus"))
-  expect_error(icheck_bounds(TRUE, "lagged", "lavaan"))
-  expect_error(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
+  expect_error(icheck_bounds(TRUE, "none", "Mplus"), "only be used with lavaan")
 })
 
 test_that("icheck_software() works", {
@@ -1037,7 +1083,7 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       ICC = 0.5,
       RI_cor = 0.3,
       lagged_effects = lagged_effects,
@@ -1051,7 +1097,7 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
 
   expect_true(out$session$bounds)
   expect_true(all(
-    c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3") %in%
+    c("RI_A=~A2", "RI_A=~A3", "RI_A=~A4", "RI_B=~B2", "RI_B=~B3", "RI_B=~B4") %in%
       out$conditions[[1]]$estimates$parameter
   ))
 })
@@ -1176,7 +1222,7 @@ test_that("DPM stationarity syntax follows fixed and free loading equations", {
     within_cor = 0.2,
     Psi = NULL,
     reliability = 1,
-    loadings = c(NA, 1, 0.8, 1.1),
+    loadings = c(1, 0.8, 1.1),
     skewness = 0,
     kurtosis = 0,
     estimate_ME = FALSE,
@@ -1184,7 +1230,7 @@ test_that("DPM stationarity syntax follows fixed and free loading equations", {
     reps = 1,
     bootstrap_reps = NULL,
     seed = 123456,
-    constraints = c("stationarity", "loadings_free"),
+    constraints = c("stationarity", "AF_loadings_free"),
     bounds = FALSE,
     estimator = "ML",
     save_path = NULL,

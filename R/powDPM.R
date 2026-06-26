@@ -4,22 +4,31 @@
 #' Perform a Monte Carlo power analysis for the dynamic panel model (DPM). This
 #' function uses the same lavaan simulation and summary machinery as
 #' \code{\link{powRICLPM}}, but exposes the DPM-native arguments directly:
-#' \code{AF_proportion}, \code{AF_cor}, and \code{wave_cor}.
+#' \code{AF_proportion}, \code{AF_cor}, and \code{dynamics_cor}.
 #'
-#' @inheritParams powRICLPM
+#' @param target_power A \code{double}, denoting the desired power. 
+#' @param search_lower,search_upper,search_step Optional sample-size search range.
+#' @param sample_size An \code{integer} (vector), indicating sample size.
 #' @param time_points An \code{integer} (vector), indicating number of time points. The DPM needs at least 4 waves.
 #' @param AF_proportion A \code{double} (vector) with elements between 0 and 1, denoting the proportion of DPM true-score variance attributed to the accumulating factors.
 #' @param AF_cor A \code{double} between -1 and 1, denoting the correlation between accumulating factors in the DPM.
-#' @param wave_cor A \code{double} between -1 and 1, denoting the observed wave-level correlation in the DPM.
+#' @param lagged_effects A 2 by 2 \code{matrix}, denoting the lagged effects.
+#' @param dynamics_cor A \code{double} between -1 and 1, denoting the true-score dynamic-process correlation in the DPM.
 #' @param reliability (optional) A \code{numeric} value, vector, or matrix with elements larger than 0.1 and at most 1, denoting the reliability of the observed variables in the DPM data-generating model.
 #' @param estimate_ME (optional) A \code{logical}, denoting if measurement error variance should be estimated in the DPM.
-#' @param loadings (optional) A \code{numeric} vector or matrix specifying accumulating-factor loadings for the DPM in the \pkg{lavaan} data-generating model. DPM loadings must include one value per wave, with an explicit first-wave \code{NA}. The wave-2 loading is fixed to 1.
-#' @param Phi Alternative name for \code{lagged_effects}.
+#' @param loadings (optional) A \code{numeric} vector or matrix specifying accumulating-factor loadings for waves 2 through T in the DPM data-generating model. The wave-2 loading is fixed to 1.
+#' @param skewness,kurtosis Numeric values used to generate nonnormal data.
+#' @param significance_criterion Significance criterion used to compute power and coverage.
+#' @param reps An integer number of Monte Carlo replications.
+#' @param seed Optional random seed.
+#' @param constraints Character vector of DPM constraints. Valid values are \code{"none"}, \code{"lagged"}, \code{"residuals"}, \code{"stationarity"}, \code{"ME"}, and \code{"AF_loadings_free"}.
+#' @param bounds A \code{logical}, denoting if bounded lavaan estimation should be used.
+#' @param estimator Lavaan estimator. Defaults to \code{"ML"} or \code{"MLR"} for nonnormal data.
 #'
 #' @details
 #' The accumulating factors load on waves 2 through T and covary with the first
 #' wave. The DPM uses \code{AF_proportion} as the accumulating-factor variance
-#' and \code{wave_cor} as the target true-score wave-level correlation. Residual
+#' and \code{dynamics_cor} as the target true-score process correlation. Residual
 #' variances and covariances are computed from the DPM stationarity equations so
 #' the DPM true-score variables have variance 1 across waves when the requested
 #' values are admissible. When measurement error is included, observed variables
@@ -56,7 +65,7 @@
 #'   AF_proportion = 0.2,
 #'   AF_cor = 0.3,
 #'   lagged_effects = lagged_effects,
-#'   wave_cor = 0.3,
+#'   dynamics_cor = 0.3,
 #'   reps = 100,
 #'   seed = 1234
 #' )
@@ -72,45 +81,33 @@ powDPM <- function(
     time_points,
     AF_proportion,
     AF_cor,
-    lagged_effects = NULL,
-    wave_cor,
+    lagged_effects,
+    dynamics_cor,
     reliability = 1,
     estimate_ME = FALSE,
     loadings = NULL,
     skewness = 0,
     kurtosis = 0,
     significance_criterion = 0.05,
-    alpha = NULL,
     reps = 20,
-    bootstrap_reps = NULL,
     seed = NA,
     constraints = "none",
-    estimator = NA,
-    Phi = NULL
+    bounds = FALSE,
+    estimator = NA
   ) {
 
   call_powDPM <- match.call()
-  if (!is.null(Phi) && !is.null(lagged_effects)) {
-    iabort_renamed_argument_conflict("lagged_effects", "Phi")
-  }
 
   argument_names <- list(
-    intraclass_correlation = "AF_proportion",
-    RI_cor = "AF_cor",
-    within_cor = "wave_cor",
-    lagged_effects = if (!is.null(Phi)) "Phi" else "lagged_effects"
+    AF_proportion = "AF_proportion",
+    AF_cor = "AF_cor",
+    dynamics_cor = "dynamics_cor",
+    lagged_effects = "lagged_effects"
   )
-  if (!is.null(Phi)) {
-    lagged_effects <- Phi
-  }
 
   time_start <- proc.time()
 
   cli::cli_h2("Checking Argument Input")
-
-  if (!is.null(alpha)) {
-    significance_criterion <- icheck_alpha(alpha)
-  }
 
   reliability_expr <- call_powDPM$reliability
   if (!is.null(reliability_expr)) {
@@ -123,26 +120,20 @@ powDPM <- function(
 
   icheck_target(target_power)
   icheck_T_DPM(time_points)
-  icheck_ICC(AF_proportion, arg = argument_names$intraclass_correlation)
-  icheck_cor(AF_cor, arg = argument_names$RI_cor)
-  icheck_cor(wave_cor, arg = argument_names$within_cor)
+  icheck_AF_proportion(AF_proportion, arg = argument_names$AF_proportion)
+  icheck_AF_cor(AF_cor, arg = argument_names$AF_cor)
+  icheck_dynamics_cor(dynamics_cor, arg = argument_names$dynamics_cor)
   icheck_rel(reliability, time_points, "lavaan")
   icheck_ME(estimate_ME)
-  icheck_lagged_effects(lagged_effects, arg = argument_names$lagged_effects)
+  icheck_DPM_lagged_effects(lagged_effects, arg = argument_names$lagged_effects)
   icheck_moment(skewness)
   icheck_moment(kurtosis)
   icheck_significance_criterion(significance_criterion)
   icheck_reps(reps)
   estimator <- icheck_estimator(estimator, skewness, kurtosis)
-  if (is.character(constraints)) {
-    icheck_DPM_constraints(constraints)
-  }
-  icheck_constraints(constraints, ME = estimate_ME)
+  icheck_DPM_constraints(constraints, estimate_ME = estimate_ME, time_points = time_points)
   icheck_loadings(loadings, time_points, "lavaan", constraints, model = "DPM")
-
-  if (!is.null(bootstrap_reps)) {
-    cli::cli_alert_warning("The argument {.arg bootstrap_reps} is superseded. Uncertainty regarding simulation estimates is now computed analytically based on Morris et al. (2017).")
-  }
+  icheck_DPM_bounds(bounds)
 
   lapply(time_points, function(time_points) {
     loadings_i <- inormalize_loadings(loadings, time_points, model = "DPM")
@@ -150,7 +141,7 @@ powDPM <- function(
       AF_var <- compute_AF_var(AF_proportion_i)
       dpm_values <- compute_DPM_values(
         lagged_effects = lagged_effects,
-        wave_cor = wave_cor,
+        dynamics_cor = dynamics_cor,
         AF_var = AF_var,
         AF_cov = compute_AF_cov(AF_cor, AF_var),
         loadings = loadings_i
@@ -165,7 +156,16 @@ powDPM <- function(
     icheck_sample_size_search(search_lower, search_upper, search_step)
     sample_size <- seq(search_lower, search_upper, search_step)
   }
+  icheck_DPM_identification(time_points, reliability, estimate_ME, constraints)
   icheck_N(sample_size, time_points, constraints, ME = estimate_ME, model = "DPM")
+  misspecification <- detect_DPM_misspecification(
+    reliability = reliability,
+    loadings = loadings,
+    time_points = time_points,
+    constraints = constraints,
+    estimate_ME = estimate_ME
+  )
+  confirm_restrictive_misspecification(misspecification)
   seed <- icheck_seed(seed)
 
   cli::cli_alert_success("Argument checking complete.")
@@ -181,7 +181,7 @@ powDPM <- function(
     intraclass_correlation = AF_proportion,
     RI_cor = AF_cor,
     lagged_effects = lagged_effects,
-    within_cor = wave_cor,
+    within_cor = dynamics_cor,
     Psi = NULL,
     reliability = reliability,
     loadings = loadings,
@@ -190,10 +190,10 @@ powDPM <- function(
     estimate_ME = estimate_ME,
     significance_criterion = significance_criterion,
     reps = reps,
-    bootstrap_reps = bootstrap_reps,
+    bootstrap_reps = NULL,
     seed = seed,
     constraints = constraints,
-    bounds = FALSE,
+    bounds = bounds,
     estimator = estimator,
     save_path = NULL,
     software = "lavaan"

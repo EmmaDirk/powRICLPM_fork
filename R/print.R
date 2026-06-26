@@ -19,7 +19,7 @@ print.powRICLPM <- function(x, ...) {
     data.frame(
       sample_size = condition$sample_size,
       time_points = condition$time_points,
-      ICC = condition$ICC,
+      ICC = icondition_proportion(condition),
       reliability = condition$reliability,
       stringsAsFactors = FALSE
     )
@@ -39,6 +39,7 @@ print.powRICLPM <- function(x, ...) {
     iexperimental_condition_label(n_conditions), ":",
     sep = ""
   )
+  iprint_misspecification_warning(x)
 
   # Format condition table
   print(
@@ -65,6 +66,7 @@ print.summary.powRICLPM <- function(x, ..., object) {
     iexperimental_condition_label(n_conditions), ".",
     sep = ""
   )
+  iprint_misspecification_warning(object)
   cat("\n")
   print(
     knitr::kable(
@@ -80,6 +82,7 @@ print.summary.powRICLPM <- function(x, ..., object) {
 #'
 #' @noRd
 print.summary.powRICLPM.condition <- function(x, ..., object) {
+  iprint_misspecification_warning(object)
   cat("\n")
   print(
     knitr::kable(
@@ -114,6 +117,7 @@ print.summary.powRICLPM.condition <- function(x, ..., object) {
 #'
 #' @noRd
 print.summary.powRICLPM.parameter <- function(x, ..., parameter, object) {
+  iprint_misspecification_warning(object)
   print(
     knitr::kable(
       x,
@@ -122,6 +126,24 @@ print.summary.powRICLPM.parameter <- function(x, ..., parameter, object) {
       caption = paste0("SIMULATION RESULTS FOR ", parameter, " (", imodel_display_short(object), ")")
     )
   )
+}
+
+iprint_misspecification_warning <- function(object) {
+  if (!isTRUE(object$session$misspecified_restrictive)) {
+    return(invisible(NULL))
+  }
+  model <- if (iis_DPM_object(object)) {
+    "DPM"
+  } else {
+    "RI-CLPM"
+  }
+  cat(
+    "\n\nMisspecified ", model, " warning:\n",
+    "A constrained/simplified model was fitted to data generated from a more general model.\n",
+    "Power may be overestimated and bias may occur.",
+    sep = ""
+  )
+  invisible(NULL)
 }
 
 #' Print Mplus Call powRICLPM

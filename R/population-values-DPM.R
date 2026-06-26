@@ -19,8 +19,8 @@ compute_AF_cov <- function(AF_cor, AF_var) {
 #' Compute Dynamic Panel Model Population Values
 #'
 #' @noRd
-compute_DPM_values <- function(lagged_effects, wave_cor, AF_var, AF_cov, loadings) {
-  sigma_s <- matrix(c(1, wave_cor, wave_cor, 1), nrow = 2, byrow = TRUE)
+compute_DPM_values <- function(lagged_effects, dynamics_cor, AF_var, AF_cov, loadings) {
+  sigma_s <- matrix(c(1, dynamics_cor, dynamics_cor, 1), nrow = 2, byrow = TRUE)
   sigma_af <- matrix(c(AF_var, AF_cov, AF_cov, AF_var), nrow = 2, byrow = TRUE)
   gamma <- sigma_af %*% solve(diag(2) - t(lagged_effects))
 

@@ -103,7 +103,7 @@ give_powRICLPM_conditions <- function(object) {
     data.frame(
       sample_size = condition$sample_size,
       time_points = condition$time_points,
-      ICC = condition$ICC,
+      ICC = icondition_proportion(condition),
       reliability = condition$reliability,
       stringsAsFactors = FALSE
     )
@@ -245,7 +245,7 @@ give_powRICLPM_estimation_problems <- function(object) {
     data.frame(
       sample_size = condition$sample_size,
       time_points = condition$time_points,
-      ICC = condition$ICC,
+      ICC = icondition_proportion(condition),
       reliability = condition$reliability,
       errors = condition$estimation_information$n_error,
       not_converged = condition$estimation_information$n_nonconvergence,
@@ -287,7 +287,7 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
     data.frame(
       sample_size = condition$sample_size,
       time_points = condition$time_points,
-      ICC = condition$ICC,
+      ICC = icondition_proportion(condition),
       reliability = condition$reliability,
       estimates
     )
@@ -323,11 +323,18 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
     data.frame(
       sample_size = condition$sample_size,
       time_points = condition$time_points,
-      ICC = condition$ICC,
+      ICC = icondition_proportion(condition),
       reliability = condition$reliability,
       uncertainty_filtered,
       stringsAsFactors = FALSE
     )
   }))
   return(d)
+}
+
+icondition_proportion <- function(condition) {
+  if (!is.null(condition$AF_proportion)) {
+    return(condition$AF_proportion)
+  }
+  condition$ICC
 }

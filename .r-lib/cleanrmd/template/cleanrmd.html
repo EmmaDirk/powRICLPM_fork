@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="$lang$" xml:lang="$lang$"$if(dir)$ dir="$dir$"$endif$>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+$for(author-meta)$
+  <meta name="author" content="$author-meta$" />
+$endfor$
+$if(date-meta)$
+  <meta name="dcterms.date" content="$date-meta$" />
+$endif$
+$if(keywords)$
+  <meta name="keywords" content="$for(keywords)$$keywords$$sep$, $endfor$" />
+$endif$
+  <title>$if(title-prefix)$$title-prefix$ – $endif$$pagetitle$</title>
+
+<style type="text/css" charset="utf-8">
+/* cleanrmd basic defaults */
+body {
+  /* at least one is usually overridden by the theme, but these ensure the
+  body doesn't go all the way up to the screen edge */
+  margin: 0.5em auto;
+  padding: 0.5em;
+  max-width: 48em;
+}
+code, code * { font-family: inherit; }
+
+@media only screen and (max-width: 768px) {
+  body { max-width: 100%; }
+}
+</style>
+
+$for(header-includes)$
+  $header-includes$
+$endfor$
+
+<style type="text/css" charset="utf-8">
+/* cleanrmd overrides */
+img { max-width: 100%; }
+</style>
+
+$if(use-prism)$$use-prism$$endif$
+
+$if(highlighting-css)$
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: auto;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+$highlighting-css$
+</style>
+<script>
+// remove everything from pandoc code styles _except_ for 'code span' colors
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      if (/^code span/.test(rule.selectorText)) {
+        j++;
+        continue;
+      }
+      sheets[i].deleteRule(j);
+    }
+  }
+})();
+</script>
+$endif$
+
+<style>
+code, pre { overflow: auto; }
+pre code, pre code:not([class]) { white-space: unset; }
+</style>
+
+$for(css)$
+<link rel="stylesheet" href="$css$" $if(html5)$$else$type="text/css" $endif$/>
+$endfor$
+
+$if(disable-fontawesome)$
+$else$
+<script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+$endif$
+</head>
+<body>
+
+$for(include-before)$
+$include-before$
+$endfor$
+
+<main>
+$if(title-in-header)$<header>$else$$endif$
+$if(title)$
+<h1 id="title" class="toc-ignore">$title$</h1>
+$endif$
+$if(subtitle)$
+<h2 id="subtitle" class="toc-ignore">$subtitle$</h2>
+$endif$
+$if(date)$
+<p id="date">$date$</p>
+$endif$
+$if(author)$
+<p id="author">$for(author)$$author$$sep$, $endfor$</p>
+$endif$
+
+$if(title-in-header)$</header>$else$$endif$
+$if(toc)$$if(toc-title)$<h2 class="toc-ignore">$toc-title$</h2>$endif$$toc$$endif$
+
+$body$
+
+$for(include-after)$
+$include-after$
+$endfor$
+</main>
+
+$if(use-prism)$
+<script>
+document.querySelectorAll('pre').forEach(function(el) {
+  if (!el.className) return;
+  el.classList.add('lang-' + el.classList[0]);
+});
+</script>
+<script data-external="1" src="https://unpkg.com/prismjs@latest/components/prism-core.min.js"></script>
+<script data-external="1" src="https://unpkg.com/prismjs@latest/plugins/autoloader/prism-autoloader.min.js"></script>
+$endif$
+
+$if(mathjax-url)$
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+document.addEventListener("DOMContentLoaded", function(event) {
+  var script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src  = "$mathjax-url$";
+  document.getElementsByTagName("head")[0].appendChild(script);
+});
+</script>
+$endif$
+
+</body>
+</html>

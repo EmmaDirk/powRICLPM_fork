@@ -1,0 +1,3 @@
+cleanrmd_themes         List cleanrmd themes
+html_document_clean     Clean Rmarkdown HTML Document
+use_cleanrmd            Use a clean CSS theme from cleanrmd

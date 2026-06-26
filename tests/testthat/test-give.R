@@ -86,16 +86,16 @@ test_that("give() notes free-loading anchor for condition tables", {
     conditions = list(list(
       sample_size = 1000,
       time_points = 3,
-      ICC = 0.2,
+      AF_proportion = 0.2,
       reliability = 1,
-      constraints = "loadings_free"
+      constraints = "AF_loadings_free"
     )),
     session = list(
       model = "DPM",
-      argument_names = list(intraclass_correlation = "AF_proportion")
+      argument_names = list(AF_proportion = "AF_proportion")
     )
   )
-  class(object_dpm) <- c("powRICLPM", "list")
+  class(object_dpm) <- c("powDPM", "powRICLPM", "list")
 
   object_riclpm <- list(
     conditions = list(list(

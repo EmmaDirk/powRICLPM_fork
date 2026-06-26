@@ -1,0 +1,4 @@
+cleanrmd_themes	cleanrmd_themes
+cleanrmd_theme_dependency	use_cleanrmd
+html_document_clean	html_document_clean
+use_cleanrmd	use_cleanrmd

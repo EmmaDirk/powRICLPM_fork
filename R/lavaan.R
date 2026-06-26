@@ -102,6 +102,7 @@ create_lavaan <- function(condition) {
     est_synt = est_synt,
     est_tab = est_tab,
     estimate_ME = condition[["estimate_ME"]],
+    misspecification = condition[["misspecification"]],
     skewness = condition[["skewness"]],
     kurtosis = condition[["kurtosis"]],
     significance_criterion = condition[["significance_criterion"]],
