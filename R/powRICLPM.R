@@ -45,7 +45,7 @@
 #'
 #' Parameters are denoted using \pkg{lavaan} model syntax (see \href{https://lavaan.ugent.be/tutorial/syntax1.html}{the \pkg{lavaan} website}). For example, the random intercept variances are denoted by \code{RI_A~~RI_A} and \code{RI_B~~RI_B}, the cross-lagged effects at the first wave as \code{wB2~wA1} and \code{wA2~wB1}, and the autoregressive effects as \code{wA2~wA1} and \code{wB2~wB1}. When factor loadings are freely estimated using \code{constraints = "RI_loadings_free"}, the freed loadings are denoted by the corresponding \pkg{lavaan} loading syntax, for example \code{RI_A=~A2}. Use \code{give(object, "names")} to extract parameter names from the \code{powRICLPM} object.}
 #'
-#' \subsection{Parallel Processing and Progress Bar}{To speed up the analysis, power analysis for multiple experimental conditions can be executed in parallel. This has been implemented using \pkg{future}. By default the analysis is executed sequentially (i.e., single-core). Parallel execution (i.e., multicore) can be setup using \code{\link[future]{plan}}, for example \code{plan(multisession, workers = 4)}. For more information and options, see \url{https://future.futureverse.org/articles/future-1-overview.html#controlling-how-futures-are-resolved}.
+#' \subsection{Parallel Processing and Progress Bar}{To speed up the analysis, power analysis for multiple experimental conditions can be executed in parallel. This has been implemented using \pkg{future}. By default the analysis is executed sequentially (i.e., single-core). Parallel execution (i.e., multicore) can be setup using \code{\link[future]{plan}}, for example \code{plan(multisession)}. For more information and options, see \url{https://future.futureverse.org/articles/future-1-overview.html#controlling-how-futures-are-resolved}.
 #'
 #' A progress bar displaying the status of the power analysis has been implemented using \pkg{progressr}. By default, a simple progress bar will be shown. For more information on how to control this progress bar and several other notification options (e.g., auditory notifications), see \url{https://progressr.futureverse.org}.}
 #'
@@ -130,12 +130,15 @@
 #' # Define population parameters for lagged effects
 #' lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 #'
+#' \dontrun{
 #' # (optional) Set up parallel computing (i.e., multicore, speeding up the analysis)
 #' library(future)
 #' library(progressr)
-#' future::plan(multisession, workers = 6)
 #'
-#' \dontrun{
+#' old_plan <- future::plan()
+#' on.exit(future::plan(old_plan), add = TRUE)
+#' future::plan(future::multisession)
+#'
 #' # Run analysis (`reps` is small, because this is an example)
 #' with_progress({
 #'   out_preliminary <- powRICLPM(
@@ -153,11 +156,6 @@
 #'     seed = 1234
 #'   )
 #' })
-#' }
-#'
-#' \dontshow{
-#' ## Shut down parallel workers (done for sake of example, normally not needed)
-#' future::plan("sequential")
 #' }
 #'
 #' @importFrom future.apply future_lapply

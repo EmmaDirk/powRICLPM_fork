@@ -34,7 +34,7 @@
 #'   \item \code{MSE}: The parameter mean square error, combining a parameter's bias and efficiency.
 #'   \item \code{Accuracy}: The average (across replications) width of the confidence interval.
 #'   \item \code{Cover}: The coverage rate, representing the proportion of times (across replications) the true parameter estimate fell in the confidence interval.
-#'   \item \code{Power}: The proportion of times (across replications) the confidence interval did not contain zero.
+#'   \item \code{Power}: The proportion of replications in which the parameter's \emph{p}-value is smaller than the specified significance criterion.
 #'   \item \code{Error}: The number of replications that failed to run (i.e., \code{lavaan()} produced an error).
 #'   \item \code{Not converged}: The number of replications that did not converge to a solution.
 #'   \item \code{Inadmissible}: The number of replications that converged to an inadmissible solution (e.g., a variance estimated to be lower than zero).
@@ -50,7 +50,12 @@
 #' summary(out_preliminary, parameter = "wB2~wA1")
 #'
 #' # Performance measures for all parameters, for specific experimental condition
-#' summary(out_preliminary, sample_size = 700, time_points = 4, intraclass_correlation = .3, reliability = 1)
+#' summary(out_preliminary,
+#'   sample_size = 700,
+#'   time_points = 4,
+#'   intraclass_correlation = .3,
+#'   reliability = 1
+#' )
 #'
 #' @method summary powRICLPM
 #' @export

@@ -83,7 +83,7 @@ output <- powRICLPM(
 ## Parallel processing using `future`
 Performing a Monte Carlo power analysis with a large number of replications, and across multiple experimental conditions can be time-consuming. To speed up the process, it is recommended to perform the power analysis *across simulation conditions* in parallel (i.e., on multiple cores). To this end, the `powRICLPM()` function has implemented `future`'s parallel processing capabilities.
 
-Load the `future` package, and use its `plan()` function to change the power analysis execution from *sequential* (i.e., single-core, the default), to *multisession* (i.e., multicore). Use the `workers` argument to specify how many cores you want to use. Next, run the `powRICLPM` analysis, and the power analysis will run on the specified number of cores. This can result in a significant reduction of computing time. For more information on other parallel execution strategies using futures, see `?future::plan()`. 
+Load the `future` package, save the current plan, and use `plan()` to change the power analysis execution from *sequential* (i.e., single-core, the default), to *multisession* (i.e., multicore). Next, run the `powRICLPM` analysis, and the power analysis will run across available workers. This can result in a significant reduction of computing time. For more information on other parallel execution strategies using futures, see `?future::plan()`.
 
 ## Progress bar using `progressr`
 It can be useful to get an approximation of the progress of the `powRICLPM` analysis while running the code, especially when running the analysis in parallel. `powRICLPM()` has implemented progress notifications using the `progressr` package. Simply put, there are two options through which you can get progress notifications: 
@@ -98,11 +98,12 @@ Implementing the `with_progress({...})` option, as well as parallel execution of
 library(future)
 library(progressr)
 
-# Check how many cores are available
-parallelly::availableCores()
+# Restore the user's previous plan when this example exits
+old_plan <- future::plan()
+on.exit(future::plan(old_plan), add = TRUE)
 
-# Plan powRICLPM analysis to run on 1 core less than number of available cores
-plan(multisession, workers = 7) # For the case of 8 available cores
+# Plan powRICLPM analysis to run in parallel
+plan(multisession)
 
 # Run the powRICLPM analysis 
 with_progress({ # Subscribe to progress updates
@@ -150,7 +151,7 @@ summary(output, sample_size = 500, time_points = 4, intraclass_correlation = 0.5
 `give()` extracts various bits of information from an `powRICLPM` object. The exact information to be extracted is given by the `what = "..."` argument: 
 
 1. `what = "conditions"` gives the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, and intraclass correlation.
-2. `what = "estimation_problems"` gives the proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row). 
+2. `what = "estimation_problems"` gives the number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
 3. `what = "results"` gives the average estimate `average`, minimum estimate `minimum`, empirical standard error of parameter estimates `EmpSE`, the average standard error `SEAvg`, the mean square error `MSE`, the average width of the confidence interval `accuracy`, the coverage rate `coverage`, and the proportion of times the *p*-value was lower than the significance criterion `power`. It requires setting the `parameter = "..."` argument.
 4. `what = "names"` gives the parameter names contained within the `powRICLPM` object.
 

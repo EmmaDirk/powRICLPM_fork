@@ -109,10 +109,12 @@ plot.powRICLPM <- function(
   }
 
   # Get performance table
+  results <- give_powRICLPM_results(x, parameter = parameter)
+  mcse <- give_powRICLPM_MCSE_parameter(x, parameter = parameter)
   d <- merge(
-    give_powRICLPM_results(x, parameter = parameter),
-    give_powRICLPM_MCSE_parameter(x, parameter = parameter),
-    by = icondition_key_columns(give_powRICLPM_results(x, parameter = parameter))
+    results,
+    mcse,
+    by = icondition_key_columns(results)
   )
 
   # Compute upper and lower bound of y-variable

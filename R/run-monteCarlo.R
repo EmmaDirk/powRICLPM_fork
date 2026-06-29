@@ -87,11 +87,18 @@ run_condition_monteCarlo <- function(
     )
   )
 
-  # Extract slot options
-  lav_model <- fit@Model
-  lav_options <- fit@Options
-  lav_options$optim.attempts <- 1L
-  lav_parTable <- fit@ParTable
+  use_lavaan_slot_cache <- !has_constraint(condition$constraints, "stationarity")
+
+  if (use_lavaan_slot_cache) {
+    lav_model <- fit@Model
+    lav_options <- fit@Options
+    lav_options$optim.attempts <- 1L
+    lav_parTable <- fit@ParTable
+  } else {
+    lav_model <- NULL
+    lav_options <- NULL
+    lav_parTable <- fit@ParTable
+  }
 
   # Fit model to datasets
   fits <- lapply(seq_along(datasets), function(i, p) {
@@ -102,26 +109,45 @@ run_condition_monteCarlo <- function(
 
       tryCatch(
         {
-          out <- suppressWarnings(
-            lavaan::lavaan(
-              model = condition$est_synt,
-              data = datasets[[i]],
-              warn = FALSE,
-              slotOptions = lav_options,
-              slotParTable = lav_parTable,
-              slotModel = lav_model
+          out <- if (use_lavaan_slot_cache) {
+            suppressWarnings(
+              lavaan::lavaan(
+                model = condition$est_synt,
+                data = datasets[[i]],
+                warn = FALSE,
+                slotOptions = lav_options,
+                slotParTable = lav_parTable,
+                slotModel = lav_model
+              )
             )
-          )
+          } else {
+            suppressWarnings(
+              lavaan::lavaan(
+                model = condition$est_synt,
+                data = datasets[[i]],
+                estimator = estimator,
+                bounds = bounds,
+                warn = FALSE,
+                check.start = FALSE,
+                check.lv.names = FALSE,
+                h1 = FALSE,
+                baseline = FALSE,
+                check.post = TRUE,
+                store.vcov = FALSE,
+                fixed.x = FALSE
+              )
+            )
+          }
 
           # Signal progress bar
           p()
 
           return(out)
         },
-        error = function(e, p) {
+        error = function(e) {
           # Signal progress bar
           p()
-          return(NULL)
+          NULL
         }
       )
     },

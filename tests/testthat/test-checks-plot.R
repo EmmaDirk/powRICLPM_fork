@@ -102,6 +102,18 @@ test_that("icheck_y() works", {
   expect_error(icheck_y(3))
 })
 
+test_that("plot.powRICLPM() extracts parameter results once", {
+  body_text <- paste(deparse(body(plot.powRICLPM)), collapse = "\n")
+  matches <- gregexpr(
+    "give_powRICLPM_results(x, parameter = parameter)",
+    body_text,
+    fixed = TRUE
+  )[[1]]
+  n_matches <- if (identical(matches, -1L)) 0L else length(matches)
+
+  expect_equal(n_matches, 1L)
+})
+
 test_that("icheck_plot_options() works", {
   expect_null(icheck_plot_options("time_points"))
   expect_null(icheck_plot_options("intraclass_correlation"))

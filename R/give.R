@@ -12,7 +12,7 @@
 #' \itemize{
 #'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown with a compact variable-specific label.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
-#'   \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
+#'   \item \code{estimation_problems}: The number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
 #'   \item \code{results}: The average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 #'   \item \code{names}: Parameter names available in every experimental condition.
 #'   \item \code{uncertainty}: Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
@@ -334,6 +334,15 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
       )
     )
   }
+  if (!is.character(parameter) || length(parameter) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg parameter} must be a character string of length 1:",
+        x = paste0("Your {.arg parameter} is ", format_object_type(parameter), " of length ", length(parameter), ".")
+      )
+    )
+  }
+  parameter_names_any <- give_powRICLPM_parameter_names_any(object)
 
   # Combine simulation results across experimental conditions
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
@@ -345,7 +354,7 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
       data.frame()
     }
     if (nrow(estimates) == 0L) {
-      if (parameter %in% give_powRICLPM_parameter_names_any(object)) {
+      if (parameter %in% parameter_names_any) {
         cli::cli_abort(
           c(
             "No usable estimates are available for {.arg parameter} `{parameter}` in at least one experimental condition:",
@@ -407,7 +416,8 @@ icondition_parameter_names <- function(condition) {
 
 
 give_powRICLPM_MCSE_parameter <- function(object, parameter) {
-  icheck_give_parameter(parameter, object, what = "uncertainty")
+  parameter_names <- give_powRICLPM_parameter_names(object)
+  icheck_give_parameter(parameter, object, what = "uncertainty", parameter_names = parameter_names)
 
   # Combine data frames across conditions
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
@@ -431,6 +441,7 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
 }
 
 icheck_give_parameter <- function(parameter, object, what = "results",
+                                  parameter_names = NULL,
                                   call = rlang::caller_env()) {
   if (is.null(parameter)) {
     cli::cli_abort(
@@ -451,7 +462,10 @@ icheck_give_parameter <- function(parameter, object, what = "results",
       call = call
     )
   }
-  if (!parameter %in% give_powRICLPM_parameter_names(object)) {
+  if (is.null(parameter_names)) {
+    parameter_names <- give_powRICLPM_parameter_names(object)
+  }
+  if (!parameter %in% parameter_names) {
     cli::cli_abort(
       c(
         "The requested {.arg parameter} was not found across all experimental conditions:",

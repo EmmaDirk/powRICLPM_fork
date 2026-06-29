@@ -24,3 +24,21 @@ test_that("run_condition_monteCarlo() computes power MCSE from completed replica
     fixed = TRUE
   )))
 })
+
+test_that("run_condition_monteCarlo() handles failed fits without handler argument mismatch", {
+  body_text <- paste(deparse(body(run_condition_monteCarlo)), collapse = "\n")
+
+  expect_true(grepl("error = function(e)", body_text, fixed = TRUE))
+  expect_false(grepl("error = function(e, p)", body_text, fixed = TRUE))
+})
+
+test_that("run_condition_monteCarlo() bypasses lavaan slot cache for stationarity constraints", {
+  body_text <- paste(deparse(body(run_condition_monteCarlo)), collapse = "\n")
+
+  expect_true(grepl("use_lavaan_slot_cache <- !has_constraint", body_text, fixed = TRUE))
+  expect_true(grepl("condition$constraints", body_text, fixed = TRUE))
+  expect_true(grepl('"stationarity"', body_text, fixed = TRUE))
+  expect_true(grepl("if (use_lavaan_slot_cache)", body_text, fixed = TRUE))
+  expect_true(grepl("slotOptions = lav_options", body_text, fixed = TRUE))
+  expect_true(grepl("estimator = estimator", body_text, fixed = TRUE))
+})
