@@ -13,8 +13,8 @@
 #'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown with a compact variable-specific label.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
 #'   \item \code{estimation_problems}: The proportion of fatal errors, inadmissible values, or non-converged estimations (columns) per experimental conditions (row).
-#'   \item \code{results}: The average estimate (\code{average}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
-#'   \item \code{names}: The parameter names in the condition with the least parameters (i.e., parameter names that apply to each experimental condition).
+#'   \item \code{results}: The average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
+#'   \item \code{names}: Parameter names available in every experimental condition.
 #'   \item \code{uncertainty}: Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
 #' }
 #'
@@ -91,7 +91,6 @@ give <- function(from, what, parameter = NULL) {
       out <- give_powRICLPM_MCSE_parameter(object = from, parameter = parameter)
   }
 
-  inote_condition_loading_anchor(from, out)
   out <- idrop_DPM_reliability_column(from, out)
   ilabel_icc_column(out, icc_column_label)
 }
@@ -109,41 +108,6 @@ give_powRICLPM_conditions <- function(object) {
     )
   }))
   return(d)
-}
-
-ireliability_is_variable_specific <- function(condition) {
-  !is.null(condition$reliability_matrix) &&
-    length(unique(c(condition$reliability_matrix))) > 1L
-}
-
-ireliability_table <- function(condition) {
-  d <- data.frame(
-    Variable = c("A", "B"),
-    condition$reliability_matrix,
-    check.names = FALSE
-  )
-  colnames(d) <- c("Variable", paste0("Occ ", seq_len(ncol(condition$reliability_matrix))))
-  d
-}
-
-iprint_reliability_tables <- function(conditions) {
-  variable_specific <- which(vapply(conditions, ireliability_is_variable_specific, logical(1)))
-  if (length(variable_specific) == 0L) {
-    return(invisible(NULL))
-  }
-
-  cat("\nReliability specification for variable-specific condition(s):\n")
-  for (condition_index in variable_specific) {
-    cat("\nCondition ", condition_index, ":\n", sep = "")
-    print(
-      knitr::kable(
-        ireliability_table(conditions[[condition_index]]),
-        format = "simple",
-        align = c("l", rep("r", conditions[[condition_index]]$time_points))
-      )
-    )
-  }
-  invisible(NULL)
 }
 
 iis_DPM_object <- function(object) {
@@ -228,7 +192,7 @@ inote_condition_loading_anchor <- function(object, output = NULL) {
   }
   if (identical(object$session$model, "DPM")) {
     cli::cli_alert_info(
-      "With DPM free loadings, `AF_proportion` is anchored at wave 2, where the accumulating-factor loading is fixed to 1."
+      "With free DPM loadings, `AF_proportion` refers to wave 2, where the accumulating-factor loading is fixed to 1."
     )
   } else {
     cli::cli_alert_info(
@@ -271,8 +235,21 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
 
     # Extract and round estimates per condition
-    estimates <- condition$estimates[condition$estimates$parameter == parameter, -1]
+    estimates <- if (is.data.frame(condition$estimates)) {
+      condition$estimates[condition$estimates$parameter == parameter, -1, drop = FALSE]
+    } else {
+      data.frame()
+    }
     if (nrow(estimates) == 0L) {
+      if (parameter %in% give_powRICLPM_parameter_names_any(object)) {
+        cli::cli_abort(
+          c(
+            "No usable estimates are available for {.arg parameter} `{parameter}` in at least one experimental condition:",
+            i = "All replications for that condition failed, did not converge, or were inadmissible.",
+            i = "Use {.code give(object, 'estimation_problems')} to inspect estimation problems."
+          )
+        )
+      }
       cli::cli_abort(
         c(
           "The requested {.arg parameter} was not found:",
@@ -296,18 +273,29 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
 }
 
 give_powRICLPM_parameter_names <- function(object) {
+  Reduce(intersect, lapply(object$conditions, function(condition) {
+    icondition_parameter_names(condition)
+  }))
+}
 
-  # Determine length of parameter vector per condition
-  condition_lengths <- sapply(object$conditions, function(condition) {
-    length(condition$estimates$parameter)
-  })
+give_powRICLPM_parameter_names_any <- function(object) {
+  unique(unlist(lapply(object$conditions, function(condition) {
+    icondition_parameter_names(condition)
+  }), use.names = FALSE))
+}
 
-  # Find index of condition with minimum length
-  min_length_index <- which.min(condition_lengths)
-
-  # Extract parameter vector from condition with minimum length
-  out <- object$conditions[[min_length_index]]$estimates$parameter
-  return(out)
+icondition_parameter_names <- function(condition) {
+  if (is.data.frame(condition$estimates) && "parameter" %in% names(condition$estimates)) {
+    return(condition$estimates$parameter)
+  }
+  if (is.data.frame(condition$est_tab) && all(c("lhs", "op", "rhs", "free") %in% names(condition$est_tab))) {
+    return(paste0(
+      condition$est_tab$lhs,
+      condition$est_tab$op,
+      condition$est_tab$rhs
+    )[condition$est_tab$free])
+  }
+  character()
 }
 
 

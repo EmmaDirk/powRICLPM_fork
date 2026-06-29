@@ -60,8 +60,7 @@ icheck_parameter_summary <- function(x, object, arg = rlang::caller_arg(x), call
     )
   }
 
-  number_of_parameters <- lapply(object$conditions, function(x) {length(x$estimates$parameter)})
-  names_parameters <- object$conditions[[which.min(number_of_parameters)]]$estimates$parameter
+  names_parameters <- give_powRICLPM_parameter_names(object)
 
   if (!any(x == names_parameters)) {
     cli::cli_abort(
@@ -144,15 +143,15 @@ icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_
     )
   }
 
-  reliabilities <- lapply(object$conditions, function(x) {x$reliability})
+  reliabilities <- vapply(object$conditions, function(x) {as.character(x$reliability)}, character(1))
 
-  if (!any(as.character(reliability) == as.character(reliabilities))) {
+  if (!any(ireliability_matches(reliability, reliabilities))) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must refer to an experimental condition in the {.cls {class(object)}} object with that reliability:",
         "i" = "The reliability you've indicated is not included in any experimental condition.",
         "x" = "Perhaps you meant any of the following reliabilities?",
-        paste(unique(as.character(reliabilities)), collapse = ", ")
+        paste(unique(reliabilities), collapse = ", ")
       ),
       call = call
     )
@@ -166,7 +165,7 @@ imatch_condition_summary <- function(object, sample_size, time_points, ICC, reli
     x$sample_size == sample_size &&
       x$time_points == time_points &&
       icondition_proportion(x) == ICC &&
-      (is.null(reliability) || as.character(x$reliability) == as.character(reliability))
+      (is.null(reliability) || ireliability_matches(reliability, x$reliability))
   }, object$conditions)
 
   if (length(matches) == 0) {

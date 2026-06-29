@@ -7,7 +7,6 @@
 #'
 #' @noRd
 create_conditions_DPM <- function(
-  model = "DPM",
   target_power,
   sample_size,
   time_points,
@@ -15,7 +14,6 @@ create_conditions_DPM <- function(
   AF_cor,
   lagged_effects,
   dynamics_cor,
-  Psi,
   reliability,
   loadings = NULL,
   skewness,
@@ -23,14 +21,13 @@ create_conditions_DPM <- function(
   estimate_ME,
   significance_criterion,
   reps,
-  bootstrap_reps,
   seed,
   constraints,
   bounds,
   estimator,
-  save_path,
-  software
+  software = "lavaan"
 ) {
+  model <- "DPM"
   constraints <- normalize_constraints_for_software(constraints, software)
   reliability_conditions <- ireliability_conditions(reliability)
 

@@ -50,7 +50,7 @@ print.powRICLPM <- function(x, ...) {
       col.names = condition_col_names
     )
   )
-  iprint_reliability_tables(x$conditions)
+  invisible(x)
 }
 
 
@@ -139,8 +139,8 @@ iprint_misspecification_warning <- function(object) {
   }
   cat(
     "\n\nMisspecified ", model, " warning:\n",
-    "A constrained/simplified model was fitted to data generated from a more general model.\n",
-    "Power may be overestimated and bias may occur.",
+    "The estimation model is more restrictive than the data-generating model; ",
+    "power may be overestimated and cross-lagged or autoregressive estimates may be biased.",
     sep = ""
   )
   invisible(NULL)

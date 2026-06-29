@@ -307,8 +307,8 @@ powRICLPM <- function(
     constraints = constraints,
     bounds = bounds,
     estimator = estimator,
-    save_path,
-    software
+    save_path = save_path,
+    software = software
   )
 }
 
@@ -325,6 +325,9 @@ irun_power_analysis <- function(
   RI_cor,
   lagged_effects,
   within_cor,
+  AF_proportion = NULL,
+  AF_cor = NULL,
+  dynamics_cor = NULL,
   Psi,
   reliability,
   loadings,
@@ -341,31 +344,54 @@ irun_power_analysis <- function(
   save_path,
   software
 ) {
-  conditions <- create_conditions(
-    model = model,
-    target_power = target_power,
-    sample_size = sample_size,
-    time_points = time_points,
-    intraclass_correlation = intraclass_correlation,
-    RI_cor = RI_cor,
-    lagged_effects = lagged_effects,
-    within_cor = within_cor,
-    Psi = Psi,
-    reliability = reliability,
-    loadings = loadings,
-    skewness = skewness,
-    kurtosis = kurtosis,
-    estimate_ME = estimate_ME,
-    significance_criterion = significance_criterion,
-    reps = reps,
-    bootstrap_reps = bootstrap_reps,
-    seed = seed,
-    constraints = constraints,
-    bounds = bounds,
-    estimator = estimator,
-    save_path = save_path,
-    software = software
-  )
+  conditions <- if (identical(model, "DPM")) {
+    create_conditions_DPM(
+      target_power = target_power,
+      sample_size = sample_size,
+      time_points = time_points,
+      AF_proportion = AF_proportion,
+      AF_cor = AF_cor,
+      lagged_effects = lagged_effects,
+      dynamics_cor = dynamics_cor,
+      reliability = reliability,
+      loadings = loadings,
+      skewness = skewness,
+      kurtosis = kurtosis,
+      estimate_ME = estimate_ME,
+      significance_criterion = significance_criterion,
+      reps = reps,
+      seed = seed,
+      constraints = constraints,
+      bounds = bounds,
+      estimator = estimator
+    )
+  } else {
+    create_conditions(
+      model = model,
+      target_power = target_power,
+      sample_size = sample_size,
+      time_points = time_points,
+      intraclass_correlation = intraclass_correlation,
+      RI_cor = RI_cor,
+      lagged_effects = lagged_effects,
+      within_cor = within_cor,
+      Psi = Psi,
+      reliability = reliability,
+      loadings = loadings,
+      skewness = skewness,
+      kurtosis = kurtosis,
+      estimate_ME = estimate_ME,
+      significance_criterion = significance_criterion,
+      reps = reps,
+      bootstrap_reps = bootstrap_reps,
+      seed = seed,
+      constraints = constraints,
+      bounds = bounds,
+      estimator = estimator,
+      save_path = save_path,
+      software = software
+    )
+  }
 
   if (identical(model, "RICLPM")) {
     confirm_RICLPM_restrictive_misspecification(

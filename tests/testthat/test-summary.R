@@ -107,6 +107,129 @@ test_that("summary.powRICLPM handles vector reliability conditions", {
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
 })
 
+test_that("matrix reliability labels print and filter consistently", {
+  base_estimates <- data.frame(
+    parameter = "wB2~wA1",
+    population_value = 0.2,
+    average = 0.2,
+    bias = 0,
+    minimum = 0.1,
+    EmpSE = 0.05,
+    SEAvg = 0.05,
+    MSE = 0.0025,
+    accuracy = 0.2,
+    coverage = 0.95,
+    power = 0.8
+  )
+  condition <- list(
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = "A=0.8, B=0.7",
+    estimates = base_estimates,
+    estimation_information = list(
+      n_error = 0,
+      n_nonconvergence = 0,
+      n_inadmissible = 0,
+      n_completed = 2
+    ),
+    skewness = 0,
+    kurtosis = 0,
+    constraints = "none",
+    bounds = FALSE,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05
+  )
+  object <- list(
+    conditions = list(
+      condition,
+      modifyList(condition, list(reliability = "A=0.9, B=0.85"))
+    ),
+    session = list(
+      model = "RICLPM",
+      version = "0.2.1",
+      reps = 2,
+      constraints = "none",
+      bounds = FALSE,
+      estimate_ME = TRUE,
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  expect_equal(give(object, "conditions")$reliability, c("A=0.8, B=0.7", "A=0.9, B=0.85"))
+  expect_output(summary(
+    object,
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = "A = 0.8, B = 0.7"
+  ), "SIMULATION RESULTS")
+  expect_error(
+    summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = "A=0.8, B=0.8"),
+    "A=0.8, B=0.7"
+  )
+})
+
+test_that("parameter-not-found and no-usable-estimates errors differ", {
+  good_condition <- list(
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = 1,
+    estimates = data.frame(
+      parameter = "wB2~wA1",
+      population_value = 0.2,
+      average = 0.2,
+      bias = 0,
+      minimum = 0.1,
+      EmpSE = 0.05,
+      SEAvg = 0.05,
+      MSE = 0.0025,
+      accuracy = 0.2,
+      coverage = 0.95,
+      power = 0.8
+    ),
+    MCSEs = data.frame(MCSE_average = 0),
+    estimation_information = list(
+      n_error = 0,
+      n_nonconvergence = 0,
+      n_inadmissible = 0,
+      n_completed = 1
+    )
+  )
+  failed_condition <- modifyList(good_condition, list(
+    reliability = 0.8,
+    estimates = NA,
+    est_tab = data.frame(
+      lhs = "wB2",
+      op = "~",
+      rhs = "wA1",
+      free = TRUE
+    ),
+    estimation_information = list(
+      n_error = 1,
+      n_nonconvergence = 0,
+      n_inadmissible = 0,
+      n_completed = 0
+    )
+  ))
+  object <- list(
+    conditions = list(good_condition, failed_condition),
+    session = list(
+      model = "RICLPM",
+      version = "0.2.1",
+      reps = 1,
+      estimate_ME = TRUE,
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  expect_error(give(object, "results", parameter = "not_a_parameter"), "not found")
+  expect_error(give(object, "results", parameter = "wB2~wA1"), "No usable estimates")
+})
+
 test_that("summary.powRICLPM omits reliability column for DPM objects", {
   object <- list(
     conditions = list(list(

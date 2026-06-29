@@ -15,13 +15,14 @@
 #' \subsection{Mapping Options}{The following outcomes can be plotted on the y-axis:
 #'
 #' \itemize{
+#'   \item \code{power}: The proportion of times the \emph{p}-value was lower than the significance criterion.
 #'   \item \code{average}: The average estimate.
 #'   \item \code{MSE}: The mean square error.
 #'   \item \code{coverage}: The coverage rate
 #'   \item \code{accuracy}: The average width of the confidence interval.
 #'   \item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} is still accepted as an alias for \code{EmpSE}.
 #'   \item \code{SEAvg}: Average standard error.
-#'   \item \code{bias}: The absolute difference between the average estimate and population value.
+#'   \item \code{bias}: The signed difference between the average estimate and population value.
 #' }
 #'
 #' The following variables can be mapped to color, shape, and facet:

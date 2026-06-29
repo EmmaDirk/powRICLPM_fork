@@ -66,8 +66,8 @@ powDPM(
 \item{estimator}{Lavaan estimator. Defaults to \code{"ML"} or \code{"MLR"} for nonnormal data.}
 }
 \value{
-An object of class \code{powRICLPM}, upon which \code{summary()},
-\code{print()}, and \code{plot()} can be used.
+An object with classes \code{powDPM} and \code{powRICLPM}, upon which
+\code{summary()}, \code{print()}, and \code{plot()} can be used.
 }
 \description{
 Perform a Monte Carlo power analysis for the dynamic panel model (DPM). This

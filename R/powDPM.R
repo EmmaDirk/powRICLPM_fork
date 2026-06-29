@@ -43,8 +43,8 @@
 #' \code{constraints = "stationarity"} can reduce model complexity.
 #'
 #' @return
-#' An object of class \code{powRICLPM}, upon which \code{summary()},
-#' \code{print()}, and \code{plot()} can be used.
+#' An object with classes \code{powDPM} and \code{powRICLPM}, upon which
+#' \code{summary()}, \code{print()}, and \code{plot()} can be used.
 #'
 #' @seealso
 #' \itemize{
@@ -178,10 +178,13 @@ powDPM <- function(
     target_power = target_power,
     sample_size = sample_size,
     time_points = time_points,
-    intraclass_correlation = AF_proportion,
-    RI_cor = AF_cor,
+    intraclass_correlation = NULL,
+    RI_cor = NULL,
     lagged_effects = lagged_effects,
-    within_cor = dynamics_cor,
+    within_cor = NULL,
+    AF_proportion = AF_proportion,
+    AF_cor = AF_cor,
+    dynamics_cor = dynamics_cor,
     Psi = NULL,
     reliability = reliability,
     loadings = loadings,

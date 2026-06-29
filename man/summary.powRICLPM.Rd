@@ -53,7 +53,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \item \code{Sample size}, \code{Time points}, \code{ICC} or \code{AF proportion}, and \code{Reliability} when applicable: The experimental condition that the row refers to.
 \item \code{Population}: The true value of the parameter.
 \item \code{Avg}: The average (across replications) parameter estimate.
-\item \code{Bias}: The difference between the population value and the average parameter estimate.
+\item \code{Bias}: The signed difference between the average parameter estimate and the population value.
 \item \code{Min}: The lowest (across replications) parameter estimate.
 \item \code{EmpSE}: The empirical standard error, computed as the standard deviation of the parameter estimate over replications.
 \item \code{SEAvg}: The average (across replications) standard error of the parameter estimate.

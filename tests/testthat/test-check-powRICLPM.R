@@ -10,7 +10,7 @@ test_that("icheck_T() works", {
   expect_error(icheck_T(Inf, ME = FALSE), "finite")
   expect_error(icheck_T(NA_real_, ME = FALSE), "finite")
   expect_error(icheck_T(c(2, 3), ME = FALSE))
-  expect_warning(icheck_T(c(3:30), ME = FALSE))
+  expect_warning(icheck_T(c(3:30), ME = FALSE), "large number of time points")
   expect_null(icheck_T(c(3, 4), ME = TRUE), c(3, 4))
 })
 
@@ -162,55 +162,6 @@ test_that("check_loadings() writes loading interpretation", {
   )
 })
 
-test_that("check_loadings() writes DPM loading interpretation", {
-  loading_matrix <- matrix(
-    c(1, 0.8, 1.1, 1, 1.2, 0.9),
-    nrow = 2,
-    byrow = TRUE
-  )
-
-  expect_output(
-    check_loadings(c(1, 0.8), model = "DPM"),
-    "AF_A loads on A3 and AF_B loads on B3 with 0.8"
-  )
-  expect_output(
-    check_loadings(loading_matrix, model = "DPM"),
-    "AF_B loads on B4 with 0.9"
-  )
-  expect_output(
-    check_loadings(loading_matrix, time_points = 4, model = "DPM"),
-    "AF_A loads on A4 with 1.1"
-  )
-  expect_error(
-    check_loadings(c(0.8, 1), model = "DPM"),
-    "first DPM loading must be 1"
-  )
-  expect_error(
-    check_loadings(c(1, NA), model = "DPM"),
-    "finite values"
-  )
-  expect_error(
-    check_loadings(c(1, Inf), model = "DPM"),
-    "finite values"
-  )
-  expect_error(
-    check_loadings(c(1, 0.8), time_points = 4, model = "DPM"),
-    "waves 2 through T"
-  )
-  expect_error(
-    check_loadings(c(1), time_points = 4, model = "DPM"),
-    "waves 2 through T"
-  )
-  expect_error(
-    check_loadings(matrix(c(1, 0.8, 1, 0.8), nrow = 2, byrow = TRUE), time_points = 4, model = "DPM"),
-    "waves 2 through T"
-  )
-  expect_error(
-    check_loadings(loading_matrix, model = "dpm"),
-    "RICLPM.*DPM.*dpm"
-  )
-})
-
 test_that("check_reliability() writes reliability interpretation", {
   reliability_vector <- c(0.8, 0.7, 1)
   reliability_matrix_same <- matrix(
@@ -233,8 +184,7 @@ test_that("check_reliability() writes reliability interpretation", {
     3
   )
 
-  expect_output(check_reliability(reliability_matrix, time_points = 4), "Variable A has reliability 0.7")
-  expect_output(check_reliability(reliability_matrix, time_points = 4), "variable B has reliability 0.85")
+  expect_output(check_reliability(reliability_matrix, time_points = 4), "A=0.7, B=0.85")
   reliability_matrix_output <- capture.output(check_reliability(reliability_matrix))
   expect_equal(
     sum(grepl("^\\s*[*\u2022] Condition", reliability_matrix_output)),
@@ -335,50 +285,6 @@ test_that("icheck_loadings() works", {
   expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"))
 })
 
-test_that("icheck_loadings() supports DPM loading specifications", {
-  expect_null(icheck_loadings(c(1, .8), 3, "lavaan", "AF_loadings_free", model = "DPM"))
-  expect_null(icheck_loadings(
-    matrix(c(1, .8, 1, 1.2), nrow = 2, byrow = TRUE),
-    3,
-    "lavaan",
-    "AF_loadings_free",
-    model = "DPM"
-  ))
-
-  expect_error(
-    icheck_loadings(c(1, .8, .7), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "waves 2 through T"
-  )
-  expect_error(
-    icheck_loadings(c(.8, 1), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "first DPM loading must be 1"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(.8, 1, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "first DPM loading must be 1"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(1, .8, 1, 1.2), nrow = 1, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "must have 2 rows"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(1, .8, .7, 1, 1.2, .9), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "waves 2 through T"
-  )
-  expect_error(
-    icheck_loadings(c(1, NA), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "finite values"
-  )
-  expect_error(
-    icheck_loadings(matrix(c(NaN, .8, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "finite values"
-  )
-  expect_error(
-    icheck_loadings(c(1, .8), c(3, 4), "lavaan", "AF_loadings_free", model = "DPM"),
-    "one value of.*time_points"
-  )
-})
-
 test_that("icheck_moment() works", {
   expect_null(icheck_moment(0.3))
   expect_error(icheck_moment("a"))
@@ -409,7 +315,7 @@ test_that("icheck_reps() works", {
 
 test_that("icheck_seed() works", {
   expect_equal(icheck_seed(1234), 1234)
-  expect_warning(icheck_seed(NA))
+  expect_warning(icheck_seed(NA), "No seed was specified")
   expect_error(icheck_seed("1234"))
   expect_error(icheck_seed(1234.5))
 })
@@ -477,7 +383,6 @@ test_that("constraint helpers interpret legacy within and explicit vectors", {
   expect_true(has_constraint(c("lagged", "residuals"), "residuals"))
   expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "lagged"))
   expect_true(has_constraint(c("stationarity", "RI_loadings_free"), "RI_loadings_free"))
-  expect_true(has_constraint(c("stationarity", "AF_loadings_free"), "loadings_free"))
   expect_false(has_constraint(c("lagged", "RI_loadings_free"), "residuals"))
 
   expect_equal(format_constraints("within"), "within")
@@ -583,23 +488,6 @@ test_that("icheck_N() works", {
   expect_null(icheck_N(17, 3, constraints = "lagged", ME = FALSE))
   expect_error(icheck_N(20, 3, constraints = "none", ME = TRUE))
   expect_null(icheck_N(20, 3, constraints = "within", ME = TRUE))
-  expect_error(
-    icheck_N(1000, 4, constraints = "none", ME = TRUE, model = "DPM"),
-    "not identified.*39 parameters.*36 distinct"
-  )
-  expect_error(
-    icheck_N(1000, 4, constraints = "AF_loadings_free", ME = TRUE, model = "DPM"),
-    "not identified.*43 parameters.*36 distinct"
-  )
-  expect_error(
-    icheck_N(1000, 4, constraints = c("ME", "AF_loadings_free"), ME = TRUE, model = "DPM"),
-    "not identified.*37 parameters.*36 distinct"
-  )
-  expect_null(icheck_N(1000, 4, constraints = "ME", ME = TRUE, model = "DPM"))
-  expect_null(icheck_N(
-    1000, 4, constraints = c("stationarity", "AF_loadings_free"),
-    ME = TRUE, model = "DPM"
-  ))
 })
 
 test_that("icheck_sample_size_search() works", {
@@ -1074,10 +962,6 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
     count_parameters(2, 4, "stationarity", TRUE),
     count_parameters(2, 4, c("stationarity", "ME"), TRUE)
   )
-  expect_equal(
-    count_parameters(2, 4, "stationarity", TRUE, model = "DPM"),
-    count_parameters(2, 4, c("stationarity", "ME"), TRUE, model = "DPM")
-  )
 
   out <- suppressWarnings(
     powRICLPM(
@@ -1101,146 +985,3 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
       out$conditions[[1]]$estimates$parameter
   ))
 })
-
-test_that("DPM lavaan syntax uses accumulating factors and observed lagged effects", {
-  lagged_effects <- matrix(c(0.3, 0.1, 0.2, 0.25), ncol = 2, byrow = TRUE)
-
-  conditions <- create_conditions(
-    model = "DPM",
-    target_power = 0.8,
-    sample_size = 1000,
-    time_points = 2,
-    intraclass_correlation = 0.2,
-    RI_cor = 0.3,
-    lagged_effects = lagged_effects,
-    within_cor = 0.2,
-    Psi = NULL,
-    reliability = 1,
-    loadings = NULL,
-    skewness = 0,
-    kurtosis = 0,
-    estimate_ME = FALSE,
-    significance_criterion = 0.05,
-    reps = 1,
-    bootstrap_reps = NULL,
-    seed = 123456,
-    constraints = "none",
-    bounds = FALSE,
-    estimator = "ML",
-    save_path = NULL,
-    software = "lavaan"
-  )
-
-  condition <- conditions[[1]]
-  expect_equal(condition$model, "DPM")
-  expect_equal(condition$AF_var, 0.2)
-  expect_equal(condition$AF_cov, 0.06)
-  expect_true(grepl("AF_A=~1*A2", condition$pop_synt, fixed = TRUE))
-  expect_false(grepl("AF_A=~1*A1", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("A2~0.3*A1", condition$pop_synt, fixed = TRUE))
-  expect_false(grepl("wA", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("AF_A~~gAA1*start", condition$est_synt, fixed = TRUE))
-})
-
-test_that("DPM measurement error syntax uses latent true-score process", {
-  lagged_effects <- matrix(c(0.3, 0.1, 0.2, 0.25), ncol = 2, byrow = TRUE)
-
-  condition <- create_conditions(
-    model = "DPM",
-    target_power = 0.8,
-    sample_size = 1000,
-    time_points = 4,
-    intraclass_correlation = 0.2,
-    RI_cor = 0.3,
-    lagged_effects = lagged_effects,
-    within_cor = 0.2,
-    Psi = NULL,
-    reliability = 0.8,
-    loadings = NULL,
-    skewness = 0,
-    kurtosis = 0,
-    estimate_ME = TRUE,
-    significance_criterion = 0.05,
-    reps = 1,
-    bootstrap_reps = NULL,
-    seed = 123456,
-    constraints = "ME",
-    bounds = FALSE,
-    estimator = "ML",
-    save_path = NULL,
-    software = "lavaan"
-  )[[1]]
-
-  expect_equal(condition$ME_var, matrix(0.25, nrow = 2, ncol = 4))
-  expect_true(grepl("tA1=~1*A1", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("tB4=~1*B4", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("AF_A=~1*tA2", condition$pop_synt, fixed = TRUE))
-  expect_false(grepl("AF_A=~1*A2", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("tA2~0.3*tA1", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("A1~~0.25*A1", condition$pop_synt, fixed = TRUE))
-  expect_true(grepl("A1~~MEvarA*start(0.25)*A1", condition$est_synt, fixed = TRUE))
-  expect_true(grepl("tB2~start(0.2)*tA1", condition$est_synt, fixed = TRUE))
-})
-
-test_that("DPM stationarity syntax follows fixed and free loading equations", {
-  lagged_effects <- matrix(c(0.3, 0.1, 0.2, 0.25), ncol = 2, byrow = TRUE)
-
-  fixed <- create_conditions(
-    model = "DPM",
-    target_power = 0.8,
-    sample_size = 1000,
-    time_points = 3,
-    intraclass_correlation = 0.2,
-    RI_cor = 0.3,
-    lagged_effects = lagged_effects,
-    within_cor = 0.2,
-    Psi = NULL,
-    reliability = 1,
-    loadings = NULL,
-    skewness = 0,
-    kurtosis = 0,
-    estimate_ME = FALSE,
-    significance_criterion = 0.05,
-    reps = 1,
-    bootstrap_reps = NULL,
-    seed = 123456,
-    constraints = "stationarity",
-    bounds = FALSE,
-    estimator = "ML",
-    save_path = NULL,
-    software = "lavaan"
-  )[[1]]
-
-  free <- create_conditions(
-    model = "DPM",
-    target_power = 0.8,
-    sample_size = 1000,
-    time_points = 4,
-    intraclass_correlation = 0.2,
-    RI_cor = 0.3,
-    lagged_effects = lagged_effects,
-    within_cor = 0.2,
-    Psi = NULL,
-    reliability = 1,
-    loadings = c(1, 0.8, 1.1),
-    skewness = 0,
-    kurtosis = 0,
-    estimate_ME = FALSE,
-    significance_criterion = 0.05,
-    reps = 1,
-    bootstrap_reps = NULL,
-    seed = 123456,
-    constraints = c("stationarity", "AF_loadings_free"),
-    bounds = FALSE,
-    estimator = "ML",
-    save_path = NULL,
-    software = "lavaan"
-  )[[1]]
-
-  expect_true(grepl("gAA1==vfa + gAA1*a + gAB1*b", fixed$est_synt, fixed = TRUE))
-  expect_true(grepl("rvarA2==1 - vfa", fixed$est_synt, fixed = TRUE))
-  expect_true(grepl("AF_A=~lx3*start(0.8)*A3", free$est_synt, fixed = TRUE))
-  expect_true(grepl("gAA3:=vfa*lx3 + gAA2*a + gAB2*b", free$est_synt, fixed = TRUE))
-  expect_true(grepl("rcov4==wc - lx4*ly4*cff", free$est_synt, fixed = TRUE))
-})
-

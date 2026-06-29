@@ -448,6 +448,14 @@ ireliability_condition_label <- function(reliability) {
   )
 }
 
+inormalize_reliability_label <- function(x) {
+  gsub("\\s*=\\s*", "=", trimws(as.character(x)))
+}
+
+ireliability_matches <- function(supplied, available) {
+  inormalize_reliability_label(supplied) == inormalize_reliability_label(available)
+}
+
 format_reliability_value <- function(x) {
   format(x, trim = TRUE, scientific = FALSE)
 }

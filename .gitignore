@@ -1,5 +1,9 @@
 .Rproj.user
 inst/doc
 .Rhistory
+.RData
+.Ruserdata
 R/draft.R
 .DS_Store
+.r-lib/
+Rplots.pdf

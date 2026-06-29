@@ -112,7 +112,7 @@ test_that("give() notes free-loading anchor for condition tables", {
   )
   class(object_riclpm) <- c("powRICLPM", "list")
 
-  expect_message(give(object_dpm, "conditions"), "AF_proportion.*wave 2")
-  expect_message(give(object_riclpm, "conditions"), "ICC.*wave 1")
+  expect_silent(give(object_dpm, "conditions"))
+  expect_silent(give(object_riclpm, "conditions"))
   expect_silent(inote_condition_loading_anchor(object_dpm, "AF_A=~A3"))
 })

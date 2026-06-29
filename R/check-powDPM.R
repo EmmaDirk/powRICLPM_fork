@@ -128,17 +128,14 @@ icheck_DPM_identification <- function(time_points, reliability, estimate_ME, con
   min_waves <- lookup_DPM_min_waves(estimate_ME, constraints)
   if (any(time_points < min_waves)) {
     supplied <- min(time_points[time_points < min_waves])
-    spec <- classify_DPM_spec(estimate_ME, constraints)
     cli::cli_abort(
       c(
-        paste0("The requested DPM specification is not identified with ", supplied, " waves."),
-        "Specification:",
-        paste0("- generated measurement error: ", if (any(reliability < 1)) "yes" else "no"),
-        paste0("- estimated measurement error: ", if (estimate_ME) "yes" else "no"),
-        paste0("- constraints: ", format_constraints(constraints)),
-        paste0("- AF loadings in fitted model: ", if (spec$AF_loadings_free) "free" else "fixed"),
-        paste0("Minimum required waves: ", min_waves),
-        x = "Use more waves or impose valid identifying constraints."
+        paste0(
+          "The requested DPM specification is not identified with ",
+          supplied, " measurement waves; this specification requires at least ",
+          min_waves, " waves."
+        ),
+        i = "Use more waves or impose valid identifying constraints."
       ),
       call = call
     )
@@ -423,9 +420,11 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
           "{.arg {arg}} must have one column for each wave from 2 through T:",
           i = "DPM accumulating-factor loadings are supplied for waves 2 through T only.",
           x = paste0(
-            "Your {.arg {arg}} has ", ncol(x),
+            "{.arg {arg}} has ", ncol(x),
             " columns, but {.arg {t_arg}} = ", time_points,
-            " requires ", time_points - 1L, " columns."
+            " requires ", time_points - 1L,
+            " loading columns because DPM accumulating-factor loadings are specified for waves 2 through ",
+            time_points, "."
           )
         ),
         call = call
@@ -438,9 +437,11 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
         c(
           "{.arg {arg}} must have one value for each wave from 2 through T:",
           i = "DPM accumulating-factor loadings are supplied for waves 2 through T only.",
-          x = paste0("Your {.arg {arg}} has length ", length(x),
+          x = paste0("{.arg {arg}} has length ", length(x),
                      ", but {.arg {t_arg}} = ", time_points,
-                     " requires ", time_points - 1L, " values.")
+                     " requires ", time_points - 1L,
+                     " loadings because DPM accumulating-factor loadings are specified for waves 2 through ",
+                     time_points, ".")
         ),
         call = call
       )
@@ -555,15 +556,7 @@ confirm_restrictive_misspecification <- function(misspecification,
     return(invisible(TRUE))
   }
   message <- paste(
-    "The fitted DPM is more restrictive than the data-generating model.",
-    "",
-    "You are fitting a constrained or simplified model to data generated from a more general model.",
-    "",
-    "Consequences:",
-    "- Power may be overestimated.",
-    "- Bias may occur.",
-    "- Coverage may be poor.",
-    "- Results answer a misspecified-model question, not the correctly specified DPM question.",
+    "The estimation model is more restrictive than the data-generating model; power may be overestimated and cross-lagged or autoregressive estimates may be biased.",
     "",
     sep = "\n"
   )

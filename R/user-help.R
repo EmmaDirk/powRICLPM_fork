@@ -345,11 +345,9 @@ iwrite_reliability_check <- function(reliability, time_points) {
       )
     } else {
       paste0(
-        "Condition ", i, ": Variable A has reliability ",
-        reliability_matrix[1, 1],
-        " and variable B has reliability ",
-        reliability_matrix[2, 1],
-        " at every time point."
+        "Condition ", i, ": ",
+        ireliability_condition_label(reliability_matrix),
+        "."
       )
     }
   }, character(1))

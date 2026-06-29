@@ -30,34 +30,6 @@ create_conditions <- function(
   save_path,
   software
 ) {
-  if (identical(model, "DPM")) {
-    return(create_conditions_DPM(
-      model = model,
-      target_power = target_power,
-      sample_size = sample_size,
-      time_points = time_points,
-      AF_proportion = intraclass_correlation,
-      AF_cor = RI_cor,
-      lagged_effects = lagged_effects,
-      dynamics_cor = within_cor,
-      Psi = Psi,
-      reliability = reliability,
-      loadings = loadings,
-      skewness = skewness,
-      kurtosis = kurtosis,
-      estimate_ME = estimate_ME,
-      significance_criterion = significance_criterion,
-      reps = reps,
-      bootstrap_reps = bootstrap_reps,
-      seed = seed,
-      constraints = constraints,
-      bounds = bounds,
-      estimator = estimator,
-      save_path = save_path,
-      software = software
-    ))
-  }
-
   ICC <- intraclass_correlation
   constraints <- normalize_constraints_for_software(constraints, software)
 
