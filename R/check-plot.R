@@ -34,11 +34,7 @@ icheck_plot_parameter <- function(parameter, object, arg = rlang::caller_arg(par
     )
   }
 
-  # Check if available in all simulation conditions
-  condition_lengths <- sapply(object$conditions, function(x) {
-    length(x$estimates$parameter)
-  })
-  parameter_names <- object$conditions[[which.min(condition_lengths)]]$estimates$parameter
+  parameter_names <- give_powRICLPM_parameter_names(object)
 
   if (!any(parameter == parameter_names)) {
     cli::cli_abort(

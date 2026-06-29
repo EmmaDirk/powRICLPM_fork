@@ -3,6 +3,8 @@
 #' Write a textual interpretation of the values in `lagged_effects`. This can be used to check if `lagged_effects` has been correctly specified.
 #'
 #' @inheritParams powRICLPM
+#' @param model A \code{character} string, either \code{"RICLPM"} or
+#'   \code{"DPM"}, indicating how \code{lagged_effects} should be checked.
 #' @param ... Additional arguments are not allowed.
 #'
 #' @return Invisibly returns \code{NULL}. The function is used for printing an
@@ -17,7 +19,8 @@
 #' # Lagged effects with too large standardized effects
 #' lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
 #' lagged_effects2 <- check_lagged_effects(lagged_effects2)
-check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, ...) {
+check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, model = "RICLPM", ...) {
+  model <- icheck_model(model)
   argument_name <- "lagged_effects"
   if (!is.null(Phi) && !is.null(lagged_effects)) {
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
@@ -39,10 +42,11 @@ check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, ...) {
     )
   }
 
-  iwrite_lagged_effects_check(lagged_effects, argument_name = argument_name)
+  iwrite_lagged_effects_check(lagged_effects, argument_name = argument_name, model = model)
 }
 
 iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
+                                        model = "RICLPM",
                                         call = rlang::caller_env()) {
   # Check argument type
   if (!is.matrix(lagged_effects)) {
@@ -58,7 +62,7 @@ iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
   # Interpretation cross-lagged effects
   writeLines(
     rlang::format_error_bullets(c(
-      paste0("According to `", argument_name, "`, the lagged effects are:"),
+        paste0("According to `", argument_name, "`, the ", imodel_name_from_value(model), " lagged effects are:"),
       "*" = paste0("Autoregressive effect of A: ", lagged_effects[1, 1]),
       "*" = paste0("Autoregressive effect of B: ", lagged_effects[2, 2]),
       "*" = paste0("Cross-lagged effect of A -> B: ", lagged_effects[2, 1]),
@@ -70,7 +74,7 @@ iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
   if (!is_unit(lagged_effects)) {
     writeLines(
         rlang::format_error_bullets(c(
-        paste0("\nHowever, `", argument_name, "` must specify a stationary process:"),
+        paste0("\nHowever, `", argument_name, "` must specify a stationary process for the ", imodel_name_from_value(model), ":"),
         i = paste0("This is checked by testing if the eigenvalues of `", argument_name, "` lie within unit circle."),
         x = paste0("The eigenvalues of `", argument_name, "` are not within unit circle. Try out smaller lagged effects?")
       ))
@@ -89,7 +93,8 @@ iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
 #' @examples
 #' lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 #' check_Phi(lagged_effects)
-check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
+check_Phi <- function(lagged_effects = NULL, Phi = NULL, model = "RICLPM") {
+  model <- icheck_model(model)
   argument_name <- "Phi"
   if (!is.null(Phi) && !is.null(lagged_effects)) {
     iabort_renamed_argument_conflict("lagged_effects", "Phi")
@@ -101,7 +106,14 @@ check_Phi <- function(lagged_effects = NULL, Phi = NULL) {
     }
   }
 
-  iwrite_lagged_effects_check(Phi, argument_name = argument_name)
+  iwrite_lagged_effects_check(Phi, argument_name = argument_name, model = model)
+}
+
+imodel_name_from_value <- function(model) {
+  if (identical(model, "DPM")) {
+    return("DPM")
+  }
+  "RI-CLPM"
 }
 
 #' Check Interpretation of Factor Loadings
@@ -338,16 +350,29 @@ iwrite_reliability_check <- function(reliability, time_points) {
     )
 
     if (identical(reliability_matrix[1, ], reliability_matrix[2, ])) {
+      condition_prefix <- if (nrow(reliability_conditions) > 1L) {
+        paste0("In condition ", i, ", variables")
+      } else {
+        "Variables"
+      }
       paste0(
-        "Condition ", i, ": Variables A and B have reliability ",
+        condition_prefix, " A and B have reliability ",
         reliability_matrix[1, 1],
         " at every time point."
       )
     } else {
+      condition_prefix <- if (nrow(reliability_conditions) > 1L) {
+        paste0("In condition ", i, ", ")
+      } else {
+        ""
+      }
       paste0(
-        "Condition ", i, ": ",
-        ireliability_condition_label(reliability_matrix),
-        "."
+        condition_prefix,
+        "variable A has reliability ",
+        format_reliability_value(reliability_matrix[1, 1]),
+        " and variable B has reliability ",
+        format_reliability_value(reliability_matrix[2, 1]),
+        " at every time point."
       )
     }
   }, character(1))

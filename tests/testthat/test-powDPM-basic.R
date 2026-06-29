@@ -12,7 +12,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       dynamics_cor = 0.3,
       reps = 1
     ),
-    "not identified with 3 measurement waves.*requires at least 4 waves"
+    "not identified with 3 waves.*requires at least 4 waves"
   )
   expect_error(
     powDPM(
@@ -135,7 +135,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       estimate_ME = TRUE,
       reps = 1
     ),
-    "not identified with 4 measurement waves.*requires at least 5 waves"
+    "not identified with 4 waves.*requires at least 5 waves"
   )
   dpm_psi_error <- tryCatch(
     powDPM(

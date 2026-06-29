@@ -1,6 +1,7 @@
 # powRICLPM 0.2.1
 
 ## Minor improvements and fixes
+* Improved consistency of DPM and RI-CLPM validation, summaries, and helper output. Reliability conditions now use clearer labels in tables, loading conditions are shown compactly when they vary, and restrictive misspecification checks use a shared confirmation message.
 * Added `powDPM()` for lavaan-only power analysis of the dynamic panel model with accumulating factors, observed-level lagged effects, DPM stationarity equations, DPM-specific arguments (`AF_proportion`, `AF_cor`, `dynamics_cor`), and `constraints = "AF_loadings_free"` for freely estimated accumulating-factor loadings.
 * Added a lavaan-only `loadings` argument to `powRICLPM()` for specifying time-varying random-intercept loadings in the data-generating model. The first occasion must be fixed to 1, and later loadings can vary over time and across variables. Supplying `loadings` requires `constraints = "RI_loadings_free"` so the estimation model frees the corresponding random-intercept loadings.
 * Added `check_loadings()` to help users check how a loading vector or matrix maps onto the random-intercept loadings used in the data-generating model.

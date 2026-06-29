@@ -128,17 +128,7 @@ icheck_DPM_identification <- function(time_points, reliability, estimate_ME, con
   min_waves <- lookup_DPM_min_waves(estimate_ME, constraints)
   if (any(time_points < min_waves)) {
     supplied <- min(time_points[time_points < min_waves])
-    cli::cli_abort(
-      c(
-        paste0(
-          "The requested DPM specification is not identified with ",
-          supplied, " measurement waves; this specification requires at least ",
-          min_waves, " waves."
-        ),
-        i = "Use more waves or impose valid identifying constraints."
-      ),
-      call = call
-    )
+    iabort_identification_error("DPM", supplied, min_waves, call = call)
   }
   invisible(NULL)
 }
@@ -285,7 +275,7 @@ icheck_DPM_bounds <- function(bounds, arg = rlang::caller_arg(bounds), call = rl
   if (!is.logical(bounds) || length(bounds) != 1L || is.na(bounds)) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be TRUE or FALSE:",
+        "{.arg {arg}} must be TRUE or FALSE.",
         x = paste0("Your {.arg {arg}} is ", format_object_type(bounds), " of length ", length(bounds), ".")
       ),
       call = call
@@ -501,7 +491,7 @@ detect_DPM_misspecification_condition <- function(reliability_matrix, loadings,
   if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Generated measurement error is ignored in the fitted model."
+      "`reliability < 1`, but `estimate_ME = FALSE`"
     )
   }
   if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
@@ -515,7 +505,7 @@ detect_DPM_misspecification_condition <- function(reliability_matrix, loadings,
   if (generated_AF_loadings_general && !estimated_AF_loadings_free) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Generated AF loadings vary but fitted AF loadings are fixed."
+      "custom `loadings`, but fitted loadings are fixed"
     )
   }
   if (!generated_AF_loadings_general && estimated_AF_loadings_free) {
@@ -548,32 +538,4 @@ combine_DPM_misspecification <- function(records) {
     restrictive_reasons = restrictive_reasons,
     general_reasons = general_reasons
   )
-}
-
-confirm_restrictive_misspecification <- function(misspecification,
-                                                 call = rlang::caller_env()) {
-  if (!isTRUE(misspecification$restrictive)) {
-    return(invisible(TRUE))
-  }
-  message <- paste(
-    "The estimation model is more restrictive than the data-generating model; power may be overestimated and cross-lagged or autoregressive estimates may be biased.",
-    "",
-    sep = "\n"
-  )
-  if (!interactive()) {
-    cli::cli_abort(
-      c(
-        message,
-        x = "Restrictive DPM misspecification requires interactive confirmation.",
-        i = "Run interactively and type `YES` to continue."
-      ),
-      call = call
-    )
-  }
-  cat(message)
-  response <- readline("Type YES to continue: ")
-  if (!identical(response, "YES")) {
-    cli::cli_abort("DPM simulation aborted because `YES` was not entered.", call = call)
-  }
-  invisible(TRUE)
 }

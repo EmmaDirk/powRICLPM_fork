@@ -14,7 +14,7 @@ test_that("all columns from summary.powRICLMP(...) are named", {
   )
 
   table_parameter <- summary(out, parameter = "wB2~wA1")
-  expect_equal(colnames(table_parameter), c("Sample size", "Time points", "ICC", "Reliability", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible"))
+  expect_equal(colnames(table_parameter), c("Sample size", "Time points", "ICC", "Reliability", "Loadings", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible"))
 
   table_condition <- summary(out, sample_size = 500, intraclass_correlation = 0.4, time_points = 3, reliability = 1)
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
@@ -125,7 +125,9 @@ test_that("matrix reliability labels print and filter consistently", {
     sample_size = 600,
     time_points = 4,
     ICC = 0.5,
-    reliability = "A=0.8, B=0.7",
+    reliability = "A 0.8, B 0.7",
+    reliability_matrix = matrix(c(0.8, 0.7), nrow = 2, ncol = 4),
+    loadings = matrix(1, nrow = 2, ncol = 4),
     estimates = base_estimates,
     estimation_information = list(
       n_error = 0,
@@ -143,7 +145,10 @@ test_that("matrix reliability labels print and filter consistently", {
   object <- list(
     conditions = list(
       condition,
-      modifyList(condition, list(reliability = "A=0.9, B=0.85"))
+      modifyList(condition, list(
+        reliability = "A 0.9, B 0.85",
+        reliability_matrix = matrix(c(0.9, 0.85), nrow = 2, ncol = 4)
+      ))
     ),
     session = list(
       model = "RICLPM",
@@ -157,7 +162,9 @@ test_that("matrix reliability labels print and filter consistently", {
   )
   class(object) <- c("powRICLPM", "list")
 
-  expect_equal(give(object, "conditions")$reliability, c("A=0.8, B=0.7", "A=0.9, B=0.85"))
+  condition_table <- give(object, "conditions")
+  expect_equal(condition_table$reliability_A, c("0.8", "0.9"))
+  expect_equal(condition_table$reliability_B, c("0.7", "0.85"))
   expect_output(summary(
     object,
     sample_size = 600,
@@ -167,7 +174,7 @@ test_that("matrix reliability labels print and filter consistently", {
   ), "SIMULATION RESULTS")
   expect_error(
     summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = "A=0.8, B=0.8"),
-    "A=0.8, B=0.7"
+    "A 0.8, B 0.7"
   )
 })
 
@@ -271,6 +278,7 @@ test_that("summary.powRICLPM omits reliability column for DPM objects", {
 
   table_parameter <- summary(object, parameter = "B2~A1")
   expect_false("Reliability" %in% colnames(table_parameter))
+  expect_true("Loadings" %in% colnames(table_parameter))
   expect_equal(colnames(table_parameter)[3], "AF proportion")
 
   overview_output <- capture.output(summary(object))

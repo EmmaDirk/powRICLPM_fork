@@ -95,30 +95,14 @@ plot.powRICLPM <- function(
   }
   mapping_choices <- unique(c(color_by, facet_by, if (!identical(shape_by, "none")) shape_by))
   if (iis_DPM_object(x) && any(mapping_choices %in% c("intraclass_correlation", "ICC"))) {
-    cli::cli_abort(
-      c(
-        "`intraclass_correlation` and `ICC` are not available for DPM plots:",
-        i = "Use `AF_proportion` for the DPM accumulating-factor proportion."
-      )
-    )
+    iabort_condition_selector_unavailable("intraclass_correlation", x, "plot")
   }
   if (!iis_DPM_object(x) && any(mapping_choices == "AF_proportion")) {
-    cli::cli_abort(
-      c(
-        "`AF_proportion` is only available for DPM plots:",
-        i = "Use `intraclass_correlation` or `ICC` for RI-CLPM and STARTS plots."
-      )
-    )
+    iabort_condition_selector_unavailable("AF_proportion", x, "plot")
   }
   if (iis_DPM_object(x) && any(mapping_choices == "reliability") &&
       !iDPM_has_reliability_conditions(x)) {
-    cli::cli_abort(
-      c(
-        "`reliability` is not available for DPM plots:",
-        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
-        i = "Use `shape_by = 'none'` or map aesthetics to another simulation condition."
-      )
-    )
+    iabort_condition_selector_unavailable("reliability", x, "plot")
   }
   if (identical(y, "SD")) {
     y <- "EmpSE"
@@ -128,7 +112,7 @@ plot.powRICLPM <- function(
   d <- merge(
     give_powRICLPM_results(x, parameter = parameter),
     give_powRICLPM_MCSE_parameter(x, parameter = parameter),
-    by = c("sample_size", "time_points", "ICC", "reliability")
+    by = icondition_key_columns(give_powRICLPM_results(x, parameter = parameter))
   )
 
   # Compute upper and lower bound of y-variable
@@ -136,6 +120,9 @@ plot.powRICLPM <- function(
   d$ub <- d[, y] + 1.96 * d[, paste0("MCSE_", y)]
   d$intraclass_correlation <- d$ICC
   d$AF_proportion <- d$ICC
+  if (!"reliability" %in% names(d) && all(c("reliability_A", "reliability_B") %in% names(d))) {
+    d$reliability <- paste0("A ", d$reliability_A, ", B ", d$reliability_B)
+  }
 
   # Select relevant columns
   mapping_vars <- mapping_choices

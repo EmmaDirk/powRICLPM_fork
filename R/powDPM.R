@@ -9,7 +9,12 @@
 #' @param target_power A \code{double}, denoting the desired power. 
 #' @param search_lower,search_upper,search_step Optional sample-size search range.
 #' @param sample_size An \code{integer} (vector), indicating sample size.
-#' @param time_points An \code{integer} (vector), indicating number of time points. The DPM needs at least 4 waves.
+#' @param time_points An \code{integer} (vector), indicating number of time
+#'   points. The DPM needs at least 3 waves, with the exact minimum depending
+#'   on \code{estimate_ME}, \code{constraints}, and whether accumulating-factor
+#'   loadings are freely estimated. If a specification is not identified with
+#'   the supplied number of waves, use more waves or impose valid identifying
+#'   constraints.
 #' @param AF_proportion A \code{double} (vector) with elements between 0 and 1, denoting the proportion of DPM true-score variance attributed to the accumulating factors.
 #' @param AF_cor A \code{double} between -1 and 1, denoting the correlation between accumulating factors in the DPM.
 #' @param lagged_effects A 2 by 2 \code{matrix}, denoting the lagged effects.
@@ -135,38 +140,15 @@ powDPM <- function(
   icheck_loadings(loadings, time_points, "lavaan", constraints, model = "DPM")
   icheck_DPM_bounds(bounds)
 
-  lapply(time_points, function(time_points) {
-    loadings_i <- inormalize_loadings(loadings, time_points, model = "DPM")
-    lapply(AF_proportion, function(AF_proportion_i) {
-      AF_var <- compute_AF_var(AF_proportion_i)
-      dpm_values <- compute_DPM_values(
-        lagged_effects = lagged_effects,
-        dynamics_cor = dynamics_cor,
-        AF_var = AF_var,
-        AF_cov = compute_AF_cov(AF_cor, AF_var),
-        loadings = loadings_i
-      )
-      lapply(seq_len(dim(dpm_values$Psi)[3]), function(i) {
-        icheck_Psi(dpm_values$Psi[, , i], model = "DPM")
-      })
-    })
-  })
-
   if (is.null(sample_size)) {
     icheck_sample_size_search(search_lower, search_upper, search_step)
     sample_size <- seq(search_lower, search_upper, search_step)
   }
   icheck_DPM_identification(time_points, reliability, estimate_ME, constraints)
   icheck_N(sample_size, time_points, constraints, ME = estimate_ME, model = "DPM")
-  misspecification <- detect_DPM_misspecification(
-    reliability = reliability,
-    loadings = loadings,
-    time_points = time_points,
-    constraints = constraints,
-    estimate_ME = estimate_ME
-  )
-  confirm_restrictive_misspecification(misspecification)
-  seed <- icheck_seed(seed)
+  if (length(seed) != 1L || !is.na(seed)) {
+    seed <- icheck_seed(seed)
+  }
 
   cli::cli_alert_success("Argument checking complete.")
 

@@ -62,7 +62,7 @@
 #'   \item \code{"RI_loadings_free"}: Freely estimated random-intercept factor loadings.
 #' }
 #'
-#' The minimum number of waves is checked against the fitted RI-CLPM/STARTS specification:
+#' The minimum number of waves is checked against the fitted RI-CLPM or STARTS specification:
 #'
 #' \tabular{llll}{
 #'   \strong{Estimated ME} \tab \strong{Constraints} \tab \strong{Free RI loadings} \tab \strong{Minimum waves}\cr
@@ -393,15 +393,24 @@ irun_power_analysis <- function(
     )
   }
 
-  if (identical(model, "RICLPM")) {
-    confirm_RICLPM_restrictive_misspecification(
-      combine_RICLPM_misspecification(lapply(conditions, function(condition) {
-        condition$misspecification
-      }))
-    )
+  misspecification <- if (identical(model, "DPM")) {
+    combine_DPM_misspecification(lapply(conditions, function(condition) {
+      condition$misspecification
+    }))
+  } else if (identical(model, "RICLPM")) {
+    combine_RICLPM_misspecification(lapply(conditions, function(condition) {
+      condition$misspecification
+    }))
+  } else {
+    NULL
+  }
+  if (!is.null(misspecification)) {
+    confirm_restrictive_misspecification(misspecification)
   }
 
   if (software == "lavaan") {
+    seed <- icheck_seed(seed)
+
     # Inform user that simulations in lavaan have started
     cli::cli_h2("\nPerforming Simulations Using lavaan")
 
@@ -432,18 +441,6 @@ irun_power_analysis <- function(
     time_end <- proc.time()
     time_taken <- time_end - time_start
 
-    misspecification <- if (identical(model, "DPM")) {
-      combine_DPM_misspecification(lapply(conditions, function(condition) {
-        condition$misspecification
-      }))
-    } else if (identical(model, "RICLPM")) {
-      combine_RICLPM_misspecification(lapply(conditions, function(condition) {
-        condition$misspecification
-      }))
-    } else {
-      NULL
-    }
-
     # Create powRICLPM object, combining conditions and general session info
     out <- list(
       conditions = conditions,
@@ -457,7 +454,10 @@ irun_power_analysis <- function(
         estimator = estimator,
         save_path = save_path,
         misspecified_restrictive = if (is.null(misspecification)) FALSE else misspecification$restrictive,
+        misspecified_general = if (is.null(misspecification)) FALSE else misspecification$general,
         misspecification_reasons = if (is.null(misspecification)) character() else misspecification$reasons,
+        misspecification_restrictive_reasons = if (is.null(misspecification)) character() else misspecification$restrictive_reasons,
+        misspecification_general_reasons = if (is.null(misspecification)) character() else misspecification$general_reasons,
         time_taken = time_taken,
         version = utils::packageVersion("powRICLPM"),
         call = call,

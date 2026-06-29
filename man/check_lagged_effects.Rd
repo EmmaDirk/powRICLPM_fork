@@ -5,14 +5,17 @@
 \alias{check_Phi}
 \title{Check Interpretation of Lagged Effects}
 \usage{
-check_lagged_effects(lagged_effects = NULL, Phi = NULL, ...)
+check_lagged_effects(lagged_effects = NULL, Phi = NULL, model = "RICLPM", ...)
 
-check_Phi(lagged_effects = NULL, Phi = NULL)
+check_Phi(lagged_effects = NULL, Phi = NULL, model = "RICLPM")
 }
 \arguments{
 \item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
 
 \item{Phi}{Alternative name for \code{lagged_effects}.}
+
+\item{model}{A \code{character} string, either \code{"RICLPM"} or
+\code{"DPM"}, indicating how \code{lagged_effects} should be checked.}
 
 \item{...}{Additional arguments are not allowed.}
 }

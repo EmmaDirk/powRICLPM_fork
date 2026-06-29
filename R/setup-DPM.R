@@ -77,6 +77,11 @@ create_conditions_DPM <- function(
     AF_cov = conditions$AF_cov,
     loadings = conditions$loadings
   )
+  lapply(conditions$DPM_values, function(dpm_values) {
+    lapply(seq_len(dim(dpm_values$Psi)[3]), function(i) {
+      icheck_Psi(dpm_values$Psi[, , i], model = "DPM")
+    })
+  })
   conditions$misspecification <- Map(
     detect_DPM_misspecification_condition,
     reliability_matrix = conditions$reliability_matrix,

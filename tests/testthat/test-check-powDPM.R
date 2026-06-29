@@ -60,7 +60,7 @@ test_that("DPM misspecification detection separates restrictive and general case
     estimate_ME = FALSE
   )
   expect_true(restrictive$restrictive)
-  expect_match(restrictive$restrictive_reasons, "measurement error")
+  expect_match(restrictive$restrictive_reasons, "reliability < 1", fixed = TRUE)
 
   general <- detect_DPM_misspecification(
     reliability = 1,

@@ -127,7 +127,7 @@ A progress bar displaying the status of the power analysis has been implemented 
 \item \code{"RI_loadings_free"}: Freely estimated random-intercept factor loadings.
 }
 
-The minimum number of waves is checked against the fitted RI-CLPM/STARTS specification:
+The minimum number of waves is checked against the fitted RI-CLPM or STARTS specification:
 
 \tabular{llll}{
 \strong{Estimated ME} \tab \strong{Constraints} \tab \strong{Free RI loadings} \tab \strong{Minimum waves}\cr

@@ -78,20 +78,10 @@ summary.powRICLPM <- function(
     iabort_renamed_argument_conflict("AF_proportion", "intraclass_correlation/ICC")
   }
   if (dpm_object && riclpm_icc_supplied) {
-    cli::cli_abort(
-      c(
-        "`intraclass_correlation` and `ICC` are not available for DPM summaries:",
-        i = "Use `AF_proportion` to select DPM conditions."
-      )
-    )
+    iabort_condition_selector_unavailable("intraclass_correlation", object, "summary")
   }
   if (!dpm_object && !is.null(AF_proportion)) {
-    cli::cli_abort(
-      c(
-        "`AF_proportion` is only available for DPM summaries:",
-        i = "Use `intraclass_correlation` or `ICC` to select RI-CLPM and STARTS conditions."
-      )
-    )
+    iabort_condition_selector_unavailable("AF_proportion", object, "summary")
   }
   if (!is.null(AF_proportion)) {
     intraclass_correlation <- AF_proportion
@@ -109,13 +99,7 @@ summary.powRICLPM <- function(
   if (!is.null(ICC)) {icheck_ICC_summary(ICC, object)}
   if (iis_DPM_object(object) && !is.null(reliability) &&
       !iDPM_has_reliability_conditions(object)) {
-    cli::cli_abort(
-      c(
-        "`reliability` is not available for DPM summaries:",
-        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
-        i = "Select DPM conditions with `sample_size`, `time_points`, and `AF_proportion`."
-      )
-    )
+    iabort_condition_selector_unavailable("reliability", object, "summary")
   }
   if (!is.null(reliability)) {icheck_reliability_summary(reliability, object)}
 
@@ -190,12 +174,18 @@ summary.powRICLPM <- function(
     # Collect information for print.summary.powRICLPM.parameter()
     parameter_df <- give_powRICLPM_results(object, parameter)
     replications_df <- give_powRICLPM_estimation_problems(object)
-    parameter_summary <- merge(parameter_df, replications_df, by = c("sample_size","time_points", "ICC", "reliability"))
+    parameter_summary <- merge(parameter_df, replications_df, by = icondition_key_columns(parameter_df))
     parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
-    parameter_col_names <- c("Sample size", "Time points", icc_table_label)
-    if (!iis_DPM_object(object) || iDPM_has_reliability_conditions(object)) {
-      parameter_col_names <- c(parameter_col_names, "Reliability")
-    }
+    condition_cols <- c(
+      "sample_size", "time_points", "ICC",
+      ireliability_columns(parameter_summary),
+      intersect("loadings", names(parameter_summary))
+    )
+    parameter_summary <- parameter_summary[, c(
+      condition_cols,
+      setdiff(names(parameter_summary), condition_cols)
+    ), drop = FALSE]
+    parameter_col_names <- icondition_table_names(object, parameter_summary, icc_table_label)
     colnames(parameter_summary) <- c(parameter_col_names, "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
     inote_condition_loading_anchor(object, parameter_summary)
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
@@ -207,10 +197,7 @@ summary.powRICLPM <- function(
     ## Summary of analysis
     replications_df <- give_powRICLPM_estimation_problems(object)
     replications_df <- idrop_DPM_reliability_column(object, replications_df)
-    replications_col_names <- c("Sample size", "Time points", icc_table_label)
-    if (!iis_DPM_object(object) || iDPM_has_reliability_conditions(object)) {
-      replications_col_names <- c(replications_col_names, "Reliability")
-    }
+    replications_col_names <- icondition_table_names(object, replications_df, icc_table_label)
     colnames(replications_df) <- c(replications_col_names, "Error", "Not converged", "Inadmissible")
     inote_condition_loading_anchor(object, replications_df)
     print.summary.powRICLPM(replications_df, object = object)

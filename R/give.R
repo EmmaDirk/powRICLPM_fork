@@ -51,30 +51,14 @@ give <- function(from, what, parameter = NULL) {
   icheck_what_give(what)
   if (iis_DPM_object(from) &&
       any(identical(raw_what, "intraclass_correlation"), identical(raw_what, "ICC"))) {
-    cli::cli_abort(
-      c(
-        "`intraclass_correlation` and `ICC` are not available for DPM objects:",
-        i = "Use `AF_proportion` for the DPM accumulating-factor proportion."
-      )
-    )
+    iabort_condition_selector_unavailable("intraclass_correlation", from, "give")
   }
   if (!iis_DPM_object(from) && identical(raw_what, "AF_proportion")) {
-    cli::cli_abort(
-      c(
-        "`AF_proportion` is only available for DPM objects:",
-        i = "Use `intraclass_correlation` or `ICC` for RI-CLPM and STARTS objects."
-      )
-    )
+    iabort_condition_selector_unavailable("AF_proportion", from, "give")
   }
   if (iis_DPM_object(from) && identical(what, "reliability") &&
       !iDPM_has_reliability_conditions(from)) {
-    cli::cli_abort(
-      c(
-        "`reliability` is not available for DPM objects:",
-        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
-        i = "Use `give(object, 'conditions')` or `give(object, 'AF_proportion')` to inspect DPM conditions."
-      )
-    )
+    iabort_condition_selector_unavailable("reliability", from, "give")
   }
 
   # Call to relevant give_*() based on `what` argument
@@ -99,12 +83,15 @@ give_powRICLPM_conditions <- function(object) {
 
   # Combine sample sizes and simulated power across conditions
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = icondition_proportion(condition),
-      reliability = condition$reliability,
-      stringsAsFactors = FALSE
+    cbind(
+      data.frame(
+        sample_size = condition$sample_size,
+        time_points = condition$time_points,
+        ICC = icondition_proportion(condition),
+        stringsAsFactors = FALSE
+      ),
+      icondition_reliability_columns(condition),
+      data.frame(loadings = iloading_status(condition), stringsAsFactors = FALSE)
     )
   }))
   return(d)
@@ -162,14 +149,125 @@ iexperimental_condition_label <- function(n) {
 }
 
 idrop_DPM_reliability_column <- function(object, x) {
-  if (!iis_DPM_object(object) || !is.data.frame(x) || !"reliability" %in% names(x)) {
+  reliability_cols <- intersect(c("reliability", "reliability_A", "reliability_B"), names(x))
+  if (!iis_DPM_object(object) || !is.data.frame(x) || length(reliability_cols) == 0L) {
     return(x)
   }
   if (iDPM_has_reliability_conditions(object)) {
     return(x)
   }
-  x$reliability <- NULL
+  x[reliability_cols] <- NULL
   x
+}
+
+iabort_condition_selector_unavailable <- function(selector, object, context,
+                                                  call = rlang::caller_env()) {
+  context_label <- switch(
+    context,
+    summary = "summaries",
+    plot = "plots",
+    give = "objects",
+    "objects"
+  )
+  if (identical(selector, "intraclass_correlation") || identical(selector, "ICC")) {
+    cli::cli_abort(
+      c(
+        "`intraclass_correlation` and `ICC` are not available for DPM objects:",
+        i = paste0("Use `AF_proportion` for DPM ", context_label, ".")
+      ),
+      call = call
+    )
+  }
+  if (identical(selector, "AF_proportion")) {
+    cli::cli_abort(
+      c(
+        "`AF_proportion` is only available for DPM objects:",
+        i = paste0("Use `intraclass_correlation` or `ICC` for RI-CLPM and STARTS ", context_label, ".")
+      ),
+      call = call
+    )
+  }
+  if (identical(selector, "reliability")) {
+    hint <- switch(
+      context,
+      summary = "Select DPM conditions with `sample_size`, `time_points`, and `AF_proportion`.",
+      plot = "Use `shape_by = 'none'` or map aesthetics to another simulation condition.",
+      give = "Use `give(object, 'conditions')` or `give(object, 'AF_proportion')` to inspect DPM conditions.",
+      "Use another simulation condition."
+    )
+    cli::cli_abort(
+      c(
+        "`reliability` is not available for DPM objects:",
+        i = "This DPM object does not include measurement error, so reliability is not part of its simulation conditions.",
+        i = hint
+      ),
+      call = call
+    )
+  }
+}
+
+icondition_reliability_columns <- function(condition) {
+  reliability_matrix <- condition$reliability_matrix
+  if (!is.null(reliability_matrix) &&
+      !identical(reliability_matrix[1, ], reliability_matrix[2, ])) {
+    return(data.frame(
+      reliability_A = format_reliability_value(reliability_matrix[1, 1]),
+      reliability_B = format_reliability_value(reliability_matrix[2, 1]),
+      stringsAsFactors = FALSE
+    ))
+  }
+  data.frame(reliability = condition$reliability, stringsAsFactors = FALSE)
+}
+
+ireliability_columns <- function(x) {
+  intersect(c("reliability", "reliability_A", "reliability_B"), names(x))
+}
+
+icondition_key_columns <- function(x) {
+  c("sample_size", "time_points", "ICC", ireliability_columns(x))
+}
+
+icondition_table_names <- function(object, x, icc_table_label) {
+  col_names <- c("Sample size", "Time points", icc_table_label)
+  if ("reliability" %in% names(x)) {
+    col_names <- c(col_names, "Reliability")
+  }
+  if ("reliability_A" %in% names(x)) {
+    col_names <- c(col_names, "Reliability A")
+  }
+  if ("reliability_B" %in% names(x)) {
+    col_names <- c(col_names, "Reliability B")
+  }
+  if ("loadings" %in% names(x)) {
+    col_names <- c(col_names, "Loadings")
+  }
+  col_names
+}
+
+iloading_status <- function(condition) {
+  fitted <- if (ihas_free_loadings(condition)) "free" else "fixed"
+  custom <- !is.null(condition$loadings) && any(condition$loadings != 1)
+  paste0(fitted, if (custom) "*" else "")
+}
+
+ihas_custom_loadings <- function(object) {
+  any(vapply(object$conditions, function(condition) {
+    !is.null(condition$loadings) && any(condition$loadings != 1)
+  }, logical(1)))
+}
+
+iprint_custom_loadings_note <- function(object) {
+  if (!ihas_custom_loadings(object)) {
+    return(invisible(NULL))
+  }
+  index <- if (length(object$conditions) == 1L) "1" else "i"
+  cat(
+    "\n* Custom data-generating loadings supplied; inspect with x$conditions[[",
+    index,
+    "]]$loadings.\n",
+    sep = ""
+  )
+  invisible(NULL)
 }
 
 ihas_free_loadings <- function(condition) {
@@ -206,15 +304,21 @@ give_powRICLPM_estimation_problems <- function(object) {
 
   # Combine sample sizes and simulated power across conditions
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = icondition_proportion(condition),
-      reliability = condition$reliability,
-      errors = condition$estimation_information$n_error,
-      not_converged = condition$estimation_information$n_nonconvergence,
-      inadmissible = condition$estimation_information$n_inadmissible,
-      stringsAsFactors = FALSE
+    cbind(
+      data.frame(
+        sample_size = condition$sample_size,
+        time_points = condition$time_points,
+        ICC = icondition_proportion(condition),
+        stringsAsFactors = FALSE
+      ),
+      icondition_reliability_columns(condition),
+      data.frame(
+        loadings = iloading_status(condition),
+        errors = condition$estimation_information$n_error,
+        not_converged = condition$estimation_information$n_nonconvergence,
+        inadmissible = condition$estimation_information$n_inadmissible,
+        stringsAsFactors = FALSE
+      )
     )
   }))
   return(d)
@@ -261,11 +365,14 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
     estimates <- round(estimates, digits = 3)
 
     # Combine extracted info in data frame
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = icondition_proportion(condition),
-      reliability = condition$reliability,
+    cbind(
+      data.frame(
+        sample_size = condition$sample_size,
+        time_points = condition$time_points,
+        ICC = icondition_proportion(condition),
+        stringsAsFactors = FALSE
+      ),
+      icondition_reliability_columns(condition),
       estimates
     )
   }))
@@ -300,24 +407,60 @@ icondition_parameter_names <- function(condition) {
 
 
 give_powRICLPM_MCSE_parameter <- function(object, parameter) {
+  icheck_give_parameter(parameter, object, what = "uncertainty")
 
   # Combine data frames across conditions
   d <- do.call(rbind, lapply(object$conditions, function(condition) {
 
     # Extract rows from uncertainty where parameter matches
-    uncertainty_filtered <- condition$MCSEs[which(condition$estimates$parameter == parameter), ]
+    uncertainty_filtered <- condition$MCSEs[which(condition$estimates$parameter == parameter), , drop = FALSE]
 
     # Create data frame
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = icondition_proportion(condition),
-      reliability = condition$reliability,
-      uncertainty_filtered,
-      stringsAsFactors = FALSE
+    cbind(
+      data.frame(
+        sample_size = condition$sample_size,
+        time_points = condition$time_points,
+        ICC = icondition_proportion(condition),
+        stringsAsFactors = FALSE
+      ),
+      icondition_reliability_columns(condition),
+      uncertainty_filtered
     )
   }))
   return(d)
+}
+
+icheck_give_parameter <- function(parameter, object, what = "results",
+                                  call = rlang::caller_env()) {
+  if (is.null(parameter)) {
+    cli::cli_abort(
+      c(
+        "No {.arg parameter} was specified:",
+        i = paste0("{.code give(object, '", what, "')} needs to know which parameter to extract."),
+        i = "Use {.code give(object, 'names')} to see available parameter names."
+      ),
+      call = call
+    )
+  }
+  if (!is.character(parameter) || length(parameter) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg parameter} must be a character string of length 1:",
+        x = paste0("Your {.arg parameter} is ", format_object_type(parameter), " of length ", length(parameter), ".")
+      ),
+      call = call
+    )
+  }
+  if (!parameter %in% give_powRICLPM_parameter_names(object)) {
+    cli::cli_abort(
+      c(
+        "The requested {.arg parameter} was not found across all experimental conditions:",
+        x = paste0("No ", what, " is available for parameter `", parameter, "`."),
+        i = "Use {.code give(object, 'names')} to see available parameter names."
+      ),
+      call = call
+    )
+  }
 }
 
 icondition_proportion <- function(condition) {

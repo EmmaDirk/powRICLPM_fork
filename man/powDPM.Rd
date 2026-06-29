@@ -35,7 +35,12 @@ powDPM(
 
 \item{sample_size}{An \code{integer} (vector), indicating sample size.}
 
-\item{time_points}{An \code{integer} (vector), indicating number of time points. The DPM needs at least 4 waves.}
+\item{time_points}{An \code{integer} (vector), indicating number of time
+points. The DPM needs at least 3 waves, with the exact minimum depending
+on \code{estimate_ME}, \code{constraints}, and whether accumulating-factor
+loadings are freely estimated. If a specification is not identified with
+the supplied number of waves, use more waves or impose valid identifying
+constraints.}
 
 \item{AF_proportion}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of DPM true-score variance attributed to the accumulating factors.}
 

@@ -152,21 +152,30 @@ icheck_RICLPM_identification <- function(time_points, estimate_ME, constraints,
   min_waves <- lookup_RICLPM_min_waves(estimate_ME, constraints)
   if (any(time_points < min_waves)) {
     supplied <- min(time_points[time_points < min_waves])
-    spec <- classify_RICLPM_spec(estimate_ME, constraints)
-    cli::cli_abort(
-      c(
-        paste0("The requested RI-CLPM/STARTS specification is not identified with ", supplied, " waves."),
-        "Specification:",
-        paste0("- estimated measurement error: ", if (estimate_ME) "yes" else "no"),
-        paste0("- constraints: ", format_constraints(constraints)),
-        paste0("- random-intercept loadings in fitted model: ", if (spec$RI_loadings_free) "free" else "fixed"),
-        paste0("Minimum required waves: ", min_waves),
-        x = "Use more waves or impose valid identifying constraints."
-      ),
-      call = call
-    )
+    model_label <- if (isTRUE(estimate_ME)) "STARTS" else "RI-CLPM"
+    iabort_identification_error(model_label, supplied, min_waves, call = call)
   }
   invisible(NULL)
+}
+
+iabort_identification_error <- function(model, supplied, min_waves = NULL,
+                                        call = rlang::caller_env()) {
+  message <- paste0(
+    "The requested ", model, " specification is not identified with ",
+    supplied, " waves"
+  )
+  if (!is.null(min_waves)) {
+    message <- paste0(
+      message, "; this specification requires at least ", min_waves, " waves"
+    )
+  }
+  cli::cli_abort(
+    c(
+      paste0(message, "."),
+      i = "Use more waves or impose valid identifying constraints."
+    ),
+    call = call
+  )
 }
 
 #' Check \code{model} Argument
@@ -200,11 +209,11 @@ icheck_model <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env
 #'
 #' @noRd
 icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!all(is.double(x))) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} should be a double (vector):",
-        x = "Not all elements in {.arg {arg}} are a double."
+        "{.arg {arg}} must be a numeric vector:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
       )
     )
   }
@@ -232,11 +241,27 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
 #'
 #' @noRd
 icheck_cor <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!is.double(x)) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a double:",
-        x = paste0("You've provided a ", typeof(x), ".")
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      )
+    )
+  }
+  if (length(x) != 1) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("You've provided ", length(x), " values.")
+      )
+    )
+  }
+  if (!is.finite(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be finite:",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
       )
     )
   }
@@ -245,14 +270,6 @@ icheck_cor <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       c(
         "A correlation must be between -1 and 1:",
         x = paste0("Your {.arg {arg}} was ", x, ".")
-      )
-    )
-  }
-  if (length(x) > 1) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} should a double of length 1:",
-        x = "You've provided multiple values for {.arg {arg}}."
       )
     )
   }
@@ -443,13 +460,15 @@ ireliability_conditions <- function(reliability) {
 
 ireliability_condition_label <- function(reliability) {
   paste0(
-    "A=", format_reliability_value(reliability[1, 1]),
-    ", B=", format_reliability_value(reliability[2, 1])
+    "A ", format_reliability_value(reliability[1, 1]),
+    ", B ", format_reliability_value(reliability[2, 1])
   )
 }
 
 inormalize_reliability_label <- function(x) {
-  gsub("\\s*=\\s*", "=", trimws(as.character(x)))
+  x <- trimws(as.character(x))
+  x <- gsub("\\s*=\\s*", " ", x)
+  gsub("\\s+", " ", x)
 }
 
 ireliability_matches <- function(supplied, available) {
@@ -678,11 +697,19 @@ icheck_moment <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_en
 #'
 #' @noRd
 icheck_significance_criterion <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!is.double(x)) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a double:",
-        x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      )
+    )
+  }
+  if (length(x) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("You've provided ", length(x), " values.")
       )
     )
   }
@@ -1113,11 +1140,11 @@ icheck_sample_size_search <- function(search_lower, search_upper, search_step, c
 #' @noRd
 icheck_bounds <- function(bounds, constraints, software,
                           con = rlang::caller_arg(constraints), soft = rlang::caller_arg(software)) {
-  if (!is.logical(bounds)) {
+  if (!is.logical(bounds) || length(bounds) != 1L || is.na(bounds)) {
     cli::cli_abort(
       c(
-        "`bounds` should be a `logical`:",
-        x = paste0("Your `bounds` is a `", typeof(bounds), "`.")
+        "`bounds` must be TRUE or FALSE.",
+        x = paste0("Your `bounds` is ", format_object_type(bounds), " of length ", length(bounds), ".")
       )
     )
   }
@@ -1219,7 +1246,7 @@ detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
   if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Generated measurement error is ignored in the fitted model."
+      "`reliability < 1`, but `estimate_ME = FALSE`"
     )
   }
   if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
@@ -1234,7 +1261,7 @@ detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
   if (generated_RI_loadings_general && !estimated_RI_loadings_free) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Generated random-intercept loadings vary but fitted random-intercept loadings are fixed."
+      "custom `loadings`, but fitted loadings are fixed"
     )
   }
   if (!generated_RI_loadings_general && estimated_RI_loadings_free) {
@@ -1271,39 +1298,52 @@ combine_RICLPM_misspecification <- function(records) {
 
 confirm_RICLPM_restrictive_misspecification <- function(misspecification,
                                                         call = rlang::caller_env()) {
+  confirm_restrictive_misspecification(misspecification, call = call)
+}
+
+imisspecification_warning_text <- function(past = FALSE) {
+  paste0(
+    "The estimation model ",
+    if (past) "was" else "is",
+    " more restrictive than the data-generating model; power may be overestimated and parameter estimates may be biased."
+  )
+}
+
+imisspecification_reason_text <- function(reasons) {
+  reasons <- unique(reasons[nzchar(reasons)])
+  if (length(reasons) == 0L) {
+    return("a restrictive fitted model")
+  }
+  if (length(reasons) == 1L) {
+    return(reasons)
+  }
+  paste0(paste(reasons[-length(reasons)], collapse = ", "), ", and ", reasons[length(reasons)])
+}
+
+confirm_restrictive_misspecification <- function(misspecification,
+                                                 call = rlang::caller_env()) {
   if (!isTRUE(misspecification$restrictive)) {
     return(invisible(TRUE))
   }
-  message <- paste(
-    "The fitted RI-CLPM is more restrictive than the data-generating model.",
-    "",
-    "You are fitting a constrained or simplified model to data generated from a more general model.",
-    "",
-    "Consequences:",
-    "- Power may be overestimated.",
-    "- Bias may occur.",
-    "- Coverage may be poor.",
-    "- Results answer a misspecified-model question, not the correctly specified RI-CLPM question.",
-    "",
-    sep = "\n"
+  reason <- imisspecification_reason_text(misspecification$restrictive_reasons)
+  message <- paste0(
+    imisspecification_warning_text(),
+    "\n\n",
+    "You supplied ", reason, "."
   )
   if (!interactive()) {
     cli::cli_abort(
       c(
         message,
-        x = "Restrictive RI-CLPM misspecification requires interactive confirmation.",
-        i = "Run interactively and type `YES` to continue."
+        i = "Run interactively and type YES to continue."
       ),
       call = call
     )
   }
-  cat(message)
-  answer <- readline("Type YES to continue: ")
+  cat(message, " Type YES to continue: ", sep = "")
+  answer <- readline()
   if (!identical(answer, "YES")) {
-    cli::cli_abort(
-      "RI-CLPM misspecification was not confirmed.",
-      call = call
-    )
+    cli::cli_abort("Simulation aborted because YES was not entered.", call = call)
   }
   invisible(TRUE)
 }

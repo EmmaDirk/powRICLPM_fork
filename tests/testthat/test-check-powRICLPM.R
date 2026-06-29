@@ -176,18 +176,18 @@ test_that("check_reliability() writes reliability interpretation", {
   )
 
   expect_output(check_reliability(0.8), "Variables A and B have reliability 0.8")
-  expect_output(check_reliability(reliability_vector), "Condition 2: Variables A and B have reliability 0.7")
-  expect_output(check_reliability(reliability_matrix_same), "Condition 3: Variables A and B have reliability 1")
+  expect_output(check_reliability(reliability_vector), "In condition 2, variables A and B have reliability 0.7")
+  expect_output(check_reliability(reliability_matrix_same), "In condition 3, variables A and B have reliability 1")
   reliability_matrix_same_output <- capture.output(check_reliability(reliability_matrix_same))
   expect_equal(
-    sum(grepl("^\\s*[*\u2022] Condition", reliability_matrix_same_output)),
+    sum(grepl("^\\s*[*\u2022] In condition", reliability_matrix_same_output)),
     3
   )
 
-  expect_output(check_reliability(reliability_matrix, time_points = 4), "A=0.7, B=0.85")
+  expect_output(check_reliability(reliability_matrix, time_points = 4), "variable A has reliability 0.7 and variable B has reliability 0.85")
   reliability_matrix_output <- capture.output(check_reliability(reliability_matrix))
   expect_equal(
-    sum(grepl("^\\s*[*\u2022] Condition", reliability_matrix_output)),
+    sum(grepl("^\\s*[*\u2022] In condition", reliability_matrix_output)),
     3
   )
 
@@ -436,7 +436,7 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
     constraints = "none"
   )
   expect_true(generated_ME$restrictive)
-  expect_match(generated_ME$reasons, "measurement error")
+  expect_match(generated_ME$reasons, "reliability < 1", fixed = TRUE)
 
   varying_loadings <- detect_RICLPM_restrictive_misspecification(
     reliability_matrix = matrix(1, nrow = 2, ncol = 3),
@@ -445,7 +445,7 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
     constraints = "none"
   )
   expect_true(varying_loadings$restrictive)
-  expect_match(varying_loadings$reasons, "random-intercept loadings")
+  expect_match(varying_loadings$reasons, "custom `loadings`")
 
   general <- detect_RICLPM_restrictive_misspecification(
     reliability_matrix = matrix(1, nrow = 2, ncol = 3),
@@ -893,14 +893,14 @@ test_that("reliability updates lavaan measurement-error syntax", {
   expect_equal(length(conditions_matrix), 3)
   expect_equal(
     unname(vapply(conditions_matrix, function(x) x$reliability, character(1))),
-    c("A=0.8, B=0.9", "A=0.7, B=0.85", "A=1, B=0.75")
+    c("A 0.8, B 0.9", "A 0.7, B 0.85", "A 1, B 0.75")
   )
   condition_matrix <- conditions_matrix[[2]]
   expected_matrix <- matrix(c(0.7, 0.85), nrow = 2, ncol = 3)
   expected_matrix_ME <- ((1 - expected_matrix) * 2) / expected_matrix
   expected_A_start <- mean(expected_matrix_ME[1, ])
   expected_B_start <- mean(expected_matrix_ME[2, ])
-  expect_equal(condition_matrix$reliability, "A=0.7, B=0.85")
+  expect_equal(condition_matrix$reliability, "A 0.7, B 0.85")
   expect_equal(condition_matrix$reliability_matrix, expected_matrix)
   expect_equal(condition_matrix$ME_var, expected_matrix_ME)
   expect_true(grepl("A2~~0.857142857142857*A2", condition_matrix$pop_synt, fixed = TRUE))

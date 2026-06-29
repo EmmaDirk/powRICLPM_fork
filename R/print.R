@@ -15,21 +15,10 @@ print.powRICLPM <- function(x, ...) {
   icc_table_label <- iicc_table_name(object = x)
 
   # Collect condition table
-  df_conditions <- do.call(rbind, lapply(x$conditions, function(condition) {
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = icondition_proportion(condition),
-      reliability = condition$reliability,
-      stringsAsFactors = FALSE
-    )
-  }))
+  df_conditions <- give_powRICLPM_conditions(x)
   df_conditions <- cbind(condition = 1:length(x$conditions), df_conditions)
   df_conditions <- idrop_DPM_reliability_column(x, df_conditions)
-  condition_col_names <- c("Condition", "Sample size", "Time points", icc_table_label)
-  if (!iis_DPM_object(x) || iDPM_has_reliability_conditions(x)) {
-    condition_col_names <- c(condition_col_names, "Reliability")
-  }
+  condition_col_names <- c("Condition", icondition_table_names(x, df_conditions, icc_table_label))
 
   # Print header
   n_conditions <- length(x$conditions)
@@ -50,6 +39,7 @@ print.powRICLPM <- function(x, ...) {
       col.names = condition_col_names
     )
   )
+  iprint_custom_loadings_note(x)
   invisible(x)
 }
 
@@ -76,6 +66,7 @@ print.summary.powRICLPM <- function(x, ..., object) {
       caption = "SUMMARY OF ANALYSIS PER EXPERIMENTAL CONDITION"
     )
   )
+  iprint_custom_loadings_note(object)
 }
 
 #' Print Summary Condition Call powRICLPM
@@ -132,15 +123,9 @@ iprint_misspecification_warning <- function(object) {
   if (!isTRUE(object$session$misspecified_restrictive)) {
     return(invisible(NULL))
   }
-  model <- if (iis_DPM_object(object)) {
-    "DPM"
-  } else {
-    "RI-CLPM"
-  }
   cat(
-    "\n\nMisspecified ", model, " warning:\n",
-    "The estimation model is more restrictive than the data-generating model; ",
-    "power may be overestimated and cross-lagged or autoregressive estimates may be biased.",
+    "\n\n",
+    imisspecification_warning_text(past = TRUE),
     sep = ""
   )
   invisible(NULL)
