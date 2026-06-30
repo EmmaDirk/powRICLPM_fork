@@ -209,6 +209,28 @@ test_that("lavaan custom loadings can be fitted freely or flagged as restrictive
   expect_true(grepl("RI_B=~0.25*B3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_false(anyNA(index))
   expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
+  expect_equal(give(out_free, "conditions")$loadings, "free*")
+})
+
+test_that("powRICLPM output labels freely estimated default loadings", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out_free_default <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      constraints = "RI_loadings_free",
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(give(out_free_default, "conditions")$loadings, "free")
 })
 
 test_that("ICOV no convergence warnings are recognized", {

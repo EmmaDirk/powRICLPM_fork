@@ -94,6 +94,7 @@ create_lavaan <- function(condition) {
     reliability = condition[["reliability"]],
     reliability_matrix = condition[["reliability_matrix"]],
     loadings = condition[["loadings"]],
+    constraints = condition[["constraints"]],
     RI_var = condition[["RI_var"]],
     RI_cov = condition[["RI_cov"]],
     ME_var = condition[["ME_var"]],

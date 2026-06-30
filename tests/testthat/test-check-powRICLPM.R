@@ -717,6 +717,66 @@ test_that("RI_loadings_free changes lavaan estimation syntax only", {
   expect_true(grepl("RI_A=~lx3*start(1)*A3", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly2*start(1)*B2", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly3*start(1)*B3", condition$est_synt, fixed = TRUE))
+  expect_equal(condition$constraints, "RI_loadings_free")
+  expect_true(has_constraint(condition$constraints, "RI_loadings_free"))
+})
+
+test_that("lavaan RI-CLPM conditions preserve constraints for condition-level logic", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  stationarity_condition <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  free_loading_condition <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "RI_loadings_free",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  expect_equal(stationarity_condition$constraints, "stationarity")
+  expect_true(has_constraint(stationarity_condition$constraints, "stationarity"))
+  expect_equal(free_loading_condition$constraints, "RI_loadings_free")
+  expect_equal(iloading_status(free_loading_condition), "free")
 })
 
 test_that("loadings update lavaan data generation syntax", {

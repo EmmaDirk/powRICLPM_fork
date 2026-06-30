@@ -1,6 +1,7 @@
 # powRICLPM 0.2.1
 
 ## Minor improvements and fixes
+* Preserved RI-CLPM/STARTS lavaan condition constraints so condition-level logic can detect stationarity and freely estimated loadings after condition construction.
 * Fixed public-method dependency metadata, Monte Carlo error handling, stationarity lavaan fitting performance, README DPM coverage, p-value based power wording, safer parallel examples, and small `give()`/`plot()` helper inefficiencies.
 * Improved consistency of DPM and RI-CLPM validation, summaries, and helper output. Reliability conditions now use clearer labels in tables, loading conditions are shown compactly when they vary, and restrictive misspecification checks use a shared confirmation message.
 * Added `powDPM()` for lavaan-only power analysis of the dynamic panel model with accumulating factors, observed-level lagged effects, DPM stationarity equations, DPM-specific arguments (`AF_proportion`, `AF_cor`, `dynamics_cor`), and `constraints = "AF_loadings_free"` for freely estimated accumulating-factor loadings.

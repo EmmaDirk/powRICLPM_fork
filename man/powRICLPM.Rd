@@ -180,6 +180,7 @@ lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 library(future)
 library(progressr)
 
+local({
 old_plan <- future::plan()
 on.exit(future::plan(old_plan), add = TRUE)
 future::plan(future::multisession)
@@ -200,6 +201,7 @@ with_progress({
     reps = 100,
     seed = 1234
   )
+})
 })
 }
 

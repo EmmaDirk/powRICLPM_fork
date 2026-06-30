@@ -135,6 +135,7 @@
 #' library(future)
 #' library(progressr)
 #'
+#' local({
 #' old_plan <- future::plan()
 #' on.exit(future::plan(old_plan), add = TRUE)
 #' future::plan(future::multisession)
@@ -155,6 +156,7 @@
 #'     reps = 100,
 #'     seed = 1234
 #'   )
+#' })
 #' })
 #' }
 #'
