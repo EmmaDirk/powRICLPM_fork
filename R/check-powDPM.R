@@ -323,7 +323,7 @@ icheck_DPM_constraints <- function(constraints, estimate_ME = FALSE, time_points
       c(
         "{.arg constraints} must not contain duplicate constraint options:",
         i = paste0("Remove duplicate option", if (length(duplicate_constraints) == 1L) "" else "s", ": ", format_constraints(duplicate_constraints), "."),
-        x = paste0("Your {.arg constraints} is ", format_constraints(constraints), ".")
+        x = paste0("Your {.arg constraints} is ", format_constraints_input(constraints), ".")
       ),
       call = call
     )

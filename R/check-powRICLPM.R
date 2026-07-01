@@ -884,7 +884,7 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
       c(
         "{.arg {arg}} must not contain duplicate constraint options:",
         i = paste0("Remove duplicate option", if (length(duplicate_constraints) == 1L) "" else "s", ": ", format_constraints(duplicate_constraints), "."),
-        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+        x = paste0("Your {.arg {arg}} is ", format_constraints_input(x), ".")
       )
     )
   }
@@ -1269,6 +1269,14 @@ has_constraint <- function(constraints, constraint) {
 
 format_constraints <- function(constraints) {
   constraints <- normalize_constraints(constraints)
+  if (length(constraints) == 1) {
+    return(constraints)
+  }
+  paste0("c(", paste0("'", constraints, "'", collapse = ", "), ")")
+}
+
+
+format_constraints_input <- function(constraints) {
   if (length(constraints) == 1) {
     return(constraints)
   }
