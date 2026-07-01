@@ -42,7 +42,7 @@
 #'   \code{\link{give}}: Extract information (e.g., performance measures) for a specific parameter, across all experimental conditions. This function is used internally by \code{plot.powRICLPM}.
 #' }
 #'
-#' @return A \code{ggplot2} object.
+#' @return Invisibly returns a \code{ggplot2} object.
 #'
 #' @method plot powRICLPM
 #' @export
@@ -170,5 +170,5 @@ plot.powRICLPM <- function(
 
   # Print plot
   print(p)
-  return(p)
+  invisible(p)
 }

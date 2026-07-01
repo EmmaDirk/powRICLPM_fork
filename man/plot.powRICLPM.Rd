@@ -30,7 +30,7 @@
 \item{facet_by}{Character string of length 1, denoting what variable to facet by (see "Details").}
 }
 \value{
-A \code{ggplot2} object.
+Invisibly returns a \code{ggplot2} object.
 }
 \description{
 Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, for a specific parameter, across all experimental conditions. By default, sample size is plotted on the x-axis, power on the y-axis, with results colored by the number of time points, wrapped by the proportion of between-unit variance or accumulating-factor proportion, and shaped by reliability when applicable. For DPM objects without measurement error, the default is no shape mapping. Optionally, other variables can be mapped to the y-axis, x-axis, color, shape, and facets.

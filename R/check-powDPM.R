@@ -298,11 +298,32 @@ icheck_DPM_constraints <- function(constraints, estimate_ME = FALSE, time_points
       call = call
     )
   }
+  if (!is.null(dim(constraints))) {
+    cli::cli_abort(
+      c(
+        "{.arg constraints} must be a character vector, not a matrix or array:",
+        i = "Combine multiple constraint options with `c()`.",
+        x = paste0("Your {.arg constraints} is ", format_object_type(constraints), ".")
+      ),
+      call = call
+    )
+  }
   if (length(constraints) == 0L) {
     cli::cli_abort(
       c(
         "{.arg constraints} must contain at least one constraint option:",
         i = "Use 'none' when no constraints should be imposed."
+      ),
+      call = call
+    )
+  }
+  if (anyDuplicated(constraints)) {
+    duplicate_constraints <- unique(constraints[duplicated(constraints)])
+    cli::cli_abort(
+      c(
+        "{.arg constraints} must not contain duplicate constraint options:",
+        i = paste0("Remove duplicate option", if (length(duplicate_constraints) == 1L) "" else "s", ": ", format_constraints(duplicate_constraints), "."),
+        x = paste0("Your {.arg constraints} is ", format_constraints(constraints), ".")
       ),
       call = call
     )

@@ -21,6 +21,9 @@ test_that("icheck_plot_parameter() works", {
 
   p <- plot(out, parameter = "wB2~wA1")
   expect_s3_class(p, "ggplot")
+  p_visible <- withVisible(plot(out, parameter = "wB2~wA1"))
+  expect_false(p_visible$visible)
+  expect_s3_class(p_visible$value, "ggplot")
   p_icc <- suppressMessages(plot(out, parameter = "wB2~wA1", facet_by = "ICC"))
   expect_s3_class(p_icc, "ggplot")
 

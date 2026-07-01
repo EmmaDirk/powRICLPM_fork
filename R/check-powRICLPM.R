@@ -847,6 +847,15 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
       )
     )
   }
+  if (!is.null(dim(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a character vector, not a matrix or array:",
+        i = "Combine multiple constraint options with `c()`.",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      )
+    )
+  }
   if (length(x) == 0) {
     cli::cli_abort(
       c(
@@ -865,6 +874,16 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
       c(
         "{.arg {arg}} contains invalid constraints:",
         i = paste0("Valid constraints are: ", paste(valid_constraints, collapse = ", "), "."),
+        x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
+      )
+    )
+  }
+  if (anyDuplicated(x)) {
+    duplicate_constraints <- unique(x[duplicated(x)])
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must not contain duplicate constraint options:",
+        i = paste0("Remove duplicate option", if (length(duplicate_constraints) == 1L) "" else "s", ": ", format_constraints(duplicate_constraints), "."),
         x = paste0("Your {.arg {arg}} is ", format_constraints(x), ".")
       )
     )
@@ -900,8 +919,8 @@ icheck_constraints <- function(x, ME, arg = rlang::caller_arg(x), call = rlang::
   if (has_constraint(constraints, "ME") && !ME) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} can only be set to 'ME' when `estimate_ME = TRUE`:",
-        x = "Your {.arg {arg}} is FALSE."
+        "{.arg {arg}} can only include 'ME' when `estimate_ME = TRUE`:",
+        x = paste0("Your {.arg {arg}} is ", format_constraints(constraints), ".")
       )
     )
   }

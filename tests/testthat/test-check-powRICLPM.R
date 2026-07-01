@@ -338,7 +338,12 @@ test_that("icheck_constraints() works", {
   expect_error(icheck_constraints("a", ME = F))
   expect_error(icheck_constraints(TRUE, ME = F))
   expect_error(icheck_constraints(c("none", "ME"), ME = F))
-  expect_error(icheck_constraints("ME", ME = F))
+  expect_error(icheck_constraints("ME", ME = F, arg = "constraints"), "Your `constraints` is ME")
+  expect_error(icheck_constraints(c("ME", "RI_loadings_free"), ME = F, arg = "constraints"), "c\\('ME', 'RI_loadings_free'\\)")
+  expect_error(icheck_constraints(c("none", "none"), ME = F), "duplicate")
+  expect_error(icheck_constraints(c("lagged", "lagged", "residuals"), ME = F), "duplicate")
+  expect_error(icheck_constraints(matrix("RI_loadings_free", nrow = 1), ME = F), "matrix or array")
+  expect_error(icheck_constraints(array(c("lagged", "RI_loadings_free"), dim = c(1, 2, 1)), ME = F), "matrix or array")
 })
 
 test_that("vector constraints validate and preserve within compatibility", {
@@ -362,10 +367,6 @@ test_that("vector constraints validate and preserve within compatibility", {
   expect_error(
     icheck_constraints(c("stationarity", "residuals"), ME = FALSE),
     "cannot combine 'stationarity'"
-  )
-  expect_error(
-    icheck_constraints(c("ME", "RI_loadings_free"), ME = FALSE),
-    "estimate_ME = TRUE"
   )
   expect_error(
     icheck_constraints("loadings_free", ME = FALSE),
