@@ -39,7 +39,7 @@ print.powRICLPM <- function(x, ...) {
       col.names = condition_col_names
     )
   )
-  iprint_custom_loadings_note(x)
+  iprint_custom_loadings(x)
   invisible(x)
 }
 
@@ -66,7 +66,7 @@ print.summary.powRICLPM <- function(x, ..., object) {
       caption = "SUMMARY OF ANALYSIS PER EXPERIMENTAL CONDITION"
     )
   )
-  iprint_custom_loadings_note(object)
+  iprint_custom_loadings(object)
 }
 
 #' Print Summary Condition Call powRICLPM
@@ -125,7 +125,7 @@ iprint_misspecification_warning <- function(object) {
   }
   cat(
     "\n\n",
-    imisspecification_warning_text(past = TRUE),
+    imisspecification_warning_text(object$session$misspecification_restrictive_reasons, past = TRUE),
     sep = ""
   )
   invisible(NULL)

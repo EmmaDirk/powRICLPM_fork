@@ -137,6 +137,23 @@ test_that("powDPM validation errors use DPM-specific argument names", {
     ),
     "not identified with 4 waves.*requires at least 5 waves"
   )
+  expect_error(
+    powDPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      AF_proportion = 0.2,
+      AF_cor = 0.3,
+      lagged_effects = lagged_effects,
+      dynamics_cor = 0.3,
+      reliability = 0.8,
+      estimate_ME = FALSE,
+      constraints = "none",
+      reps = 1,
+      seed = 123456
+    ),
+    "Measurement error was generated, but not estimated"
+  )
   dpm_psi_error <- tryCatch(
     powDPM(
       target_power = 0.8,
@@ -263,7 +280,7 @@ test_that("powDPM validation errors catch common DPM loading mistakes", {
 
   expect_error(
     do.call(powDPM, c(base, list(loadings = c(1, 0.8)))),
-    "waves 2 through T"
+    "requires 3 loadings"
   )
   expect_error(
     do.call(powDPM, c(base, list(loadings = c(0.8, 1, 1)))),
@@ -281,4 +298,40 @@ test_that("powDPM validation errors catch common DPM loading mistakes", {
     do.call(powDPM, c(base, list(loadings = matrix(c(0.8, 0.7, 1, 1.2, 0.9, 1), nrow = 2, byrow = TRUE)))),
     "first DPM loading must be 1"
   )
+})
+
+test_that("powDPM notes custom data-generating loadings at argument checking", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  base <- list(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    AF_proportion = 0.2,
+    AF_cor = 0.3,
+    lagged_effects = lagged_effects,
+    dynamics_cor = 0.3,
+    reps = 1,
+    seed = 123456,
+    constraints = "AF_loadings_free"
+  )
+
+  custom_messages <- capture.output(
+    suppressWarnings(do.call(powDPM, c(base, list(loadings = c(1, 0.8, 1.1))))),
+    type = "message"
+  )
+  default_messages <- capture.output(
+    suppressWarnings(do.call(powDPM, base)),
+    type = "message"
+  )
+
+  expect_true(any(grepl(
+    "AF_proportion is not the accumulating-factor proportion at every wave",
+    custom_messages,
+    fixed = TRUE
+  )))
+  expect_false(any(grepl(
+    "AF_proportion is not the accumulating-factor proportion at every wave",
+    default_messages,
+    fixed = TRUE
+  )))
 })

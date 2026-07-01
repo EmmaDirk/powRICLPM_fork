@@ -48,15 +48,23 @@ test_that("icheck_lagged_effects() works", {
   expect_error(icheck_lagged_effects("m1"))
   expect_error(icheck_lagged_effects(data.frame(A = c(.3, .2), B = c(.15, .2))), "matrix")
   expect_error(icheck_lagged_effects(c(.3, .2, .15, .2)), "matrix")
-  expect_error(icheck_lagged_effects(m2))
+  expect_error(icheck_lagged_effects(m2), "largest absolute eigenvalue")
+  expect_error(icheck_lagged_effects(m2), "Use smaller autoregressive")
+  stationarity_error <- tryCatch(icheck_lagged_effects(m2), error = conditionMessage)
+  expect_false(grepl("unit circle", stationarity_error, fixed = TRUE))
 })
 
 test_that("check_lagged_effects() writes lagged effect interpretation", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
 
-  expect_output(check_lagged_effects(m1), "According to `lagged_effects`")
+  expect_output(check_lagged_effects(m1), "According to `lagged_effects`, the data-generating lagged effects are")
+  expect_output(check_lagged_effects(m1, model = "DPM"), "data-generating lagged effects")
   expect_error(check_lagged_effects("m1"), "lagged_effects")
   expect_output(check_lagged_effects(Phi = m1), "According to `Phi`")
+  expect_output(check_Phi(Phi = m1), "According to `Phi`, the data-generating lagged effects are")
+  lagged_output <- capture.output(check_lagged_effects(m1, model = "DPM"))
+  expect_false(any(grepl("DPM lagged effects", lagged_output, fixed = TRUE)))
+  expect_false(any(grepl("RI-CLPM lagged effects", lagged_output, fixed = TRUE)))
   expect_error(check_lagged_effects(Phi = 1), "Phi")
   expect_error(check_lagged_effects(m1, extra = TRUE), "Unexpected argument")
   expect_error(
@@ -186,10 +194,13 @@ test_that("check_reliability() writes reliability interpretation", {
 
   expect_output(check_reliability(reliability_matrix, time_points = 4), "variable A has reliability 0.7 and variable B has reliability 0.85")
   reliability_matrix_output <- capture.output(check_reliability(reliability_matrix))
+  reliability_scalar_output <- capture.output(check_reliability(0.8))
   expect_equal(
     sum(grepl("^\\s*[*\u2022] In condition", reliability_matrix_output)),
     3
   )
+  expect_false(any(grepl("at every time point", reliability_scalar_output, fixed = TRUE)))
+  expect_false(any(grepl("at every time point", reliability_matrix_output, fixed = TRUE)))
 
   expect_error(check_reliability(), "must be supplied")
   suppressWarnings(expect_error(
@@ -436,7 +447,7 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
     constraints = "none"
   )
   expect_true(generated_ME$restrictive)
-  expect_match(generated_ME$reasons, "reliability < 1", fixed = TRUE)
+  expect_match(generated_ME$reasons, "Measurement error was generated, but not estimated", fixed = TRUE)
 
   varying_loadings <- detect_RICLPM_restrictive_misspecification(
     reliability_matrix = matrix(1, nrow = 2, ncol = 3),
@@ -445,7 +456,8 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
     constraints = "none"
   )
   expect_true(varying_loadings$restrictive)
-  expect_match(varying_loadings$reasons, "custom `loadings`")
+  expect_match(varying_loadings$reasons, "Custom data-generating loadings", fixed = TRUE)
+  expect_match(varying_loadings$reasons, "estimated as fixed", fixed = TRUE)
 
   general <- detect_RICLPM_restrictive_misspecification(
     reliability_matrix = matrix(1, nrow = 2, ncol = 3),
@@ -458,8 +470,13 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
 
   expect_error(
     confirm_RICLPM_restrictive_misspecification(generated_ME),
-    "more restrictive"
+    "Measurement error was generated, but not estimated"
   )
+  confirmation_error <- tryCatch(
+    confirm_RICLPM_restrictive_misspecification(generated_ME),
+    error = conditionMessage
+  )
+  expect_false(grepl("more restrictive", confirmation_error, fixed = TRUE))
 })
 
 test_that("icheck_estimator() works", {
@@ -776,7 +793,7 @@ test_that("lavaan RI-CLPM conditions preserve constraints for condition-level lo
   expect_equal(stationarity_condition$constraints, "stationarity")
   expect_true(has_constraint(stationarity_condition$constraints, "stationarity"))
   expect_equal(free_loading_condition$constraints, "RI_loadings_free")
-  expect_equal(iloading_status(free_loading_condition), "free")
+  expect_false("loadings" %in% names(give_powRICLPM_conditions(list(conditions = list(free_loading_condition)))))
 })
 
 test_that("loadings update lavaan data generation syntax", {

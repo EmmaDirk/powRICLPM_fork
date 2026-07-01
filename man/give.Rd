@@ -9,23 +9,24 @@ give(from, what, parameter = NULL)
 \arguments{
 \item{from}{A \code{powRICLPM} object}
 
-\item{what}{A character string, denoting the information to extract, such as "conditions", "estimation_problems", "results", or "names" (see "Details").}
+\item{what}{A character string, denoting the information to extract, such as "conditions", "estimation_problems", "loadings", "results", or "names" (see "Details").}
 
 \item{parameter}{(optional) When \code{what = "results"}, a character string denoting the parameter to extract the results for.}
 }
 \value{
-A \code{data.frame}.
+A \code{data.frame}, character vector, matrix, or list, depending on \code{what}.
 }
 \description{
-Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. The information is presented by condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, and reliability when applicable).
+Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. Condition information is presented by experimental condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, and reliability when applicable). Data-generating loadings are returned separately.
 }
 \details{
 The following information can be extracted from the \code{powRICLPM} object:
 
 \itemize{
-\item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown with a compact variable-specific label.
+\item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown with a compact variable-specific label. Custom data-generating loadings are not repeated row-wise; use \code{give(object, "loadings")} to inspect them.
 \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
 \item \code{estimation_problems}: The number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
+\item \code{loadings}: The data-generating loadings matrix. If an object contains multiple loading matrices because conditions have different numbers of waves, a list of matrices is returned.
 \item \code{results}: The average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 \item \code{names}: Parameter names available in every experimental condition.
 \item \code{uncertainty}: Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
@@ -37,6 +38,9 @@ load(system.file("extdata", "out_preliminary.RData", package = "powRICLPM"))
 }
 # Return data frame with number of estimation problems per experimental condition
 give(out_preliminary, "estimation_problems")
+
+# Return the data-generating loadings
+give(out_preliminary, "loadings")
 
 # Return data frame with performance measures for "wB2~wA1" per experimental condition
 give(out_preliminary, "results", parameter = "wB2~wA1")

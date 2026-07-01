@@ -293,8 +293,8 @@ icheck_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlang::c
     cli::cli_abort(
       c(
         "{.arg {arg}} must specify a stationary process:",
-        i = "This is checked by testing if the eigenvalues of {.arg {arg}} lie within unit circle.",
-        x = "Eigenvalues of {.arg {arg}} are not within unit circle. Try out smaller lagged effects?"
+        i = "Use smaller autoregressive and/or cross-lagged effects.",
+        x = "The largest absolute eigenvalue of {.arg {arg}} must be smaller than 1."
       )
     )
   }
@@ -642,6 +642,27 @@ inormalize_loadings <- function(loadings, time_points, model = "RICLPM") {
     return(loadings)
   }
   rbind(loadings, loadings)
+}
+
+inote_custom_loadings_interpretation <- function(loadings, time_points,
+                                                model = "RICLPM") {
+  if (is.null(loadings)) {
+    return(invisible(NULL))
+  }
+  loadings_matrix <- inormalize_loadings(loadings, time_points[1], model)
+  if (!any(loadings_matrix != 1)) {
+    return(invisible(NULL))
+  }
+  if (identical(model, "DPM")) {
+    cli::cli_alert_info(
+      "With freely generated accumulating-factor loadings, AF_proportion is not the accumulating-factor proportion at every wave."
+    )
+  } else {
+    cli::cli_alert_info(
+      "With freely generated random-intercept loadings, ICC is not the ICC at every wave."
+    )
+  }
+  invisible(NULL)
 }
 
 format_object_type <- function(x) {
@@ -1246,7 +1267,7 @@ detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
   if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "`reliability < 1`, but `estimate_ME = FALSE`"
+      "Measurement error was generated, but not estimated"
     )
   }
   if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
@@ -1261,7 +1282,7 @@ detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
   if (generated_RI_loadings_general && !estimated_RI_loadings_free) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "custom `loadings`, but fitted loadings are fixed"
+      "Custom data-generating loadings were supplied, but loadings are estimated as fixed"
     )
   }
   if (!generated_RI_loadings_general && estimated_RI_loadings_free) {
@@ -1301,23 +1322,25 @@ confirm_RICLPM_restrictive_misspecification <- function(misspecification,
   confirm_restrictive_misspecification(misspecification, call = call)
 }
 
-imisspecification_warning_text <- function(past = FALSE) {
-  paste0(
-    "The estimation model ",
-    if (past) "was" else "is",
-    " more restrictive than the data-generating model; power may be overestimated and parameter estimates may be biased."
-  )
-}
-
-imisspecification_reason_text <- function(reasons) {
+imisspecification_warning_text <- function(reasons = character(), past = FALSE) {
+  consequence <- "power may be overestimated and parameter estimates may be biased."
   reasons <- unique(reasons[nzchar(reasons)])
   if (length(reasons) == 0L) {
-    return("a restrictive fitted model")
+    return(paste0(
+      "A restrictive estimation-model mismatch ",
+      if (past) "was" else "is",
+      " present; ",
+      consequence
+    ))
   }
   if (length(reasons) == 1L) {
-    return(reasons)
+    return(paste0(reasons, "; ", consequence))
   }
-  paste0(paste(reasons[-length(reasons)], collapse = ", "), ", and ", reasons[length(reasons)])
+  paste(
+    rlang::format_error_bullets(stats::setNames(reasons, rep("*", length(reasons)))),
+    paste0("Power may be overestimated and parameter estimates may be biased."),
+    sep = "\n\n"
+  )
 }
 
 confirm_restrictive_misspecification <- function(misspecification,
@@ -1325,12 +1348,7 @@ confirm_restrictive_misspecification <- function(misspecification,
   if (!isTRUE(misspecification$restrictive)) {
     return(invisible(TRUE))
   }
-  reason <- imisspecification_reason_text(misspecification$restrictive_reasons)
-  message <- paste0(
-    imisspecification_warning_text(),
-    "\n\n",
-    "You supplied ", reason, "."
-  )
+  message <- imisspecification_warning_text(misspecification$restrictive_reasons)
   if (!interactive()) {
     cli::cli_abort(
       c(
@@ -1340,7 +1358,7 @@ confirm_restrictive_misspecification <- function(misspecification,
       call = call
     )
   }
-  cat(message, " Type YES to continue: ", sep = "")
+  cat(message, "\n\nType YES to continue: ", sep = "")
   answer <- readline()
   if (!identical(answer, "YES")) {
     cli::cli_abort("Simulation aborted because YES was not entered.", call = call)

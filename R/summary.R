@@ -170,7 +170,6 @@ summary.powRICLPM <- function(
       replications = summary_replications
     )
 
-    inote_condition_loading_anchor(object, results)
     print.summary.powRICLPM.condition(summary_list, object = object)
     invisible(results)
 
@@ -183,8 +182,7 @@ summary.powRICLPM <- function(
     parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
     condition_cols <- c(
       "sample_size", "time_points", "ICC",
-      ireliability_columns(parameter_summary),
-      intersect("loadings", names(parameter_summary))
+      ireliability_columns(parameter_summary)
     )
     parameter_summary <- parameter_summary[, c(
       condition_cols,
@@ -192,7 +190,6 @@ summary.powRICLPM <- function(
     ), drop = FALSE]
     parameter_col_names <- icondition_table_names(object, parameter_summary, icc_table_label)
     colnames(parameter_summary) <- c(parameter_col_names, "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
-    inote_condition_loading_anchor(object, parameter_summary)
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
     invisible(parameter_summary)
 
@@ -204,7 +201,6 @@ summary.powRICLPM <- function(
     replications_df <- idrop_DPM_reliability_column(object, replications_df)
     replications_col_names <- icondition_table_names(object, replications_df, icc_table_label)
     colnames(replications_df) <- c(replications_col_names, "Error", "Not converged", "Inadmissible")
-    inote_condition_loading_anchor(object, replications_df)
     print.summary.powRICLPM(replications_df, object = object)
     invisible(replications_df)
   }

@@ -9,7 +9,7 @@ check_reliability(reliability = NULL, time_points = NULL, ...)
 \arguments{
 \item{reliability}{A \code{numeric} value, vector, or matrix specifying
 reliability in the lavaan data-generating model. A single value is applied
-to both variables at every time point. A vector supplies multiple
+to both variables. A vector supplies multiple
 reliability conditions, with each value applied to both variables at every
 time point. A matrix must have two rows, one for each variable, and one
 column per reliability condition.}

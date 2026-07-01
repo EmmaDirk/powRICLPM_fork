@@ -62,7 +62,7 @@ iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
   # Interpretation cross-lagged effects
   writeLines(
     rlang::format_error_bullets(c(
-        paste0("According to `", argument_name, "`, the ", imodel_name_from_value(model), " lagged effects are:"),
+        paste0("According to `", argument_name, "`, the data-generating lagged effects are:"),
       "*" = paste0("Autoregressive effect of A: ", lagged_effects[1, 1]),
       "*" = paste0("Autoregressive effect of B: ", lagged_effects[2, 2]),
       "*" = paste0("Cross-lagged effect of A -> B: ", lagged_effects[2, 1]),
@@ -74,9 +74,9 @@ iwrite_lagged_effects_check <- function(lagged_effects, argument_name,
   if (!is_unit(lagged_effects)) {
     writeLines(
         rlang::format_error_bullets(c(
-        paste0("\nHowever, `", argument_name, "` must specify a stationary process for the ", imodel_name_from_value(model), ":"),
-        i = paste0("This is checked by testing if the eigenvalues of `", argument_name, "` lie within unit circle."),
-        x = paste0("The eigenvalues of `", argument_name, "` are not within unit circle. Try out smaller lagged effects?")
+        paste0("\n`", argument_name, "` must specify a stationary process:"),
+        i = "Use smaller autoregressive and/or cross-lagged effects.",
+        x = paste0("The largest absolute eigenvalue of `", argument_name, "` must be smaller than 1.")
       ))
     )
   }
@@ -260,7 +260,7 @@ iwrite_loadings_check <- function(loadings, time_points, model = "RICLPM") {
 #'
 #' @param reliability A \code{numeric} value, vector, or matrix specifying
 #'   reliability in the lavaan data-generating model. A single value is applied
-#'   to both variables at every time point. A vector supplies multiple
+#'   to both variables. A vector supplies multiple
 #'   reliability conditions, with each value applied to both variables at every
 #'   time point. A matrix must have two rows, one for each variable, and one
 #'   column per reliability condition.
@@ -358,7 +358,7 @@ iwrite_reliability_check <- function(reliability, time_points) {
       paste0(
         condition_prefix, " A and B have reliability ",
         reliability_matrix[1, 1],
-        " at every time point."
+        "."
       )
     } else {
       condition_prefix <- if (nrow(reliability_conditions) > 1L) {
@@ -372,7 +372,7 @@ iwrite_reliability_check <- function(reliability, time_points) {
         format_reliability_value(reliability_matrix[1, 1]),
         " and variable B has reliability ",
         format_reliability_value(reliability_matrix[2, 1]),
-        " at every time point."
+        "."
       )
     }
   }, character(1))

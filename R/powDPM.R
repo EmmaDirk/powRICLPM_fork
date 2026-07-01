@@ -36,7 +36,11 @@
 #' and \code{dynamics_cor} as the target true-score process correlation. Residual
 #' variances and covariances are computed from the DPM stationarity equations so
 #' the DPM true-score variables have variance 1 across waves when the requested
-#' values are admissible. When measurement error is included, observed variables
+#' values are admissible. Custom data-generating accumulating-factor loadings can
+#' be supplied with \code{loadings}; the estimation model frees those loadings
+#' only when \code{constraints = "AF_loadings_free"} is supplied. With custom
+#' data-generating loadings, \code{AF_proportion} is not the accumulating-factor
+#' proportion at every wave. When measurement error is included, observed variables
 #' are single-indicator measurements of latent true-score variables named
 #' \code{tA1}, \code{tA2}, ..., \code{tB1}, \code{tB2}, and so on.
 #' The \code{reliability} argument controls the generated measurement error
@@ -150,6 +154,7 @@ powDPM <- function(
     seed <- icheck_seed(seed)
   }
 
+  inote_custom_loadings_interpretation(loadings, time_points, model = "DPM")
   cli::cli_alert_success("Argument checking complete.")
 
   irun_power_analysis(

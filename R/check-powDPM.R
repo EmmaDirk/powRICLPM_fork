@@ -262,8 +262,8 @@ icheck_DPM_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlan
     cli::cli_abort(
       c(
         "{.arg {arg}} must specify a stationary process:",
-        i = "This is checked by testing if the eigenvalues of {.arg {arg}} lie within the unit circle.",
-        x = "Eigenvalues of {.arg {arg}} are not within the unit circle. Try smaller lagged effects?"
+        i = "Use smaller autoregressive and/or cross-lagged effects.",
+        x = "The largest absolute eigenvalue of {.arg {arg}} must be smaller than 1."
       ),
       call = call
     )
@@ -407,14 +407,12 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
     if (ncol(x) != time_points - 1L) {
       cli::cli_abort(
         c(
-          "{.arg {arg}} must have one column for each wave from 2 through T:",
-          i = "DPM accumulating-factor loadings are supplied for waves 2 through T only.",
+          "{.arg {arg}} must have one column for each wave from 2 through T.",
           x = paste0(
             "{.arg {arg}} has ", ncol(x),
             " columns, but {.arg {t_arg}} = ", time_points,
             " requires ", time_points - 1L,
-            " loading columns because DPM accumulating-factor loadings are specified for waves 2 through ",
-            time_points, "."
+            " loading columns."
           )
         ),
         call = call
@@ -425,13 +423,11 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
     if (length(x) != time_points - 1L) {
       cli::cli_abort(
         c(
-          "{.arg {arg}} must have one value for each wave from 2 through T:",
-          i = "DPM accumulating-factor loadings are supplied for waves 2 through T only.",
+          "{.arg {arg}} must have one value for each wave from 2 through T.",
           x = paste0("{.arg {arg}} has length ", length(x),
                      ", but {.arg {t_arg}} = ", time_points,
                      " requires ", time_points - 1L,
-                     " loadings because DPM accumulating-factor loadings are specified for waves 2 through ",
-                     time_points, ".")
+                     " loadings.")
         ),
         call = call
       )
@@ -491,7 +487,7 @@ detect_DPM_misspecification_condition <- function(reliability_matrix, loadings,
   if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "`reliability < 1`, but `estimate_ME = FALSE`"
+      "Measurement error was generated, but not estimated"
     )
   }
   if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
@@ -505,7 +501,7 @@ detect_DPM_misspecification_condition <- function(reliability_matrix, loadings,
   if (generated_AF_loadings_general && !estimated_AF_loadings_free) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "custom `loadings`, but fitted loadings are fixed"
+      "Custom data-generating loadings were supplied, but loadings are estimated as fixed"
     )
   }
   if (!generated_AF_loadings_general && estimated_AF_loadings_free) {

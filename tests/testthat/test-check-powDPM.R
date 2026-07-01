@@ -20,6 +20,20 @@ test_that("DPM constraint checks reject unsupported options", {
   expect_error(icheck_DPM_constraints(c("stationarity", "lagged")), "cannot combine")
 })
 
+test_that("DPM lagged-effects stationarity error is concise", {
+  lagged_effects <- matrix(c(0.9, 0.7, 0.7, 0.9), nrow = 2)
+  stationarity_error <- tryCatch(
+    icheck_DPM_lagged_effects(lagged_effects),
+    error = conditionMessage
+  )
+
+  expect_match(stationarity_error, "must specify a stationary process", fixed = TRUE)
+  expect_match(stationarity_error, "Use smaller autoregressive and/or cross-lagged effects", fixed = TRUE)
+  expect_match(stationarity_error, "largest absolute eigenvalue", fixed = TRUE)
+  expect_false(grepl("Try smaller lagged effects", stationarity_error, fixed = TRUE))
+  expect_false(grepl("unit circle", stationarity_error, fixed = TRUE))
+})
+
 test_that("DPM identification table is enforced", {
   for (i in seq_len(nrow(DPM_identification_table))) {
     row <- DPM_identification_table[i, ]
@@ -60,7 +74,7 @@ test_that("DPM misspecification detection separates restrictive and general case
     estimate_ME = FALSE
   )
   expect_true(restrictive$restrictive)
-  expect_match(restrictive$restrictive_reasons, "reliability < 1", fixed = TRUE)
+  expect_match(restrictive$restrictive_reasons, "Measurement error was generated, but not estimated", fixed = TRUE)
 
   general <- detect_DPM_misspecification(
     reliability = 1,
@@ -106,15 +120,15 @@ test_that("check_loadings() writes DPM loading interpretation", {
   )
   expect_error(
     check_loadings(c(1, 0.8), time_points = 4, model = "DPM"),
-    "waves 2 through T"
+    "requires 3 loadings"
   )
   expect_error(
     check_loadings(c(1), time_points = 4, model = "DPM"),
-    "waves 2 through T"
+    "requires 3 loadings"
   )
   expect_error(
     check_loadings(matrix(c(1, 0.8, 1, 0.8), nrow = 2, byrow = TRUE), time_points = 4, model = "DPM"),
-    "waves 2 through T"
+    "requires 3 loading columns"
   )
   expect_error(
     check_loadings(loading_matrix, model = "dpm"),
@@ -134,7 +148,7 @@ test_that("icheck_loadings() supports DPM loading specifications", {
 
   expect_error(
     icheck_loadings(c(1, .8, .7), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "waves 2 through T"
+    "requires 2 loadings"
   )
   expect_error(
     icheck_loadings(c(.8, 1), 3, "lavaan", "AF_loadings_free", model = "DPM"),
@@ -150,7 +164,7 @@ test_that("icheck_loadings() supports DPM loading specifications", {
   )
   expect_error(
     icheck_loadings(matrix(c(1, .8, .7, 1, 1.2, .9), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "waves 2 through T"
+    "requires 2 loading columns"
   )
   expect_error(
     icheck_loadings(c(1, NA), 3, "lavaan", "AF_loadings_free", model = "DPM"),

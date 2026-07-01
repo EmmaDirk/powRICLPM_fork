@@ -27,13 +27,13 @@ icheck_what_give <- function(x, arg = rlang::caller_arg(x), call = rlang::caller
 
   x <- normalize_intraclass_correlation_value(x)
   if (!any(x == c(
-    "conditions", "estimation_problems", "results", "names",
+    "conditions", "estimation_problems", "loadings", "results", "names",
     "sample_size", "time_points", "intraclass_correlation",
     "AF_proportion", "reliability", "uncertainty"
   ))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} is not an accepted input. Please change it to `conditions`, `estimation_problems`, `results`, `names`, `sample_size`, `time_points`, `intraclass_correlation`, `ICC`, `AF_proportion`, `reliability`, or `uncertainty`.",
+        "{.arg {arg}} is not an accepted input. Please change it to `conditions`, `estimation_problems`, `loadings`, `results`, `names`, `sample_size`, `time_points`, `intraclass_correlation`, `ICC`, `AF_proportion`, `reliability`, or `uncertainty`.",
         "x" = "Your {.arg {arg}} is {.val {x}}."
       ),
       call = call

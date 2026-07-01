@@ -181,23 +181,27 @@ test_that("lavaan custom loadings can be fitted freely or flagged as restrictive
       reps = 1,
       seed = 123456
     ),
-    "more restrictive"
+    "Custom data-generating loadings were supplied, but loadings are estimated as fixed"
   )
 
-  out_free <- suppressWarnings(
-    powRICLPM(
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      ICC = 0.5,
-      RI_cor = 0.3,
-      lagged_effects = lagged_effects,
-      within_cor = 0.3,
-      loadings = loadings,
-      constraints = c("lagged", "RI_loadings_free"),
-      reps = 1,
-      seed = 123456
-    )
+  out_free <- NULL
+  out_free_messages <- capture.output(
+    out_free <- suppressWarnings(
+      powRICLPM(
+        target_power = 0.8,
+        sample_size = 1000,
+        time_points = 3,
+        ICC = 0.5,
+        RI_cor = 0.3,
+        lagged_effects = lagged_effects,
+        within_cor = 0.3,
+        loadings = loadings,
+        constraints = c("lagged", "RI_loadings_free"),
+        reps = 1,
+        seed = 123456
+      )
+    ),
+    type = "message"
   )
 
   RI_loading_parameters <- c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3")
@@ -209,28 +213,36 @@ test_that("lavaan custom loadings can be fitted freely or flagged as restrictive
   expect_true(grepl("RI_B=~0.25*B3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_false(anyNA(index))
   expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
-  expect_equal(give(out_free, "conditions")$loadings, "free*")
+  expect_false("loadings" %in% names(give(out_free, "conditions")))
+  expect_equal(unname(give(out_free, "loadings")), loadings)
+  expect_true(any(grepl("ICC is not the ICC at every wave", out_free_messages, fixed = TRUE)))
 })
 
-test_that("powRICLPM output labels freely estimated default loadings", {
+test_that("freely estimated default loadings do not become condition output", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
-  out_free_default <- suppressWarnings(
-    powRICLPM(
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 4,
-      ICC = 0.5,
-      RI_cor = 0.3,
-      lagged_effects = lagged_effects,
-      within_cor = 0.3,
-      constraints = "RI_loadings_free",
-      reps = 1,
-      seed = 123456
-    )
+  out_free_default <- NULL
+  out_free_default_messages <- capture.output(
+    out_free_default <- suppressWarnings(
+      powRICLPM(
+        target_power = 0.8,
+        sample_size = 1000,
+        time_points = 4,
+        ICC = 0.5,
+        RI_cor = 0.3,
+        lagged_effects = lagged_effects,
+        within_cor = 0.3,
+        constraints = "RI_loadings_free",
+        reps = 1,
+        seed = 123456
+      )
+    ),
+    type = "message"
   )
 
-  expect_equal(give(out_free_default, "conditions")$loadings, "free")
+  expect_false("loadings" %in% names(give(out_free_default, "conditions")))
+  expect_equal(unname(give(out_free_default, "loadings")), matrix(1, nrow = 2, ncol = 4))
+  expect_false(any(grepl("ICC is not the ICC at every wave", out_free_default_messages, fixed = TRUE)))
 })
 
 test_that("ICOV no convergence warnings are recognized", {
