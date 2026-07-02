@@ -279,3 +279,30 @@ test_that("Mplus condition print uses variable-specific reliability columns", {
   expect_true(any(grepl("Reliability B", print_output, fixed = TRUE)))
   expect_false(any(grepl("A = 0.7, B = 0.6", print_output, fixed = TRUE)))
 })
+
+test_that("Mplus condition print collapses matching matrix reliability columns", {
+  conditions <- list(
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.7, B = 0.7",
+      reliability_matrix = matrix(0.7, nrow = 2, ncol = 5)
+    ),
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.8, B = 0.8",
+      reliability_matrix = matrix(0.8, nrow = 2, ncol = 5)
+    )
+  )
+
+  print_output <- capture.output(
+    print.powRICLPM.Mplus(conditions, save_path = tempdir())
+  )
+
+  expect_true(any(grepl("Reliability", print_output, fixed = TRUE)))
+  expect_false(any(grepl("Reliability A", print_output, fixed = TRUE)))
+  expect_false(any(grepl("Reliability B", print_output, fixed = TRUE)))
+})

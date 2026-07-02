@@ -10,7 +10,7 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B}. Custom data-generating loadings are not repeated row-wise; use \code{give(object, "loadings")} to inspect them.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B} when the reliabilities differ between variables A and B; if they match in every condition, a single \code{reliability} column is shown. Custom data-generating loadings are not repeated row-wise; use \code{give(object, "loadings")} to inspect them.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
 #'   \item \code{estimation_problems}: The number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
 #'   \item \code{loadings}: The data-generating loadings matrix. If an object contains multiple loading matrices because conditions have different numbers of waves, a list of matrices is returned.
@@ -99,7 +99,7 @@ give_powRICLPM_conditions <- function(object) {
       icondition_reliability_columns(condition)
     )
   }))
-  return(d)
+  icollapse_equal_reliability_columns(d)
 }
 
 give_powRICLPM_loadings <- function(object) {
@@ -243,6 +243,22 @@ icondition_reliability_columns <- function(condition) {
   data.frame(reliability = condition$reliability, stringsAsFactors = FALSE)
 }
 
+icollapse_equal_reliability_columns <- function(x) {
+  if (!is.data.frame(x) || !all(c("reliability_A", "reliability_B") %in% names(x))) {
+    return(x)
+  }
+  if (!all(x$reliability_A == x$reliability_B)) {
+    return(x)
+  }
+  reliability_position <- match("reliability_A", names(x))
+  x$reliability <- x$reliability_A
+  x[c("reliability_A", "reliability_B")] <- NULL
+  if (!is.finite(reliability_position)) {
+    return(x)
+  }
+  x[, append(setdiff(names(x), "reliability"), "reliability", after = reliability_position - 1L), drop = FALSE]
+}
+
 ireliability_columns <- function(x) {
   intersect(c("reliability", "reliability_A", "reliability_B"), names(x))
 }
@@ -359,7 +375,7 @@ give_powRICLPM_estimation_problems <- function(object) {
       )
     )
   }))
-  return(d)
+  icollapse_equal_reliability_columns(d)
 }
 
 give_powRICLPM_results <- function(object, parameter = NULL) {
@@ -423,7 +439,7 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
       estimates
     )
   }))
-  return(d)
+  icollapse_equal_reliability_columns(d)
 }
 
 give_powRICLPM_parameter_names <- function(object) {
@@ -475,7 +491,7 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
       uncertainty_filtered
     )
   }))
-  return(d)
+  icollapse_equal_reliability_columns(d)
 }
 
 icheck_give_parameter <- function(parameter, object, what = "results",

@@ -490,8 +490,23 @@ ireliability_selector_label <- function(x) {
 }
 
 ireliability_matches <- function(supplied, available) {
-  inormalize_reliability_label(ireliability_selector_label(supplied)) ==
+  supplied <- ireliability_canonical_equal_label(
+    inormalize_reliability_label(ireliability_selector_label(supplied))
+  )
+  available <- ireliability_canonical_equal_label(
     inormalize_reliability_label(available)
+  )
+  supplied == available
+}
+
+ireliability_canonical_equal_label <- function(x) {
+  vapply(x, function(label) {
+    parts <- regmatches(label, regexec("^A ([^,]+), B (.+)$", label))[[1]]
+    if (length(parts) == 3L && identical(parts[2], parts[3])) {
+      return(parts[2])
+    }
+    label
+  }, character(1), USE.NAMES = FALSE)
 }
 
 ireliability_display_label <- function(x) {
@@ -1421,7 +1436,8 @@ confirm_restrictive_misspecification <- function(misspecification,
       call = call
     )
   }
-  cat(message, "\n\nType YES to continue: ", sep = "")
+  cli::cli_alert_info(message)
+  cat("\nType YES to continue: ", sep = "")
   answer <- readline()
   if (!identical(answer, "YES")) {
     cli::cli_abort("Simulation aborted because YES was not entered.", call = call)

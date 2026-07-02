@@ -148,6 +148,7 @@ print.powRICLPM.Mplus <- function(x, ..., save_path, icc_label = "Intraclass cor
       icondition_reliability_columns(condition)
     )
   }))
+  df_conditions <- icollapse_equal_reliability_columns(df_conditions)
   df_conditions <- cbind(condition = 1:length(x), df_conditions)
   reliability_col_names <- character()
   if ("reliability" %in% names(df_conditions)) {
