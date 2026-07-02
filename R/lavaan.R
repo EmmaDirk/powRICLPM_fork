@@ -133,7 +133,7 @@ est_RI <- function(condition, name_RI, name_obs) {
   con <- rep("*", times = 2 * condition[["time_points"]])
   rhs <- c(unlist(name_obs))
 
-  if (has_constraint(condition[["constraints"]], "loadings_free")) {
+  if (has_constraint(condition[["constraints"]], "RI_loadings_free")) {
     loading_prefixes <- c("lx", "ly")
     pv <- unlist(lapply(seq_along(loading_prefixes), function(i) {
       loadings <- condition[["loadings"]][i, ]

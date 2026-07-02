@@ -133,10 +133,14 @@ icheck_ICC_summary <- function(ICC, object, arg = rlang::caller_arg(ICC), call =
 
 icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_arg(reliability), call = rlang::caller_env()) {
 
-  if (length(reliability) > 1) {
+  variable_specific_selector <- is.numeric(reliability) &&
+    is.null(dim(reliability)) &&
+    length(reliability) == 2L
+  if (length(reliability) > 1 && !variable_specific_selector) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a single reliability value or label:",
+        "{.arg {arg}} must be a single reliability value, a variable-specific pair, or a label:",
+        i = "Use a two-value numeric vector as `c(A = ..., B = ...)` to select a matrix-reliability condition.",
         "x" = "Your {.arg {arg}} is of length {length(reliability)}."
       ),
       call = call
@@ -150,8 +154,8 @@ icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_
       c(
         "{.arg {arg}} must refer to an experimental condition in the {.cls {class(object)}} object with that reliability:",
         "i" = "The reliability you've indicated is not included in any experimental condition.",
-        "x" = "Perhaps you meant any of the following reliabilities?",
-        paste(unique(reliabilities), collapse = ", ")
+        "x" = "Perhaps you meant one of the following reliability conditions?",
+        paste(ireliability_available_display_labels(object), collapse = "; ")
       ),
       call = call
     )
@@ -195,9 +199,10 @@ imatch_condition_summary <- function(object, sample_size, time_points, ICC, reli
       c(
         "Multiple experimental conditions match the supplied condition arguments:",
         i = "{.arg reliability} is needed to select one condition.",
+        i = "For variable-specific matrix reliability, use `reliability = c(A = ..., B = ...)`.",
         x = paste0(
-          "Matching reliabilities are: ",
-          paste(matching_reliabilities, collapse = ", "),
+          "Matching reliability conditions are: ",
+          paste(vapply(matching_reliabilities, ireliability_display_label, character(1)), collapse = "; "),
           "."
         )
       ),

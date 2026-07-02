@@ -138,15 +138,27 @@ print.powRICLPM.Mplus <- function(x, ..., save_path, icc_label = "Intraclass cor
 
   # Collect condition table
   df_conditions <- do.call(rbind, lapply(x, function(condition) {
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = condition$ICC,
-      reliability = condition$reliability,
-      stringsAsFactors = FALSE
+    cbind(
+      data.frame(
+        sample_size = condition$sample_size,
+        time_points = condition$time_points,
+        ICC = condition$ICC,
+        stringsAsFactors = FALSE
+      ),
+      icondition_reliability_columns(condition)
     )
   }))
   df_conditions <- cbind(condition = 1:length(x), df_conditions)
+  reliability_col_names <- character()
+  if ("reliability" %in% names(df_conditions)) {
+    reliability_col_names <- c(reliability_col_names, "Reliability")
+  }
+  if ("reliability_A" %in% names(df_conditions)) {
+    reliability_col_names <- c(reliability_col_names, "Reliability A")
+  }
+  if ("reliability_B" %in% names(df_conditions)) {
+    reliability_col_names <- c(reliability_col_names, "Reliability B")
+  }
 
   cli::cli_alert_info("Mplus input files for power analysis have been saved to {.path {save_path}}.\n
                       The conditions numbers correspond to the following conditions:")
@@ -157,7 +169,7 @@ print.powRICLPM.Mplus <- function(x, ..., save_path, icc_label = "Intraclass cor
       df_conditions,
       format = "simple",
       align = rep("r", times = length(colnames(df_conditions))),
-      col.names = c("Condition", "Sample size", "Time points", icc_label, "Reliability")
+      col.names = c("Condition", "Sample size", "Time points", icc_label, reliability_col_names)
     )
   )
 }

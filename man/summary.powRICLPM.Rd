@@ -31,7 +31,7 @@
 
 \item{AF_proportion}{(optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.}
 
-\item{reliability}{(optional) A \code{numeric} or \code{character} value denoting the scalar reliability or reliability label of the experimental condition of interest. This is available for DPM objects when measurement error is part of the DPM conditions.}
+\item{reliability}{(optional) A single \code{numeric} reliability, a two-value numeric vector such as \code{c(A = .7, B = .6)} for matrix-reliability conditions, or a \code{character} reliability label of the experimental condition of interest. This is available for DPM objects when measurement error is part of the DPM conditions.}
 
 \item{ICC}{Alternative name for \code{intraclass_correlation}.}
 }

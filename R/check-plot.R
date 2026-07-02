@@ -74,8 +74,7 @@ icheck_y <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) 
   if (!any(x == c("power", "coverage", "accuracy", "MSE", "bias", "average", "EmpSE", "SD", "SEAvg"))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'power', 'coverage', 'accuracy', 'MSE', 'bias', 'average', 'EmpSE', or 'SEAvg':",
-        i = "'SD' is still accepted as an alias for 'EmpSE'.",
+        "{.arg {arg}} must be 'power', 'coverage', 'accuracy', 'MSE', 'bias', 'average', 'EmpSE' (or 'SD'), or 'SEAvg':",
         x = paste0("Your {.arg {arg}} is '", x, "'.")
       )
     )

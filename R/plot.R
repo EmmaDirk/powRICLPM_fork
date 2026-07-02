@@ -20,7 +20,7 @@
 #'   \item \code{MSE}: The mean square error.
 #'   \item \code{coverage}: The coverage rate
 #'   \item \code{accuracy}: The average width of the confidence interval.
-#'   \item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} is still accepted as an alias for \code{EmpSE}.
+#'   \item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} can also be used.
 #'   \item \code{SEAvg}: Average standard error.
 #'   \item \code{bias}: The signed difference between the average estimate and population value.
 #' }
@@ -123,7 +123,7 @@ plot.powRICLPM <- function(
   d$intraclass_correlation <- d$ICC
   d$AF_proportion <- d$ICC
   if (!"reliability" %in% names(d) && all(c("reliability_A", "reliability_B") %in% names(d))) {
-    d$reliability <- paste0("A ", d$reliability_A, ", B ", d$reliability_B)
+    d$reliability <- paste0("A = ", d$reliability_A, ", B = ", d$reliability_B)
   }
 
   # Select relevant columns

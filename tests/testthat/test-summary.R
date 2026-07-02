@@ -172,10 +172,90 @@ test_that("matrix reliability labels print and filter consistently", {
     ICC = 0.5,
     reliability = "A = 0.8, B = 0.7"
   ), "SIMULATION RESULTS")
+  expect_output(summary(
+    object,
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = c(A = 0.8, B = 0.7)
+  ), "SIMULATION RESULTS")
   expect_error(
     summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = "A=0.8, B=0.8"),
-    "A 0.8, B 0.7"
+    "A = 0.8, B = 0.7"
   )
+})
+
+test_that("mixed matrix reliability conditions keep stable condition columns", {
+  base_estimates <- data.frame(
+    parameter = "A1~~A1",
+    population_value = 0.2,
+    average = 0.2,
+    bias = 0,
+    minimum = 0.1,
+    EmpSE = 0.05,
+    SEAvg = 0.05,
+    MSE = 0.0025,
+    accuracy = 0.2,
+    coverage = 0.95,
+    power = 0.8
+  )
+  base_condition <- list(
+    sample_size = 500,
+    time_points = 5,
+    ICC = 0.4,
+    reliability = "A = 0.8, B = 0.8",
+    reliability_matrix = matrix(0.8, nrow = 2, ncol = 5),
+    loadings = matrix(1, nrow = 2, ncol = 5),
+    estimates = base_estimates,
+    MCSEs = data.frame(
+      MCSE_average = 0.01,
+      MCSE_bias = 0.01,
+      MCSE_MSE = 0.01,
+      MCSE_coverage = 0.01,
+      MCSE_SEAvg = 0.01,
+      MCSE_EmpSE = 0.01,
+      MCSE_SD = 0.01,
+      MCSE_accuracy = 0.01,
+      MCSE_power = 0.01
+    ),
+    estimation_information = list(
+      n_error = 0,
+      n_nonconvergence = 0,
+      n_inadmissible = 0,
+      n_completed = 2
+    ),
+    skewness = 0,
+    kurtosis = 0,
+    significance_criterion = 0.05
+  )
+  object <- list(
+    conditions = list(
+      base_condition,
+      modifyList(base_condition, list(
+        reliability = "A = 0.8, B = 0.7",
+        reliability_matrix = matrix(c(0.8, 0.7), nrow = 2, ncol = 5)
+      ))
+    ),
+    session = list(
+      model = "RICLPM",
+      target_power = 0.8,
+      version = "0.2.1",
+      reps = 2,
+      constraints = "ME",
+      bounds = FALSE,
+      estimate_ME = TRUE,
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  conditions <- give(object, "conditions")
+  expect_equal(names(conditions), c("sample_size", "time_points", "ICC", "reliability_A", "reliability_B"))
+  expect_equal(conditions$reliability_A, c("0.8", "0.8"))
+  expect_equal(conditions$reliability_B, c("0.8", "0.7"))
+
+  parameter_summary <- summary(object, parameter = "A1~~A1")
+  expect_equal(colnames(parameter_summary)[4:5], c("Reliability A", "Reliability B"))
 })
 
 test_that("parameter-not-found and no-usable-estimates errors differ", {

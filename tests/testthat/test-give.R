@@ -249,6 +249,33 @@ test_that("restrictive misspecification print messages use concrete reasons", {
   class(object) <- c("powRICLPM", "list")
 
   print_output <- capture.output(print(object))
-  expect_true(any(grepl("Measurement error was generated, but not estimated; power may be overestimated", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Measurement error was generated, but not estimated; this is a restrictive misspecification", print_output, fixed = TRUE)))
   expect_false(any(grepl("The estimation model was more restrictive", print_output, fixed = TRUE)))
+})
+
+test_that("Mplus condition print uses variable-specific reliability columns", {
+  conditions <- list(
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.7, B = 0.6",
+      reliability_matrix = matrix(c(0.7, 0.6), nrow = 2, ncol = 5)
+    ),
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.8, B = 0.75",
+      reliability_matrix = matrix(c(0.8, 0.75), nrow = 2, ncol = 5)
+    )
+  )
+
+  print_output <- capture.output(
+    print.powRICLPM.Mplus(conditions, save_path = tempdir())
+  )
+
+  expect_true(any(grepl("Reliability A", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Reliability B", print_output, fixed = TRUE)))
+  expect_false(any(grepl("A = 0.7, B = 0.6", print_output, fixed = TRUE)))
 })

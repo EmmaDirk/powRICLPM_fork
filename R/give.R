@@ -10,7 +10,7 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown with a compact variable-specific label. Custom data-generating loadings are not repeated row-wise; use \code{give(object, "loadings")} to inspect them.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B}. Custom data-generating loadings are not repeated row-wise; use \code{give(object, "loadings")} to inspect them.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
 #'   \item \code{estimation_problems}: The number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
 #'   \item \code{loadings}: The data-generating loadings matrix. If an object contains multiple loading matrices because conditions have different numbers of waves, a list of matrices is returned.
@@ -231,8 +231,9 @@ iabort_condition_selector_unavailable <- function(selector, object, context,
 
 icondition_reliability_columns <- function(condition) {
   reliability_matrix <- condition$reliability_matrix
-  if (!is.null(reliability_matrix) &&
-      !identical(reliability_matrix[1, ], reliability_matrix[2, ])) {
+  if (is.character(condition$reliability) &&
+      !is.null(reliability_matrix) &&
+      grepl("^A\\s*=?", condition$reliability)) {
     return(data.frame(
       reliability_A = format_reliability_value(reliability_matrix[1, 1]),
       reliability_B = format_reliability_value(reliability_matrix[2, 1]),

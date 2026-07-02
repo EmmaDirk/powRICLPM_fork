@@ -238,6 +238,7 @@ test_that("icheck_reliability() works", {
   expect_error(icheck_rel(c(.8, Inf, 1), 3, "lavaan"), "contains: c\\(0.8, Inf, 1\\)")
   expect_error(icheck_rel(matrix(.8, nrow = 1, ncol = 3), 3, "lavaan"), "must have 2 rows.*has 1 row")
   expect_error(icheck_rel(matrix(.8, nrow = 3, ncol = 3), 3, "lavaan"), "must have 2 rows.*has 3 rows")
+  expect_error(icheck_rel(matrix(numeric(0), nrow = 2, ncol = 0), 3, "lavaan"), "at least one column.*0 columns")
 })
 
 test_that("icheck_loadings() works", {
@@ -971,14 +972,14 @@ test_that("reliability updates lavaan measurement-error syntax", {
   expect_equal(length(conditions_matrix), 3)
   expect_equal(
     unname(vapply(conditions_matrix, function(x) x$reliability, character(1))),
-    c("A 0.8, B 0.9", "A 0.7, B 0.85", "A 1, B 0.75")
+    c("A = 0.8, B = 0.9", "A = 0.7, B = 0.85", "A = 1, B = 0.75")
   )
   condition_matrix <- conditions_matrix[[2]]
   expected_matrix <- matrix(c(0.7, 0.85), nrow = 2, ncol = 3)
   expected_matrix_ME <- ((1 - expected_matrix) * 2) / expected_matrix
   expected_A_start <- mean(expected_matrix_ME[1, ])
   expected_B_start <- mean(expected_matrix_ME[2, ])
-  expect_equal(condition_matrix$reliability, "A 0.7, B 0.85")
+  expect_equal(condition_matrix$reliability, "A = 0.7, B = 0.85")
   expect_equal(condition_matrix$reliability_matrix, expected_matrix)
   expect_equal(condition_matrix$ME_var, expected_matrix_ME)
   expect_true(grepl("A2~~0.857142857142857*A2", condition_matrix$pop_synt, fixed = TRUE))

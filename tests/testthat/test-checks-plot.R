@@ -101,7 +101,13 @@ test_that("icheck_y() works", {
   expect_null(icheck_y("EmpSE"))
   expect_null(icheck_y("SD"))
   expect_error(icheck_y("minimum"), "minimum")
-  expect_error(icheck_y("sample_size"))
+  y_error <- tryCatch(
+    icheck_y("sample_size"),
+    error = function(e) e
+  )
+  expect_s3_class(y_error, "error")
+  expect_match(conditionMessage(y_error), "EmpSE.*SD")
+  expect_false(grepl("still accepted", conditionMessage(y_error), fixed = TRUE))
   expect_error(icheck_y(3))
 })
 

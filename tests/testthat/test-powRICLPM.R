@@ -616,7 +616,7 @@ test_that("reliability scenario paths run", {
   expect_equal(length(out_matrix$conditions), 2)
   expect_equal(
     unname(vapply(out_matrix$conditions, function(x) x$reliability, character(1))),
-    c("A 0.8, B 0.9", "A 0.7, B 0.85")
+    c("A = 0.8, B = 0.9", "A = 0.7, B = 0.85")
   )
   expect_equal(out_matrix$conditions[[2]]$reliability_matrix, matrix(c(0.7, 0.85), nrow = 2, ncol = 4))
   expect_true(grepl("A2~~0.857142857142857*A2", out_matrix$conditions[[2]]$pop_synt, fixed = TRUE))

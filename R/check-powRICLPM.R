@@ -359,9 +359,19 @@ icheck_rel <- function(x, time_points = NULL, software = "lavaan",
       row_label <- if (nrow(x) == 1L) "row" else "rows"
       cli::cli_abort(
         c(
-          "{.arg {arg}} must have 2 rows:",
+          "When {.arg {arg}} is a matrix, it must have 2 rows:",
           i = "Rows correspond to the reliabilities for variables A and B.",
           x = paste0("Your {.arg {arg}} has ", nrow(x), " ", row_label, ".")
+        ),
+        call = call
+      )
+    }
+    if (ncol(x) == 0L) {
+      cli::cli_abort(
+        c(
+          "When {.arg {arg}} is a matrix, it must have at least one column:",
+          i = "Each column defines one reliability condition.",
+          x = "Your {.arg {arg}} has 0 columns."
         ),
         call = call
       )
@@ -460,19 +470,45 @@ ireliability_conditions <- function(reliability) {
 
 ireliability_condition_label <- function(reliability) {
   paste0(
-    "A ", format_reliability_value(reliability[1, 1]),
-    ", B ", format_reliability_value(reliability[2, 1])
+    "A = ", format_reliability_value(reliability[1, 1]),
+    ", B = ", format_reliability_value(reliability[2, 1])
   )
 }
 
 inormalize_reliability_label <- function(x) {
   x <- trimws(as.character(x))
+  x <- gsub("\\bis\\b", "=", x, ignore.case = TRUE)
   x <- gsub("\\s*=\\s*", " ", x)
   gsub("\\s+", " ", x)
 }
 
+ireliability_selector_label <- function(x) {
+  if (is.numeric(x) && is.null(dim(x)) && length(x) == 2L) {
+    return(ireliability_condition_label(matrix(x, nrow = 2, ncol = 1)))
+  }
+  as.character(x)
+}
+
 ireliability_matches <- function(supplied, available) {
-  inormalize_reliability_label(supplied) == inormalize_reliability_label(available)
+  inormalize_reliability_label(ireliability_selector_label(supplied)) ==
+    inormalize_reliability_label(available)
+}
+
+ireliability_display_label <- function(x) {
+  x <- ireliability_selector_label(x)
+  x <- trimws(as.character(x))
+  x <- gsub("\\bis\\b", "=", x, ignore.case = TRUE)
+  x <- gsub("^A\\s*=?\\s*([^,]+),\\s*B\\s*=?\\s*(.+)$", "A = \\1, B = \\2", x)
+  x <- gsub("\\s*=\\s*", " = ", x)
+  gsub("\\s+", " ", x)
+}
+
+ireliability_available_display_labels <- function(object) {
+  unique(vapply(
+    object$conditions,
+    function(x) ireliability_display_label(x$reliability),
+    character(1)
+  ))
 }
 
 format_reliability_value <- function(x) {
@@ -1361,7 +1397,7 @@ imisspecification_warning_text <- function(reasons = character(), past = FALSE) 
     ))
   }
   if (length(reasons) == 1L) {
-    return(paste0(reasons, "; ", consequence))
+    return(paste0(reasons, "; this is a restrictive misspecification, so ", consequence))
   }
   paste(
     rlang::format_error_bullets(stats::setNames(reasons, rep("*", length(reasons)))),

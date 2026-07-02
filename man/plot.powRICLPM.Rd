@@ -44,7 +44,7 @@ Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, f
 \item \code{MSE}: The mean square error.
 \item \code{coverage}: The coverage rate
 \item \code{accuracy}: The average width of the confidence interval.
-\item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} is still accepted as an alias for \code{EmpSE}.
+\item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} can also be used.
 \item \code{SEAvg}: Average standard error.
 \item \code{bias}: The signed difference between the average estimate and population value.
 }
