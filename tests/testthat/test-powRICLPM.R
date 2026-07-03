@@ -181,7 +181,7 @@ test_that("lavaan custom loadings can be fitted freely or flagged as restrictive
       reps = 1,
       seed = 123456
     ),
-    "Custom data-generating loadings were supplied, but loadings are estimated as fixed"
+    "Custom random-intercept loadings were supplied, but loadings are estimated as fixed"
   )
 
   out_free <- NULL
@@ -213,9 +213,10 @@ test_that("lavaan custom loadings can be fitted freely or flagged as restrictive
   expect_true(grepl("RI_B=~0.25*B3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_false(anyNA(index))
   expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
-  expect_false("loadings" %in% names(give(out_free, "conditions")))
+  expect_true("loadings_RI_A" %in% names(give(out_free, "conditions")))
+  expect_true("loadings_RI_B" %in% names(give(out_free, "conditions")))
   expect_equal(unname(give(out_free, "loadings")), loadings)
-  expect_true(any(grepl("ICC is not the ICC at every wave", out_free_messages, fixed = TRUE)))
+  expect_true(any(grepl("specified ICC can only be interpreted as the ICC at wave 1", out_free_messages, fixed = TRUE)))
 })
 
 test_that("freely estimated default loadings do not become condition output", {
@@ -241,8 +242,9 @@ test_that("freely estimated default loadings do not become condition output", {
   )
 
   expect_false("loadings" %in% names(give(out_free_default, "conditions")))
+  expect_false("loadings_RI_A" %in% names(give(out_free_default, "conditions")))
   expect_equal(unname(give(out_free_default, "loadings")), matrix(1, nrow = 2, ncol = 4))
-  expect_false(any(grepl("ICC is not the ICC at every wave", out_free_default_messages, fixed = TRUE)))
+  expect_false(any(grepl("specified ICC can only be interpreted as the ICC at wave 1", out_free_default_messages, fixed = TRUE)))
 })
 
 test_that("ICOV no convergence warnings are recognized", {

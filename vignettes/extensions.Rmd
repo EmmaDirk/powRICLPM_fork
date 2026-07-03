@@ -80,11 +80,11 @@ out <- powRICLPM(
 If you are unsure if you have specified the `loadings` vector or matrix as intended, you can use the `check_loadings()` function to print how the random-intercept loadings are interpreted.
 
 ```{r check-loading-vector}
-check_loadings(c(1, .8, 1.1, .9))
+check_loadings(c(1, .8, 1.1, .9), model = "RICLPM")
 ```
 
 ```{r check-loading-matrix}
-check_loadings(loadings)
+check_loadings(loadings, model = "RICLPM")
 ```
 
 The estimated random-intercept loadings are returned as regular model parameters. Use `give(out, "names")` to inspect the available parameter names. Freed random-intercept loadings use lavaan loading syntax, such as `RI_A=~A2` or `RI_B=~B3`. They can then be inspected with the usual parameter workflow:

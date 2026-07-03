@@ -152,7 +152,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
       reps = 1,
       seed = 123456
     ),
-    "Measurement error was generated, but not estimated"
+    "Measurement error was generated but not estimated"
   )
   dpm_psi_error <- tryCatch(
     powDPM(
@@ -325,12 +325,12 @@ test_that("powDPM notes custom data-generating loadings at argument checking", {
   )
 
   expect_true(any(grepl(
-    "AF_proportion is not the accumulating-factor proportion at every wave",
+    "specified AF_proportion can only be interpreted as the accumulating-factor proportion at wave 2",
     custom_messages,
     fixed = TRUE
   )))
   expect_false(any(grepl(
-    "AF_proportion is not the accumulating-factor proportion at every wave",
+    "specified AF_proportion can only be interpreted as the accumulating-factor proportion at wave 2",
     default_messages,
     fixed = TRUE
   )))

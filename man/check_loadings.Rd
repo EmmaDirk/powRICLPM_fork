@@ -4,7 +4,7 @@
 \alias{check_loadings}
 \title{Check Interpretation of Factor Loadings}
 \usage{
-check_loadings(loadings = NULL, time_points = NULL, model = "RICLPM", ...)
+check_loadings(loadings = NULL, time_points = NULL, model, ...)
 }
 \arguments{
 \item{loadings}{A \code{numeric} vector or matrix specifying
@@ -38,9 +38,9 @@ for Mplus.
 \examples{
 # Same random-intercept loadings for A and B
 loadings1 <- c(1, .8, 1.1, .9)
-check_loadings(loadings1)
+check_loadings(loadings1, model = "RICLPM")
 
 # Different random-intercept loadings for A and B
 loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)
-check_loadings(loadings2, time_points = 4)
+check_loadings(loadings2, time_points = 4, model = "RICLPM")
 }

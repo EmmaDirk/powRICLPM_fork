@@ -696,7 +696,8 @@ inormalize_loadings <- function(loadings, time_points, model = "RICLPM") {
 }
 
 inote_custom_loadings_interpretation <- function(loadings, time_points,
-                                                model = "RICLPM") {
+                                                model = "RICLPM",
+                                                proportion_label = NULL) {
   if (is.null(loadings)) {
     return(invisible(NULL))
   }
@@ -706,11 +707,15 @@ inote_custom_loadings_interpretation <- function(loadings, time_points,
   }
   if (identical(model, "DPM")) {
     cli::cli_alert_info(
-      "With freely generated accumulating-factor loadings, AF_proportion is not the accumulating-factor proportion at every wave."
+      "With freely generated accumulating-factor loadings, the specified AF_proportion can only be interpreted as the accumulating-factor proportion at wave 2."
     )
   } else {
+    if (is.null(proportion_label)) {
+      proportion_label <- "intraclass correlation"
+    }
+    proportion_label <- if (identical(proportion_label, "ICC")) "ICC" else "intraclass correlation"
     cli::cli_alert_info(
-      "With freely generated random-intercept loadings, ICC is not the ICC at every wave."
+      "With freely generated random-intercept loadings, the specified {proportion_label} can only be interpreted as the {proportion_label} at wave 1."
     )
   }
   invisible(NULL)
@@ -1345,7 +1350,7 @@ detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
   if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Measurement error was generated, but not estimated"
+      "Measurement error was generated but not estimated"
     )
   }
   if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
@@ -1360,7 +1365,7 @@ detect_RICLPM_restrictive_misspecification <- function(reliability_matrix,
   if (generated_RI_loadings_general && !estimated_RI_loadings_free) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Custom data-generating loadings were supplied, but loadings are estimated as fixed"
+      "Custom random-intercept loadings were supplied, but loadings are estimated as fixed"
     )
   }
   if (!generated_RI_loadings_general && estimated_RI_loadings_free) {
@@ -1401,22 +1406,22 @@ confirm_RICLPM_restrictive_misspecification <- function(misspecification,
 }
 
 imisspecification_warning_text <- function(reasons = character(), past = FALSE) {
-  consequence <- "power may be overestimated and parameter estimates may be biased."
+  consequence <- "Power may be overestimated and parameter estimates may be biased."
   reasons <- unique(reasons[nzchar(reasons)])
   if (length(reasons) == 0L) {
     return(paste0(
       "A restrictive estimation-model mismatch ",
       if (past) "was" else "is",
-      " present; ",
+      " present. ",
       consequence
     ))
   }
   if (length(reasons) == 1L) {
-    return(paste0(reasons, "; this is a restrictive misspecification, so ", consequence))
+    return(paste0(reasons, ". ", consequence))
   }
   paste(
     rlang::format_error_bullets(stats::setNames(reasons, rep("*", length(reasons)))),
-    paste0("Power may be overestimated and parameter estimates may be biased."),
+    consequence,
     sep = "\n\n"
   )
 }

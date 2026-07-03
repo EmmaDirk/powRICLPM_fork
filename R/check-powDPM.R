@@ -508,7 +508,7 @@ detect_DPM_misspecification_condition <- function(reliability_matrix, loadings,
   if (any(reliability_matrix < 1) && !isTRUE(estimate_ME)) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Measurement error was generated, but not estimated"
+      "Measurement error was generated but not estimated"
     )
   }
   if (!any(reliability_matrix < 1) && isTRUE(estimate_ME)) {
@@ -522,7 +522,7 @@ detect_DPM_misspecification_condition <- function(reliability_matrix, loadings,
   if (generated_AF_loadings_general && !estimated_AF_loadings_free) {
     restrictive_reasons <- c(
       restrictive_reasons,
-      "Custom data-generating loadings were supplied, but loadings are estimated as fixed"
+      "Custom accumulating-factor loadings were supplied, but loadings are estimated as fixed"
     )
   }
   if (!generated_AF_loadings_general && estimated_AF_loadings_free) {

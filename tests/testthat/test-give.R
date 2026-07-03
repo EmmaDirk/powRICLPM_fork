@@ -131,7 +131,7 @@ test_that("give() notes free-loading anchor for condition tables", {
   expect_silent(inote_condition_loading_anchor(object_dpm, "AF_A=~A3"))
 })
 
-test_that("condition tables omit loading status and give() returns loadings", {
+test_that("condition tables show compact custom loading values and give() returns loadings", {
   base_condition <- list(
     sample_size = 600,
     time_points = 4,
@@ -163,21 +163,26 @@ test_that("condition tables omit loading status and give() returns loadings", {
   )
   class(object) <- c("powRICLPM", "list")
 
-  expect_false("loadings" %in% names(give(object, "conditions")))
-  expect_false("loadings" %in% names(give(object, "estimation_problems")))
+  expect_true(all(c("loadings_RI_A", "loadings_RI_B") %in% names(give(object, "conditions"))))
+  expect_true(all(c("loadings_RI_A", "loadings_RI_B") %in% names(give(object, "estimation_problems"))))
+  expect_equal(
+    give(object, "conditions")$loadings_RI_A,
+    c("c(1, 1, 1, 1)", "c(1, 1, 1, 1)", "c(1, 0.8, 1, 1)", "c(1, 0.8, 1, 1)")
+  )
 
   custom_loadings <- give(object, "loadings")
   expect_true(is.list(custom_loadings))
   expect_equal(unname(custom_loadings[[2]]), matrix(c(1, .8, 1, 1, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE))
 
   print_output <- capture.output(print(object))
-  expect_true(any(grepl("give(<your_object>, \"loadings\")", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
+  expect_false(any(grepl("give(<your_object>, \"loadings\")", print_output, fixed = TRUE)))
   expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
   expect_false(any(grepl("fixed*", print_output, fixed = TRUE)))
   expect_false(any(grepl("free*", print_output, fixed = TRUE)))
 })
 
-test_that("small custom loading matrices print below condition tables", {
+test_that("small custom loading matrices print inside condition tables", {
   loadings <- matrix(c(1, .8, 1, 1, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE)
   condition <- list(
     sample_size = 600,
@@ -198,18 +203,24 @@ test_that("small custom loading matrices print below condition tables", {
   class(object) <- c("powRICLPM", "list")
 
   print_output <- capture.output(print(object))
-  expect_true(any(grepl("DATA-GENERATING LOADINGS", print_output, fixed = TRUE)))
-  expect_true(any(grepl("RI_A", print_output, fixed = TRUE)))
+  expect_false(any(grepl("DATA-GENERATING LOADINGS", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
+  expect_true(any(grepl("c(1, 0.8, 1, 1)", print_output, fixed = TRUE)))
   expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
 })
 
-test_that("large custom loadings print inspection note only", {
+test_that("eight-wave custom loadings print inspection note only", {
   condition <- list(
     sample_size = 600,
-    time_points = 6,
+    time_points = 8,
     ICC = 0.5,
     reliability = 1,
-    loadings = matrix(c(1, .8, 1, 1, 1, .9, 1, 1.2, 1, 1, 1, 1.1), nrow = 2, byrow = TRUE),
+    loadings = matrix(
+      c(1, .8, 1, 1, 1, .9, 1.1, .95,
+        1, 1.2, 1, 1, 1, 1.1, .85, 1),
+      nrow = 2,
+      byrow = TRUE
+    ),
     constraints = "RI_loadings_free"
   )
   object <- list(
@@ -224,6 +235,7 @@ test_that("large custom loadings print inspection note only", {
 
   print_output <- capture.output(print(object))
   expect_false(any(grepl("DATA-GENERATING LOADINGS", print_output, fixed = TRUE)))
+  expect_false(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
   expect_true(any(grepl("give(<your_object>, \"loadings\")", print_output, fixed = TRUE)))
   expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
 })
@@ -242,15 +254,16 @@ test_that("restrictive misspecification print messages use concrete reasons", {
       model = "RICLPM",
       version = "0.2.1",
       misspecified_restrictive = TRUE,
-      misspecification_restrictive_reasons = "Measurement error was generated, but not estimated",
+      misspecification_restrictive_reasons = "Measurement error was generated but not estimated",
       argument_names = list(intraclass_correlation = "ICC")
     )
   )
   class(object) <- c("powRICLPM", "list")
 
   print_output <- capture.output(print(object))
-  expect_true(any(grepl("Measurement error was generated, but not estimated; this is a restrictive misspecification", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Measurement error was generated but not estimated. Power may be overestimated", print_output, fixed = TRUE)))
   expect_false(any(grepl("The estimation model was more restrictive", print_output, fixed = TRUE)))
+  expect_false(any(grepl("restrictive misspecification", print_output, fixed = TRUE)))
 })
 
 test_that("Mplus condition print uses variable-specific reliability columns", {

@@ -1,6 +1,6 @@
 #' Extract Information From \code{powRICLPM} Object
 #'
-#' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. Condition information is presented by experimental condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, and reliability when applicable). Data-generating loadings are returned separately.
+#' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. Condition information is presented by experimental condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, reliability when applicable, and compact custom loadings when applicable). Full data-generating loadings can be returned separately.
 #'
 #' @param from A \code{powRICLPM} object
 #' @param what A character string, denoting the information to extract, such as "conditions", "estimation_problems", "loadings", "results", or "names" (see "Details").
@@ -10,7 +10,7 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B} when the reliabilities differ between variables A and B; if they match in every condition, a single \code{reliability} column is shown. Custom data-generating loadings are not repeated row-wise; use \code{give(object, "loadings")} to inspect them.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B} when the reliabilities differ between variables A and B; if they match in every condition, a single \code{reliability} column is shown. Compact custom data-generating loadings are shown as \code{loadings}, \code{loadings_RI_A}, and \code{loadings_RI_B}, or the DPM accumulating-factor equivalents. Use \code{give(object, "loadings")} to inspect full loading matrices.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
 #'   \item \code{estimation_problems}: The number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
 #'   \item \code{loadings}: The data-generating loadings matrix. If an object contains multiple loading matrices because conditions have different numbers of waves, a list of matrices is returned.
@@ -99,7 +99,8 @@ give_powRICLPM_conditions <- function(object) {
       icondition_reliability_columns(condition)
     )
   }))
-  icollapse_equal_reliability_columns(d)
+  d <- icollapse_equal_reliability_columns(d)
+  cbind(d, icondition_loading_columns(object))
 }
 
 give_powRICLPM_loadings <- function(object) {
@@ -263,8 +264,68 @@ ireliability_columns <- function(x) {
   intersect(c("reliability", "reliability_A", "reliability_B"), names(x))
 }
 
+iloading_columns <- function(x) {
+  intersect(
+    c("loadings", "loadings_RI_A", "loadings_RI_B", "loadings_AF_A", "loadings_AF_B"),
+    names(x)
+  )
+}
+
+icondition_loading_columns <- function(object) {
+  n_conditions <- length(object$conditions)
+  if (!ishow_loading_condition_columns(object)) {
+    return(data.frame(row.names = seq_len(n_conditions)))
+  }
+
+  loadings <- lapply(object$conditions, function(condition) {
+    condition$loadings
+  })
+  same_by_variable <- all(vapply(loadings, function(loading_matrix) {
+    identical(loading_matrix[1, ], loading_matrix[2, ])
+  }, logical(1)))
+
+  if (same_by_variable) {
+    return(data.frame(
+      loadings = vapply(loadings, function(loading_matrix) {
+        format_loading_condition_value(loading_matrix[1, ])
+      }, character(1)),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  prefix <- if (iis_DPM_object(object)) "AF" else "RI"
+  out <- data.frame(
+    A = vapply(loadings, function(loading_matrix) {
+      format_loading_condition_value(loading_matrix[1, ])
+    }, character(1)),
+    B = vapply(loadings, function(loading_matrix) {
+      format_loading_condition_value(loading_matrix[2, ])
+    }, character(1)),
+    stringsAsFactors = FALSE
+  )
+  names(out) <- paste0("loadings_", prefix, "_", c("A", "B"))
+  out
+}
+
+ishow_loading_condition_columns <- function(object) {
+  if (!ihas_custom_loadings(object)) {
+    return(FALSE)
+  }
+  max_loading_columns <- max(vapply(object$conditions, function(condition) {
+    if (is.null(condition$loadings) || !is.matrix(condition$loadings)) {
+      return(0L)
+    }
+    ncol(condition$loadings)
+  }, integer(1)))
+  max_loading_columns <= 7L
+}
+
+format_loading_condition_value <- function(x) {
+  paste0("c(", paste(as.character(x), collapse = ", "), ")")
+}
+
 icondition_key_columns <- function(x) {
-  c("sample_size", "time_points", "ICC", ireliability_columns(x))
+  c("sample_size", "time_points", "ICC", ireliability_columns(x), iloading_columns(x))
 }
 
 icondition_table_names <- function(object, x, icc_table_label) {
@@ -277,6 +338,21 @@ icondition_table_names <- function(object, x, icc_table_label) {
   }
   if ("reliability_B" %in% names(x)) {
     col_names <- c(col_names, "Reliability B")
+  }
+  if ("loadings" %in% names(x)) {
+    col_names <- c(col_names, "Loadings")
+  }
+  if ("loadings_RI_A" %in% names(x)) {
+    col_names <- c(col_names, "Loadings RI_A")
+  }
+  if ("loadings_RI_B" %in% names(x)) {
+    col_names <- c(col_names, "Loadings RI_B")
+  }
+  if ("loadings_AF_A" %in% names(x)) {
+    col_names <- c(col_names, "Loadings AF_A")
+  }
+  if ("loadings_AF_B" %in% names(x)) {
+    col_names <- c(col_names, "Loadings AF_B")
   }
   col_names
 }
@@ -291,6 +367,9 @@ iprint_custom_loadings_note <- function(object) {
   if (!ihas_custom_loadings(object)) {
     return(invisible(NULL))
   }
+  if (ishow_loading_condition_columns(object)) {
+    return(invisible(NULL))
+  }
   cat(
     "\nCustom data-generating loadings were supplied. Inspect them with give(<your_object>, \"loadings\").\n"
   )
@@ -298,23 +377,7 @@ iprint_custom_loadings_note <- function(object) {
 }
 
 iprint_custom_loadings <- function(object) {
-  if (!ihas_custom_loadings(object)) {
-    return(invisible(NULL))
-  }
-  loadings <- give_powRICLPM_loadings(object)
-  if (!is.matrix(loadings) || ncol(loadings) > 5L) {
-    iprint_custom_loadings_note(object)
-    return(invisible(NULL))
-  }
-  cat("\n")
-  print(
-    knitr::kable(
-      loadings,
-      format = "simple",
-      align = rep("r", times = ncol(loadings)),
-      caption = "DATA-GENERATING LOADINGS"
-    )
-  )
+  iprint_custom_loadings_note(object)
   invisible(NULL)
 }
 
@@ -345,11 +408,13 @@ inote_condition_loading_anchor <- function(object, output = NULL) {
   }
   if (identical(object$session$model, "DPM")) {
     cli::cli_alert_info(
-      "With freely generated accumulating-factor loadings, AF_proportion is not the accumulating-factor proportion at every wave."
+      "With freely generated accumulating-factor loadings, the specified AF_proportion can only be interpreted as the accumulating-factor proportion at wave 2."
     )
   } else {
+    icc_name <- iicc_value_name(object)
+    icc_label <- if (identical(icc_name, "ICC")) "ICC" else "intraclass correlation"
     cli::cli_alert_info(
-      "With freely generated random-intercept loadings, ICC is not the ICC at every wave."
+      "With freely generated random-intercept loadings, the specified {icc_label} can only be interpreted as the {icc_label} at wave 1."
     )
   }
   invisible(NULL)
@@ -375,7 +440,8 @@ give_powRICLPM_estimation_problems <- function(object) {
       )
     )
   }))
-  icollapse_equal_reliability_columns(d)
+  d <- icollapse_equal_reliability_columns(d)
+  cbind(d, icondition_loading_columns(object))
 }
 
 give_powRICLPM_results <- function(object, parameter = NULL) {
@@ -439,7 +505,8 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
       estimates
     )
   }))
-  icollapse_equal_reliability_columns(d)
+  d <- icollapse_equal_reliability_columns(d)
+  cbind(d, icondition_loading_columns(object))
 }
 
 give_powRICLPM_parameter_names <- function(object) {
@@ -491,7 +558,8 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
       uncertainty_filtered
     )
   }))
-  icollapse_equal_reliability_columns(d)
+  d <- icollapse_equal_reliability_columns(d)
+  cbind(d, icondition_loading_columns(object))
 }
 
 icheck_give_parameter <- function(parameter, object, what = "results",

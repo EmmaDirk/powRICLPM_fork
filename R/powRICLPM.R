@@ -280,7 +280,12 @@ powRICLPM <- function(
   seed <- icheck_seed(seed)
 
   # Inform user that input check is complete
-  inote_custom_loadings_interpretation(loadings, time_points, model = "RICLPM")
+  inote_custom_loadings_interpretation(
+    loadings,
+    time_points,
+    model = "RICLPM",
+    proportion_label = argument_names$intraclass_correlation
+  )
   cli::cli_alert_success("Argument checking complete.")
 
   irun_power_analysis(

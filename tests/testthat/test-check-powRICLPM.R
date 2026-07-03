@@ -100,72 +100,74 @@ test_that("check_loadings() writes loading interpretation", {
   )
 
   expect_output(
-    check_loadings(loading_vector),
+    check_loadings(loading_vector, model = "RICLPM"),
     "According to `loadings`"
   )
   expect_output(
-    check_loadings(loading_vector),
+    check_loadings(loading_vector, model = "RICLPM"),
     "RI_A loads on A3 and RI_B loads on B3 with -1.2"
   )
   expect_output(
-    check_loadings(loading_vector),
+    check_loadings(loading_vector, model = "RICLPM"),
     "RI_A loads on A4 and RI_B loads on B4 with 2"
   )
   expect_output(
-    check_loadings(loading_matrix_same),
+    check_loadings(loading_matrix_same, model = "RICLPM"),
     "RI_A loads on A2 and RI_B loads on B2 with 0.5"
   )
-  loading_matrix_same_output <- capture.output(check_loadings(loading_matrix_same))
+  loading_matrix_same_output <- capture.output(check_loadings(loading_matrix_same, model = "RICLPM"))
   expect_equal(
     sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_same_output)),
     4
   )
 
   expect_output(
-    check_loadings(loading_matrix, time_points = 4),
+    check_loadings(loading_matrix, time_points = 4, model = "RICLPM"),
     "RI_A loads on A2 with 0"
   )
   expect_output(
-    check_loadings(loading_matrix, time_points = 4),
+    check_loadings(loading_matrix, time_points = 4, model = "RICLPM"),
     "RI_B loads on B2 with 2.5"
   )
   expect_output(
-    check_loadings(loading_matrix),
+    check_loadings(loading_matrix, model = "RICLPM"),
     "RI_B loads on B4 with -0.5"
   )
-  loading_matrix_output <- capture.output(check_loadings(loading_matrix))
+  loading_matrix_output <- capture.output(check_loadings(loading_matrix, model = "RICLPM"))
   expect_equal(
     sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_output)),
     8
   )
 
   expect_error(check_loadings(), "must be supplied")
-  expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
+  expect_error(check_loadings(loading_vector), "model.*must be supplied")
+  expect_error(check_loadings(loading_vector, time_points = 3, model = "RICLPM"), "length 4.*time_points.*= 3")
   expect_error(
-    check_loadings(c(0.8, 1, 1), time_points = 3),
+    check_loadings(c(0.8, 1, 1), time_points = 3, model = "RICLPM"),
     "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
   )
   expect_error(
     check_loadings(
       suppressWarnings(matrix(c(1, 0, 1, -0.5, 0.25), nrow = 2, byrow = TRUE)),
-      time_points = 3
+      time_points = 3,
+      model = "RICLPM"
     ),
     "first column.*RI_A = 1.*RI_B = -0.5.*matrix.*c\\(1, 1\\)"
   )
-  expect_error(check_loadings(list(c(1, 0, 1))), "numeric vector.*numeric matrix.*list")
-  expect_error(check_loadings(data.frame(a = c(1, 0, 1))), "numeric vector.*numeric matrix.*data frame")
-  expect_error(check_loadings(array(c(1, 0, -1, 2.5), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
-  expect_error(check_loadings(numeric(0)), "at least one value.*length 0")
-  expect_error(check_loadings(loading_vector, time_points = c(3, 4)), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
-  expect_error(check_loadings(loading_vector, time_points = 3.5), "positive whole number.*time_points.*= 3.5")
-  expect_error(check_loadings(loading_vector, time_points = "4"), 'positive whole number.*time_points.*= "4"')
-  expect_error(check_loadings(loading_vector, time_points = NA), "positive whole number.*time_points.*= NA")
-  expect_error(check_loadings(loading_vector, time_points = Inf), "positive whole number.*time_points.*= Inf")
-  expect_error(check_loadings(loading_vector, time_points = 0), "positive whole number.*time_points.*= 0")
-  expect_error(check_loadings(loading_vector, time_points = -4), "positive whole number.*time_points.*= -4")
-  expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
+  expect_error(check_loadings(list(c(1, 0, 1)), model = "RICLPM"), "numeric vector.*numeric matrix.*list")
+  expect_error(check_loadings(data.frame(a = c(1, 0, 1)), model = "RICLPM"), "numeric vector.*numeric matrix.*data frame")
+  expect_error(check_loadings(array(c(1, 0, -1, 2.5), dim = c(2, 2, 1)), model = "RICLPM"), "numeric vector.*numeric matrix.*array")
+  expect_error(check_loadings(numeric(0), model = "RICLPM"), "at least one value.*length 0")
+  expect_error(check_loadings(loading_vector, time_points = c(3, 4), model = "RICLPM"), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
+  expect_error(check_loadings(loading_vector, time_points = 3.5, model = "RICLPM"), "positive whole number.*time_points.*= 3.5")
+  expect_error(check_loadings(loading_vector, time_points = "4", model = "RICLPM"), 'positive whole number.*time_points.*= "4"')
+  expect_error(check_loadings(loading_vector, time_points = NA, model = "RICLPM"), "positive whole number.*time_points.*= NA")
+  expect_error(check_loadings(loading_vector, time_points = Inf, model = "RICLPM"), "positive whole number.*time_points.*= Inf")
+  expect_error(check_loadings(loading_vector, time_points = 0, model = "RICLPM"), "positive whole number.*time_points.*= 0")
+  expect_error(check_loadings(loading_vector, time_points = -4, model = "RICLPM"), "positive whole number.*time_points.*= -4")
+  expect_error(check_loadings(loading_vector, time_points = 4, model = "RICLPM", extra = TRUE), "Unexpected argument")
   expect_error(
-    check_loadings(c(NA, 1, 0.8, 1.1)),
+    check_loadings(c(NA, 1, 0.8, 1.1), model = "RICLPM"),
     "only valid for DPM loadings"
   )
 })
@@ -449,7 +451,7 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
     constraints = "none"
   )
   expect_true(generated_ME$restrictive)
-  expect_match(generated_ME$reasons, "Measurement error was generated, but not estimated", fixed = TRUE)
+  expect_match(generated_ME$reasons, "Measurement error was generated but not estimated", fixed = TRUE)
 
   varying_loadings <- detect_RICLPM_restrictive_misspecification(
     reliability_matrix = matrix(1, nrow = 2, ncol = 3),
@@ -458,7 +460,7 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
     constraints = "none"
   )
   expect_true(varying_loadings$restrictive)
-  expect_match(varying_loadings$reasons, "Custom data-generating loadings", fixed = TRUE)
+  expect_match(varying_loadings$reasons, "Custom random-intercept loadings", fixed = TRUE)
   expect_match(varying_loadings$reasons, "estimated as fixed", fixed = TRUE)
 
   general <- detect_RICLPM_restrictive_misspecification(
@@ -472,7 +474,7 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
 
   expect_error(
     confirm_RICLPM_restrictive_misspecification(generated_ME),
-    "Measurement error was generated, but not estimated"
+    "Measurement error was generated but not estimated"
   )
   confirmation_error <- tryCatch(
     confirm_RICLPM_restrictive_misspecification(generated_ME),
@@ -796,6 +798,7 @@ test_that("lavaan RI-CLPM conditions preserve constraints for condition-level lo
   expect_true(has_constraint(stationarity_condition$constraints, "stationarity"))
   expect_equal(free_loading_condition$constraints, "RI_loadings_free")
   expect_false("loadings" %in% names(give_powRICLPM_conditions(list(conditions = list(free_loading_condition)))))
+  expect_false("loadings_RI_A" %in% names(give_powRICLPM_conditions(list(conditions = list(free_loading_condition)))))
 })
 
 test_that("loadings update lavaan data generation syntax", {

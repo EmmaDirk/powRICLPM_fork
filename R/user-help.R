@@ -145,13 +145,12 @@ imodel_name_from_value <- function(model) {
 #' @examples
 #' # Same random-intercept loadings for A and B
 #' loadings1 <- c(1, .8, 1.1, .9)
-#' check_loadings(loadings1)
+#' check_loadings(loadings1, model = "RICLPM")
 #'
 #' # Different random-intercept loadings for A and B
 #' loadings2 <- matrix(c(1, .8, 1.1, .9, 1, 1.2, .7, 1), nrow = 2, byrow = TRUE)
-#' check_loadings(loadings2, time_points = 4)
-check_loadings <- function(loadings = NULL, time_points = NULL, model = "RICLPM", ...) {
-  model <- icheck_model(model)
+#' check_loadings(loadings2, time_points = 4, model = "RICLPM")
+check_loadings <- function(loadings = NULL, time_points = NULL, model, ...) {
   dots <- list(...)
   if (length(dots) > 0) {
     dot_names <- names(dots)
@@ -163,7 +162,6 @@ check_loadings <- function(loadings = NULL, time_points = NULL, model = "RICLPM"
       )
     )
   }
-
   if (is.null(loadings)) {
     cli::cli_abort(
       c(
@@ -172,6 +170,16 @@ check_loadings <- function(loadings = NULL, time_points = NULL, model = "RICLPM"
       )
     )
   }
+  if (missing(model)) {
+    cli::cli_abort(
+      c(
+        "{.arg model} must be supplied:",
+        i = "Use {.code model = 'RICLPM'} for random-intercept loadings or {.code model = 'DPM'} for accumulating-factor loadings."
+      )
+    )
+  }
+  model <- icheck_model(model)
+
   if (is.numeric(loadings) && is.null(dim(loadings)) && length(loadings) == 0L) {
     cli::cli_abort(
       c(
