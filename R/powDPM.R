@@ -144,6 +144,16 @@ powDPM <- function(
   icheck_loadings(loadings, time_points, "lavaan", constraints, model = "DPM")
   icheck_DPM_bounds(bounds)
 
+  inote_ignored_input_names(sample_size, "sample_size", "Sample-size values")
+  inote_ignored_input_names(time_points, "time_points", "Time-point values")
+  inote_ignored_input_names(AF_proportion, argument_names$AF_proportion, "Accumulating-factor proportion values")
+  inote_ignored_input_names(AF_cor, argument_names$AF_cor, "Correlation values")
+  inote_ignored_input_names(dynamics_cor, argument_names$dynamics_cor, "Correlation values")
+  inote_ignored_input_names(lagged_effects, argument_names$lagged_effects, "Lagged-effect values")
+  inote_ignored_input_names(reliability, "reliability", "Reliability values")
+  inote_ignored_input_names(loadings, "loadings", "Loading values")
+  inote_ignored_input_names(constraints, "constraints", "Constraint values")
+
   if (is.null(sample_size)) {
     icheck_sample_size_search(search_lower, search_upper, search_step)
     sample_size <- seq(search_lower, search_upper, search_step)

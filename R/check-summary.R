@@ -133,15 +133,50 @@ icheck_ICC_summary <- function(ICC, object, arg = rlang::caller_arg(ICC), call =
 
 icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_arg(reliability), call = rlang::caller_env()) {
 
-  variable_specific_selector <- is.numeric(reliability) &&
-    is.null(dim(reliability)) &&
-    length(reliability) == 2L
-  if (length(reliability) > 1 && !variable_specific_selector) {
+  if (is.character(reliability)) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a single reliability value, a variable-specific pair, or a label:",
-        i = "Use a two-value numeric vector as `c(A = ..., B = ...)` to select a matrix-reliability condition.",
-        "x" = "Your {.arg {arg}} is of length {length(reliability)}."
+        "{.arg {arg}} must be either a single numeric value or a named numeric vector:",
+        i = "For variable-specific reliability, use `reliability = c(A = 0.8, B = 0.7)`.",
+        i = "Character strings such as \"A = 0.8, B = 0.7\" are not supported."
+      ),
+      call = call
+    )
+  }
+  if (!is.numeric(reliability) || !is.null(dim(reliability))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be either a single numeric value or a named numeric vector:",
+        i = "For variable-specific reliability, use `reliability = c(A = 0.8, B = 0.7)`.",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(reliability), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(reliability) == 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain one reliability selector:",
+        i = "Use a single numeric value or `reliability = c(A = 0.8, B = 0.7)`."
+      ),
+      call = call
+    )
+  }
+  if (!all(is.finite(reliability))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite, non-missing reliability values:",
+        x = paste0("Your {.arg {arg}} contains: ", format_reliability(reliability), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(reliability) > 1L && !is_combined_reliability_selector(reliability)) {
+    cli::cli_abort(
+      c(
+        "For variable-specific reliability, {.arg {arg}} must specify exactly variables {.val A} and {.val B}:",
+        i = "Use `reliability = c(A = 0.8, B = 0.7)`.",
+        x = paste0("Your {.arg {arg}} has names: ", format_reliability_names(names(reliability)), ".")
       ),
       call = call
     )
@@ -160,6 +195,24 @@ icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_
       call = call
     )
   }
+}
+
+is_combined_reliability_selector <- function(reliability) {
+  is.numeric(reliability) &&
+    is.null(dim(reliability)) &&
+    length(reliability) == 2L &&
+    !is.null(names(reliability)) &&
+    all(nzchar(names(reliability))) &&
+    !anyDuplicated(names(reliability)) &&
+    setequal(names(reliability), c("A", "B"))
+}
+
+format_reliability_names <- function(x) {
+  if (is.null(x)) {
+    return("<none>")
+  }
+  x[!nzchar(x)] <- "<empty>"
+  paste(x, collapse = ", ")
 }
 
 

@@ -26,9 +26,7 @@ Phi <- matrix(c(0.20, 0.10, 0.15, 0.30), byrow = FALSE, ncol = 2)
 # powRICLPM automatically computes Psi based on Phi and within_cor
 
 # Setup parallel processing to speed up computations
-old_plan <- future::plan()
-on.exit(future::plan(old_plan), add = TRUE)
-plan(multisession)
+plan(multisession, workers = 6)
 
 # Perform preliminary power analysis (with progress bar)
 with_progress({
@@ -79,9 +77,7 @@ The preliminary results suggest that at least 4 time-points and a sample size up
 
 ```{r validation, eval = FALSE}
 # Setup parallel processing to speed up computations
-old_plan <- future::plan()
-on.exit(future::plan(old_plan), add = TRUE)
-plan(multisession)
+plan(multisession, workers = 6)
 
 # Perform preliminary power analysis (with progress bar)
 with_progress({

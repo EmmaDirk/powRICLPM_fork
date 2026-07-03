@@ -12,9 +12,9 @@
 #' \itemize{
 #'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row. The \code{condition} column numbers the experimental conditions. The remaining columns define each condition through sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B} when the reliabilities differ between variables A and B; if they match in every condition, a single \code{reliability} column is shown. Compact custom data-generating loadings are shown as \code{loadings}, \code{loadings_RI_A}, and \code{loadings_RI_B}, or the DPM accumulating-factor equivalents. Use \code{give(object, "loadings")} to inspect full loading matrices.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
-#'   \item \code{estimation_problems}: The completed replications and the number of fatal errors, inadmissible solutions, or non-converged estimations for each experimental condition.
+#'   \item \code{estimation_problems}: The requested replications and the number of fatal errors, inadmissible solutions, or non-converged estimations for each experimental condition.
 #'   \item \code{loadings}: The data-generating loadings matrix. If an object contains multiple loading matrices because conditions have different numbers of waves, a list of matrices is returned.
-#'   \item \code{results}: The numbered \code{condition}, average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}), completed replications, and estimation-problem counts. It requires setting the \code{parameter = "..."} argument.
+#'   \item \code{results}: The numbered \code{condition}, average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
 #'   \item \code{names}: Parameter names available in every experimental condition.
 #'   \item \code{uncertainty}: Numbered \code{condition} and Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
 #' }
@@ -75,11 +75,6 @@ give <- function(from, what, parameter = NULL) {
     return(give_powRICLPM_loadings(object = from))
   } else if (what == "results") {
       out <- give_powRICLPM_results(object = from, parameter = parameter)
-      estimation_problems <- give_powRICLPM_estimation_problems(object = from)
-      out <- cbind(
-        out,
-        estimation_problems[, c("reps", "errors", "not_converged", "inadmissible"), drop = FALSE]
-      )
   } else if (what == "names") {
       out <- give_powRICLPM_parameter_names(object = from)
   } else if (what == "uncertainty") {
@@ -128,6 +123,7 @@ give_powRICLPM_conditions <- function(object) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
+        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition)
@@ -139,7 +135,10 @@ give_powRICLPM_conditions <- function(object) {
 
 give_powRICLPM_loadings <- function(object) {
   loadings <- lapply(object$conditions, function(condition) {
-    condition$loadings
+    if (!is.null(condition$loadings)) {
+      return(condition$loadings)
+    }
+    idefault_loadings(condition, object)
   })
   unique_loadings <- list()
   for (loading_matrix in loadings) {
@@ -153,6 +152,19 @@ give_powRICLPM_loadings <- function(object) {
   }
   names(unique_loadings) <- paste0("condition_", seq_along(unique_loadings))
   lapply(unique_loadings, iwith_loading_dimnames, object = object)
+}
+
+idefault_loadings <- function(condition, object) {
+  n_waves <- condition$time_points
+  if (is.null(n_waves)) {
+    return(NULL)
+  }
+  ncol_loadings <- if (iis_DPM_object(object)) {
+    n_waves - 1L
+  } else {
+    n_waves
+  }
+  matrix(1, nrow = 2, ncol = ncol_loadings)
 }
 
 iis_DPM_object <- function(object) {
@@ -250,7 +262,7 @@ iabort_condition_selector_unavailable <- function(selector, object, context,
       context,
       summary = "Select DPM conditions with `sample_size`, `time_points`, and `AF_proportion`.",
       plot = "Use `shape_by = 'none'` or map aesthetics to another simulation condition.",
-      give = "Use `give(object, 'conditions')` or `give(object, 'AF_proportion')` to inspect DPM conditions.",
+      give = "Use `give(object, 'conditions')` to inspect DPM conditions.",
       "Use another simulation condition."
     )
     cli::cli_abort(
@@ -276,6 +288,16 @@ icondition_reliability_columns <- function(condition) {
     ))
   }
   data.frame(reliability = condition$reliability, stringsAsFactors = FALSE)
+}
+
+icondition_software <- function(condition, object = NULL) {
+  if (!is.null(condition$software)) {
+    return(condition$software)
+  }
+  if (!is.null(object$session$software)) {
+    return(object$session$software)
+  }
+  NA_character_
 }
 
 icollapse_equal_reliability_columns <- function(x) {
@@ -361,7 +383,7 @@ ishow_loading_condition_columns <- function(object) {
     }
     ncol(condition$loadings)
   }, integer(1)))
-  max_loading_columns <= 7L
+  max_loading_columns <= 5L
 }
 
 format_loading_condition_value <- function(x) {
@@ -369,11 +391,14 @@ format_loading_condition_value <- function(x) {
 }
 
 icondition_key_columns <- function(x) {
-  c("sample_size", "time_points", "ICC", ireliability_columns(x), iloading_columns(x))
+  c("sample_size", "time_points", "ICC", "software", ireliability_columns(x), iloading_columns(x))
 }
 
 icondition_table_names <- function(object, x, icc_table_label) {
   col_names <- c("Sample size", "Time points", icc_table_label)
+  if ("software" %in% names(x)) {
+    col_names <- c(col_names, "Software")
+  }
   if ("reliability" %in% names(x)) {
     col_names <- c(col_names, "Reliability")
   }
@@ -415,7 +440,7 @@ iprint_custom_loadings_note <- function(object) {
     return(invisible(NULL))
   }
   cat(
-    "\nCustom loadings were supplied. Inspect them with give(<your_object>, \"loadings\").\n"
+    "\nCustom loadings were supplied. Use `give(object, \"loadings\")` to inspect the loadings matrix.\n"
   )
   invisible(NULL)
 }
@@ -473,11 +498,12 @@ give_powRICLPM_estimation_problems <- function(object) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
+        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition),
       data.frame(
-        reps = icondition_completed_reps(condition),
+        reps = icondition_requested_reps(object),
         errors = condition$estimation_information$n_error,
         not_converged = condition$estimation_information$n_nonconvergence,
         inadmissible = condition$estimation_information$n_inadmissible,
@@ -489,12 +515,12 @@ give_powRICLPM_estimation_problems <- function(object) {
   iwith_condition_loading_columns(object, d)
 }
 
-icondition_completed_reps <- function(condition) {
-  completed <- condition$estimation_information$n_completed
-  if (is.null(completed)) {
+icondition_requested_reps <- function(object) {
+  requested <- object$session$reps
+  if (is.null(requested)) {
     return(NA_integer_)
   }
-  completed
+  requested
 }
 
 give_powRICLPM_results <- function(object, parameter = NULL) {
@@ -552,6 +578,7 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
+        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition),
@@ -605,6 +632,7 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
+        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition),

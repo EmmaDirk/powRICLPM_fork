@@ -33,7 +33,7 @@
 #'
 #' @details A rationale for the power analysis strategy implemented in this package can be found in Mulder (2023).
 #'
-#' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. The estimation model frees the corresponding random-intercept loadings only when \code{constraints = "RI_loadings_free"} is supplied. If the data-generating model uses varying random-intercept loadings while the estimation model keeps them fixed, \code{powRICLPM()} requires exact interactive confirmation before running. With time-varying loadings, \code{intraclass_correlation} still gives the ICC at the first wave because the first loading is fixed to 1. Later loadings describe how strongly those first-wave between-unit differences carry into each later wave; for example, a loading of 0.9 means the between-unit differences are 0.9 times as large on the score scale, and contribute \eqn{0.9^2} times the first-wave random-intercept variance. Consequently, the supplied value is not a wave-invariant ICC.}
+#' \subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. The estimation model frees the corresponding random-intercept loadings only when \code{constraints = "RI_loadings_free"} is supplied. If the data-generating model uses varying random-intercept loadings while the estimation model keeps them fixed, \code{powRICLPM()} prints an informational message before running. With time-varying loadings, \code{intraclass_correlation} still gives the ICC at the first wave because the first loading is fixed to 1. Later loadings describe how strongly those first-wave between-unit differences carry into each later wave; for example, a loading of 0.9 means the between-unit differences are 0.9 times as large on the score scale, and contribute \eqn{0.9^2} times the first-wave random-intercept variance. Consequently, the supplied value is not a wave-invariant ICC.}
 #'
 #' \subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. With the default \code{estimator = NA}, the estimator is maximum likelihood (\code{ML}) for normally generated data and robust maximum likelihood (\code{MLR}) when skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. The population parameter values are used as starting values.
 #'
@@ -49,7 +49,7 @@
 #'
 #' A progress bar displaying the status of the power analysis has been implemented using \pkg{progressr}. By default, a simple progress bar will be shown. For more information on how to control this progress bar and several other notification options (e.g., auditory notifications), see \url{https://progressr.futureverse.org}.}
 #'
-#' \subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting \code{reliability = 0.8} implies that 80 percent is true score variance, and 20 percent is measurement error variance. A vector specifies multiple reliability conditions, each applied to both variables. A matrix with two rows specifies reliability conditions separately for variables A and B, with each column defining one experimental condition. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}. If generated measurement error is ignored by the estimation model, \code{powRICLPM()} requires exact interactive confirmation before running.}
+#' \subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting \code{reliability = 0.8} implies that 80 percent is true score variance, and 20 percent is measurement error variance. A vector specifies multiple reliability conditions, each applied to both variables. A matrix with two rows specifies reliability conditions separately for variables A and B, with each column defining one experimental condition. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}. If generated measurement error is ignored by the estimation model, \code{powRICLPM()} prints an informational message before running.}
 #'
 #' \subsection{Extension: Imposing Constraints}{The following options can be supplied to the estimation model using the \code{constraints} argument. By default, \code{constraints = "none"}, and no equality or time-invariance constraints are imposed.
 #'
@@ -262,6 +262,16 @@ powRICLPM <- function(
   icheck_constraints_software(constraints, software)
   icheck_RICLPM_identification(time_points, estimate_ME, constraints)
 
+  inote_ignored_input_names(sample_size, "sample_size", "Sample-size values")
+  inote_ignored_input_names(time_points, "time_points", "Time-point values")
+  inote_ignored_input_names(ICC, argument_names$intraclass_correlation, "Intraclass-correlation values")
+  inote_ignored_input_names(RI_cor, argument_names$RI_cor, "Correlation values")
+  inote_ignored_input_names(within_cor, argument_names$within_cor, "Correlation values")
+  inote_ignored_input_names(lagged_effects, argument_names$lagged_effects, "Lagged-effect values")
+  inote_ignored_input_names(reliability, "reliability", "Reliability values")
+  inote_ignored_input_names(loadings, "loadings", "Loading values")
+  inote_ignored_input_names(constraints, "constraints", "Constraint values")
+
   # powRICLPM updates
   if (!is.null(bootstrap_reps)) {
     cli::cli_alert_warning("The argument {.arg bootstrap_reps} is superseded. Uncertainty regarding simulation estimates is now computed analytically based on Morris et al. (2017).")
@@ -369,7 +379,8 @@ irun_power_analysis <- function(
       seed = seed,
       constraints = constraints,
       bounds = bounds,
-      estimator = estimator
+      estimator = estimator,
+      software = software
     )
   } else {
     create_conditions(
@@ -458,6 +469,7 @@ irun_power_analysis <- function(
         constraints = constraints,
         bounds = bounds,
         estimator = estimator,
+        software = software,
         save_path = save_path,
         misspecified_restrictive = if (is.null(misspecification)) FALSE else misspecification$restrictive,
         misspecified_general = if (is.null(misspecification)) FALSE else misspecification$general,

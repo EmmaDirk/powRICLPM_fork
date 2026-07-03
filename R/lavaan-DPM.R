@@ -55,6 +55,7 @@ create_lavaan_DPM <- function(condition) {
   list(
     sample_size = condition[["sample_size"]],
     model = condition[["model"]],
+    software = condition[["software"]],
     time_points = condition[["time_points"]],
     AF_proportion = condition[["AF_proportion"]],
     AF_cor = condition[["AF_cor"]],

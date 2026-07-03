@@ -36,7 +36,7 @@ check_lagged_effects(lagged_effects1)
 
 # Lagged effects with too large standardized effects
 lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
-lagged_effects2 <- check_lagged_effects(lagged_effects2)
+check_lagged_effects(lagged_effects2)
 lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 check_Phi(lagged_effects)
 }

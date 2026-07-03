@@ -137,7 +137,7 @@ test_that("powDPM validation errors use DPM-specific argument names", {
     ),
     "not identified with 4 waves.*requires at least 5 waves"
   )
-  expect_error(
+  expect_message(
     powDPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -284,11 +284,11 @@ test_that("powDPM validation errors catch common DPM loading mistakes", {
   )
   expect_error(
     do.call(powDPM, c(base, list(loadings = c(0.8, 1, 1)))),
-    "first DPM loading must be 1"
+    "accumulating factor A is 0.8"
   )
   expect_error(
     do.call(powDPM, c(base, list(loadings = c(NaN, 0.8, 0.7)))),
-    "finite values"
+    "must not contain missing values"
   )
   expect_error(
     do.call(powDPM, c(base, list(loadings = c(1, Inf, 0.7)))),
@@ -296,8 +296,29 @@ test_that("powDPM validation errors catch common DPM loading mistakes", {
   )
   expect_error(
     do.call(powDPM, c(base, list(loadings = matrix(c(0.8, 0.7, 1, 1.2, 0.9, 1), nrow = 2, byrow = TRUE)))),
-    "first DPM loading must be 1"
+    "accumulating factor A is 0.8"
   )
+  expect_error(
+    do.call(powDPM, c(base, list(loadings = matrix(c(1, 0.7, 1, 0.8, 0.9, 1), nrow = 2, byrow = TRUE)))),
+    "accumulating factor B is 0.8"
+  )
+})
+
+test_that("powDPM rejects missing skewness and kurtosis informatively", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  base <- list(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    AF_proportion = 0.2,
+    AF_cor = 0.3,
+    lagged_effects = lagged_effects,
+    dynamics_cor = 0.3,
+    reps = 1
+  )
+
+  expect_error(do.call(powDPM, c(base, list(skewness = NA_real_))), "skewness.*non-missing")
+  expect_error(do.call(powDPM, c(base, list(kurtosis = NA_real_))), "kurtosis.*non-missing")
 })
 
 test_that("powDPM notes custom data-generating loadings at argument checking", {

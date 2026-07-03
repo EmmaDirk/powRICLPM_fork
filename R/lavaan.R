@@ -89,6 +89,7 @@ create_lavaan <- function(condition) {
   list(
     sample_size = condition[["sample_size"]],
     model = condition[["model"]],
+    software = condition[["software"]],
     time_points = condition[["time_points"]],
     ICC = condition[["ICC"]],
     reliability = condition[["reliability"]],

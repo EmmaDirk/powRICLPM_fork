@@ -11,31 +11,28 @@ status](https://www.r-pkg.org/badges/version/powRICLPM)](https://CRAN.R-project.
 <a href="https://www.r-pkg.org/pkg/powRICLPM"><img src="https://cranlogs.r-pkg.org/badges/grand-total/powRICLPM" alt="CRAN RStudio mirror downloads"/></a>
 <!-- badges: end -->
 
-`powRICLPM` is an R package that aids researchers with performing power
-analyses for the random intercept cross-lagged panel model (RI-CLPM) by
-Hamaker et al. (2015), the Stable Trait Autoregressive Trait State Model
-(STARTS) by Kenny and Zautra (1995) and Kenny and Zautra (2001), and the
-dynamic panel model (DPM). It implements the strategy as proposed by
+`powRICLPM` is an R package that aids researchers with performing a
+power analysis for the random intercept cross-lagged panel model
+(RI-CLPM) by Hamaker, Kuiper, and Grasman (2015), and the Stable Trait
+Autoregressive Trait State Model (STARTS) by Kenny and Zautra (1995) and
+Kenny and Zautra (2001). It implements the strategy as proposed by
 Mulder (2023). Its main functionalities include:
 
 - [**Basic power
   analysis**](https://jeroendmulder.github.io/powRICLPM/articles/start.html):
-  Use Monte Carlo simulations to compute p-value based power to reject
-  the null hypothesis (as well as other performance measures such as
-  bias and mean square error) for model parameters in the RI-CLPM,
-  STARTS, and DPM, for a specific experimental condition. Conditions can
-  vary by sample size, number of repeated measures, RI-CLPM/STARTS
-  between-unit variance proportion or DPM accumulating-factor
-  proportion, and reliability when measurement error is included.
-  `powRICLPM` can perform power analyses across multiple experimental
-  conditions simultaneously, and report the results back in a
-  user-friendly manner.
+  Use Monte Carlo simulations to compute the power to reject the
+  null-hypothesis (as well as other performance measures such as bias,
+  mean square error) for all parameters in the RI-CLPM and STARTS, for a
+  specific experimental condition. A condition is defined by its sample
+  size, number of repeated measures, proportion of between-unit
+  variance, and reliability of the indicators. `powRICLPM` can perform
+  power analyses across multiple experimental conditions simultaneously,
+  and report the results back in a user-friendly manner.
 - [**Extensions**](https://jeroendmulder.github.io/powRICLPM/articles/extensions.html):
-  The basic power analysis setup can be extended to include bounded
-  estimation, measurement error, reliability conditions, time-varying
-  loadings, various (stationarity) constraints over time on parameters
-  of the estimation model, DPM accumulating-factor constraints, and the
-  generation of nonnormal data, among other things.
+  The basic power analysis setup can be extended to include the use of
+  bounded estimation, various (stationarity) constraints over time on
+  parameters of the estimation model, the generation of nonnormal data,
+  among other things.
 - [**Mplus**](https://jeroendmulder.github.io/powRICLPM/articles/mplus.html):
   When Mplus is installed, `powRICLPM` can create Mplus syntax, and run
   the power analyses in Mplus.
@@ -94,7 +91,8 @@ get in touch.
 
 ## References
 
-<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="refs" class="references csl-bib-body hanging-indent"
+entry-spacing="0">
 
 <div id="ref-hamaker_critique_2015" class="csl-entry">
 
@@ -115,10 +113,10 @@ Consulting and Clinical Psychology1* 63 (1): 52–59.
 
 <div id="ref-kenny_trait-state_2001" class="csl-entry">
 
-Kenny, David A., and Alex Zautra. 2001.
-“<span class="nocase">Trait–state models for longitudinal data</span>.”
-In *New Methods for the Analysis of Change*. American Psychological
-Association. <https://doi.org/10.1037/10409-008>.
+———. 2001. “<span class="nocase">Trait–state models for longitudinal
+data</span>.” In *New Methods for the Analysis of Change*, 243–63.
+Washington: American Psychological Association.
+<https://doi.org/10.1037/10409-008>.
 
 </div>
 

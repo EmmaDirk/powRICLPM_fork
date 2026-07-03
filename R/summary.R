@@ -10,7 +10,7 @@
 #' @param time_points (optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.
 #' @param intraclass_correlation (optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.
 #' @param AF_proportion (optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.
-#' @param reliability (optional) A single \code{numeric} reliability, a two-value numeric vector such as \code{c(A = .7, B = .6)} for matrix-reliability conditions, or a \code{character} reliability label of the experimental condition of interest. This is available for DPM objects when measurement error is part of the DPM conditions.
+#' @param reliability (optional) A single \code{numeric} reliability or a named two-value numeric vector such as \code{c(A = .7, B = .6)} for matrix-reliability conditions. Character strings such as \code{"A = .7, B = .6"} are not supported. This is available for DPM objects when measurement error is part of the DPM conditions.
 #' @param ICC Alternative name for \code{intraclass_correlation}.
 #'
 #' @return No return value, called for side effects.
@@ -36,7 +36,7 @@
 #'   \item \code{Accuracy}: The average (across replications) width of the confidence interval.
 #'   \item \code{Cover}: The coverage rate, representing the proportion of times (across replications) the true parameter estimate fell in the confidence interval.
 #'   \item \code{Power}: The proportion of replications in which the parameter's \emph{p}-value is smaller than the specified significance criterion.
-#'   \item \code{Reps}: The number of completed replications that contributed usable results.
+#'   \item \code{Reps}: The number of repetitions requested for the condition.
 #'   \item \code{Error}: The number of replications that failed to run (i.e., \code{lavaan()} produced an error).
 #'   \item \code{Not converged}: The number of replications that did not converge to a solution.
 #'   \item \code{Inadmissible}: The number of replications that converged to an inadmissible solution (e.g., a variance estimated to be lower than zero).
@@ -181,7 +181,7 @@ summary.powRICLPM <- function(
     parameter_df <- give_powRICLPM_results(object, parameter)
     parameter_summary <- idrop_DPM_reliability_column(object, parameter_df)
     condition_cols <- c(
-      "sample_size", "time_points", "ICC",
+      "sample_size", "time_points", "ICC", "software",
       ireliability_columns(parameter_summary),
       iloading_columns(parameter_summary)
     )

@@ -21,24 +21,44 @@ run_condition_monteCarlo <- function(
   save_path
 ) {
 
+  lav_parTable <- condition$est_tab
+
   # Generate data
-  datasets <- lapply(1:reps, function(i) {
-    capture_icov_nonconvergence_warning(
-      lavaan::simulateData(
-        model = condition$pop_synt,
-        sample.nobs = condition$sample_size,
-        skewness = condition$skewness,
-        kurtosis = condition$kurtosis
-      )
+  simulated_data <- lapply(1:reps, function(i) {
+    tryCatch(
+      {
+        out <- capture_icov_nonconvergence_warning(
+          lavaan::simulateData(
+            model = condition$pop_synt,
+            sample.nobs = condition$sample_size,
+            skewness = condition$skewness,
+            kurtosis = condition$kurtosis
+          )
+        )
+        out$error <- FALSE
+        out
+      },
+      error = function(e) {
+        list(
+          value = NULL,
+          icov_nonconverged = FALSE,
+          error = TRUE
+        )
+      }
     )
   })
+  data_generation_error <- vapply(
+    simulated_data,
+    function(x) isTRUE(x$error),
+    logical(1)
+  )
   data_icov_nonconverged <- vapply(
-    datasets,
+    simulated_data,
     function(x) x$icov_nonconverged,
     logical(1)
   )
   n_data_icov_nonconvergence <- sum(data_icov_nonconverged)
-  datasets <- lapply(datasets, function(x) x$value)
+  datasets <- lapply(simulated_data, function(x) x$value)
 
   # (optional) Export generated data
   if (!is.null(save_path)) {
@@ -47,7 +67,10 @@ run_condition_monteCarlo <- function(
     dir.create(save_path_aux)
 
     # Export data
-    lapply(1:reps, function(i) {
+    lapply(seq_along(datasets), function(i) {
+      if (is.null(datasets[[i]])) {
+        return(invisible(NULL))
+      }
       utils::write.table(
         datasets[[i]],
         file = file.path(save_path_aux, paste0("df", i, ".dat")),
@@ -60,7 +83,7 @@ run_condition_monteCarlo <- function(
 
     # Create list of exported .dat-files
     utils::write.table(
-      paste0("df", 1:reps, ".dat"),
+      paste0("df", which(!vapply(datasets, is.null, logical(1))), ".dat"),
       file = file.path(save_path_aux, "dfList.dat"),
       sep = "\n",
       col.names = FALSE,
@@ -69,75 +92,31 @@ run_condition_monteCarlo <- function(
     )
   }
 
-  # Fit initial lavaan model
-  fit <- suppressWarnings(
-    lavaan::lavaan(
-      model = condition$est_synt,
-      data = datasets[[1]],
-      estimator = estimator,
-      bounds = bounds,
-      warn = FALSE, # Suppress lavaan-specific warnings
-      check.start = FALSE, # Don't check consistency starting values
-      check.lv.names = FALSE, # Don't check if latent variable are also observed
-      h1 = FALSE, # Don't compute unrestricted model
-      baseline = FALSE, # Don't compute baseline model
-      check.post = TRUE, # Check admissibility of results
-      store.vcov = FALSE, # Don't store variance-covariance matrix of model parameters
-      fixed.x = FALSE # Treat exogenous variable as endogenous
-    )
-  )
-
-  use_lavaan_slot_cache <- !has_constraint(condition$constraints, "stationarity")
-
-  if (use_lavaan_slot_cache) {
-    lav_model <- fit@Model
-    lav_options <- fit@Options
-    lav_options$optim.attempts <- 1L
-    lav_parTable <- fit@ParTable
-  } else {
-    lav_model <- NULL
-    lav_options <- NULL
-    lav_parTable <- fit@ParTable
-  }
-
   # Fit model to datasets
   fits <- lapply(seq_along(datasets), function(i, p) {
-      if (isTRUE(data_icov_nonconverged[i])) {
+      if (isTRUE(data_generation_error[i]) || isTRUE(data_icov_nonconverged[i])) {
         p()
         return(NULL)
       }
 
       tryCatch(
         {
-          out <- if (use_lavaan_slot_cache) {
-            suppressWarnings(
-              lavaan::lavaan(
-                model = condition$est_synt,
-                data = datasets[[i]],
-                warn = FALSE,
-                slotOptions = lav_options,
-                slotParTable = lav_parTable,
-                slotModel = lav_model
-              )
+          out <- suppressWarnings(
+            lavaan::lavaan(
+              model = condition$est_synt,
+              data = datasets[[i]],
+              estimator = estimator,
+              bounds = bounds,
+              warn = FALSE,
+              check.start = FALSE,
+              check.lv.names = FALSE,
+              h1 = FALSE,
+              baseline = FALSE,
+              check.post = TRUE,
+              store.vcov = FALSE,
+              fixed.x = FALSE
             )
-          } else {
-            suppressWarnings(
-              lavaan::lavaan(
-                model = condition$est_synt,
-                data = datasets[[i]],
-                estimator = estimator,
-                bounds = bounds,
-                warn = FALSE,
-                check.start = FALSE,
-                check.lv.names = FALSE,
-                h1 = FALSE,
-                baseline = FALSE,
-                check.post = TRUE,
-                store.vcov = FALSE,
-                fixed.x = FALSE
-              )
-            )
-          }
+          )
 
           # Signal progress bar
           p()
@@ -198,7 +177,12 @@ run_condition_monteCarlo <- function(
 
   # Extract population values
   index_free <- lav_parTable$free != 0
-  population_values <- lav_parTable$start[index_free]
+  population_column <- if ("start" %in% names(lav_parTable)) {
+    lav_parTable$start
+  } else {
+    lav_parTable$pv
+  }
+  population_values <- ipopulation_values_from_parameter_table(population_column[index_free])
 
   # Initialize data frames for simulation results
   condition$estimates <- data.frame(
@@ -326,6 +310,22 @@ run_condition_monteCarlo <- function(
     )
   }
   return(condition)
+}
+
+ipopulation_values_from_parameter_table <- function(x) {
+  if (is.numeric(x)) {
+    return(x)
+  }
+  x <- as.character(x)
+  x <- ifelse(
+    grepl("start\\(", x),
+    sub("^.*start\\(([^()]*)\\).*$", "\\1", x),
+    x
+  )
+  x[!nzchar(x)] <- "0"
+  values <- suppressWarnings(as.numeric(x))
+  values[is.na(values) & nzchar(x)] <- 0
+  values
 }
 
 #' @noRd

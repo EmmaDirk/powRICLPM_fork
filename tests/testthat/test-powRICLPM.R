@@ -16,12 +16,12 @@ test_that("basic power analysis using lavaan runs", {
   expect_equal(length(out1$conditions), 1)
   expect_equal(
     c(
-      "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
+      "sample_size", "time_points", "ICC", "software", "reliability", "RI_var", "RI_cov",
       "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
       "kurtosis", "significance_criterion", "misspecification", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 21)
+    rep(TRUE, times = 22)
   )
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
@@ -168,7 +168,7 @@ test_that("lavaan custom loadings can be fitted freely or flagged as restrictive
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
 
-  expect_error(
+  expect_message(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -395,6 +395,23 @@ test_that("powRICLPM requires sample_size or a complete search range", {
   expect_equal(out$conditions[[1]]$sample_size, 1000)
 })
 
+test_that("powRICLPM rejects missing skewness and kurtosis informatively", {
+  base <- list(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reps = 1,
+    seed = 123456
+  )
+
+  expect_error(do.call(powRICLPM, c(base, list(skewness = NA_real_))), "skewness.*non-missing")
+  expect_error(do.call(powRICLPM, c(base, list(kurtosis = NA_real_))), "kurtosis.*non-missing")
+})
+
 test_that("powRICLPM validation errors use user-facing alias names", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
@@ -490,12 +507,12 @@ test_that("basic power analysis with multiple experimental conditions works", {
   expect_equal(length(out1$conditions), 8)
   expect_equal(
     c(
-      "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
+      "sample_size", "time_points", "ICC", "software", "reliability", "RI_var", "RI_cov",
       "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
       "kurtosis", "significance_criterion", "misspecification", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 21)
+    rep(TRUE, times = 22)
   )
 
 })

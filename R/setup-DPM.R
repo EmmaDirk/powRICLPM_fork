@@ -41,6 +41,7 @@ create_conditions_DPM <- function(
     kurtosis = kurtosis,
     significance_criterion = significance_criterion,
     estimate_ME = estimate_ME,
+    software = software,
     model = model,
     bounds = bounds,
     estimator = estimator,

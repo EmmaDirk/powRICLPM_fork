@@ -18,7 +18,7 @@
 #'
 #' # Lagged effects with too large standardized effects
 #' lagged_effects2 <- matrix(c(.6, .5, .4, .7), ncol = 2, byrow = TRUE)
-#' lagged_effects2 <- check_lagged_effects(lagged_effects2)
+#' check_lagged_effects(lagged_effects2)
 check_lagged_effects <- function(lagged_effects = NULL, Phi = NULL, model = "RICLPM", ...) {
   model <- icheck_model(model)
   argument_name <- "lagged_effects"

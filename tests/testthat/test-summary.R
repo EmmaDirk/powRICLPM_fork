@@ -14,7 +14,7 @@ test_that("all columns from summary.powRICLMP(...) are named", {
   )
 
   table_parameter <- summary(out, parameter = "wB2~wA1")
-  expect_equal(colnames(table_parameter), c("Condition", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Reps", "Error", "Not converged", "Inadmissible"))
+  expect_equal(colnames(table_parameter), c("Condition", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
 
   table_condition <- summary(out, sample_size = 500, intraclass_correlation = 0.4, time_points = 3, reliability = 1)
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
@@ -165,13 +165,13 @@ test_that("matrix reliability labels print and filter consistently", {
   condition_table <- give(object, "conditions")
   expect_equal(condition_table$reliability_A, c("0.8", "0.9"))
   expect_equal(condition_table$reliability_B, c("0.7", "0.85"))
-  expect_output(summary(
+  expect_error(summary(
     object,
     sample_size = 600,
     time_points = 4,
     ICC = 0.5,
     reliability = "A = 0.8, B = 0.7"
-  ), "SIMULATION RESULTS")
+  ), "Character strings")
   expect_output(summary(
     object,
     sample_size = 600,
@@ -179,9 +179,36 @@ test_that("matrix reliability labels print and filter consistently", {
     ICC = 0.5,
     reliability = c(A = 0.8, B = 0.7)
   ), "SIMULATION RESULTS")
+  expect_output(summary(
+    object,
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = c(B = 0.7, A = 0.8)
+  ), "SIMULATION RESULTS")
+  expect_error(
+    summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = c(0.8, 0.7)),
+    "exactly variables"
+  )
+  expect_error(
+    summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = c(A = 0.8, 0.7)),
+    "exactly variables"
+  )
+  expect_error(
+    summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = c(A = 0.8, A = 0.7)),
+    "exactly variables"
+  )
+  expect_error(
+    summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = c(X = 0.8, Y = 0.7)),
+    "exactly variables"
+  )
+  expect_error(
+    summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = c(A = 0.8, B = 0.7, C = 0.9)),
+    "exactly variables"
+  )
   expect_error(
     summary(object, sample_size = 600, time_points = 4, ICC = 0.5, reliability = "A=0.8, B=0.8"),
-    "A = 0.8, B = 0.7"
+    "Character strings"
   )
 })
 
@@ -254,11 +281,11 @@ test_that("matrix reliability collapses when variables match in every condition"
   class(object) <- c("powRICLPM", "list")
 
   conditions <- give(object, "conditions")
-  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "reliability"))
+  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "software", "reliability"))
   expect_equal(conditions$reliability, c("0.7", "0.8", "0.9"))
 
   overview <- summary(object)
-  expect_equal(colnames(overview)[5], "Reliability")
+  expect_equal(colnames(overview)[5:6], c("Software", "Reliability"))
   expect_false(any(grepl("Reliability A|Reliability B", colnames(overview))))
 
   parameter_summary <- summary(object, parameter = "A1~~A1")
@@ -340,7 +367,7 @@ test_that("mixed matrix reliability conditions keep stable condition columns", {
   class(object) <- c("powRICLPM", "list")
 
   conditions <- give(object, "conditions")
-  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "reliability_A", "reliability_B"))
+  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "software", "reliability_A", "reliability_B"))
   expect_equal(conditions$reliability_A, c("0.8", "0.8"))
   expect_equal(conditions$reliability_B, c("0.8", "0.7"))
 
@@ -349,7 +376,7 @@ test_that("mixed matrix reliability conditions keep stable condition columns", {
   expect_false(any(grepl("Reliability A|Reliability B", colnames(parameter_summary))))
 
   overview <- summary(object)
-  expect_equal(colnames(overview)[5:6], c("Reliability A", "Reliability B"))
+  expect_equal(colnames(overview)[5:7], c("Software", "Reliability A", "Reliability B"))
 })
 
 test_that("parameter-not-found and no-usable-estimates errors differ", {
@@ -514,10 +541,10 @@ test_that("DPM custom loadings stay with condition columns in summaries", {
   estimation_problems <- give(object, "estimation_problems")
   expect_equal(
     names(estimation_problems),
-    c("condition", "sample_size", "time_points", "AF_proportion", "loadings", "reps", "errors", "not_converged", "inadmissible")
+    c("condition", "sample_size", "time_points", "AF_proportion", "software", "loadings", "reps", "errors", "not_converged", "inadmissible")
   )
   expect_equal(estimation_problems$condition, 1)
-  expect_equal(estimation_problems$reps, 0)
+  expect_equal(estimation_problems$reps, 1)
   expect_equal(estimation_problems$loadings, "c(1, 0.8, 1.1)")
   expect_equal(estimation_problems$errors, 1)
   expect_equal(estimation_problems$inadmissible, 0)
@@ -526,11 +553,11 @@ test_that("DPM custom loadings stay with condition columns in summaries", {
   capture.output(overview <- summary(object))
   expect_equal(
     colnames(overview),
-    c("Condition", "Sample size", "Time points", "AF proportion", "Loadings", "Reps", "Error", "Not converged", "Inadmissible")
+    c("Condition", "Sample size", "Time points", "AF proportion", "Software", "Loadings", "Reps", "Error", "Not converged", "Inadmissible")
   )
   expect_equal(overview$Condition, 1)
   expect_equal(overview$Loadings, "c(1, 0.8, 1.1)")
-  expect_equal(overview$Reps, 0)
+  expect_equal(overview$Reps, 1)
   expect_equal(overview$Error, 1)
   expect_equal(overview$Inadmissible, 0)
 
@@ -538,9 +565,7 @@ test_that("DPM custom loadings stay with condition columns in summaries", {
   capture.output(parameter_summary <- summary(object, parameter = "B2~A1"))
   expect_equal(
     colnames(parameter_summary),
-    c("Condition", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Reps", "Error", "Not converged", "Inadmissible")
+    c("Condition", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
   )
   expect_equal(parameter_summary$Condition, 1)
-  expect_equal(parameter_summary$Reps, 0)
-  expect_equal(parameter_summary$Error, 1)
 })

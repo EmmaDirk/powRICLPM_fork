@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Get Started â€¢ powRICLPM</title>
+<title>Get Started • powRICLPM</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">powRICLPM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0.9001</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,7 @@ analysis for a bivariate random intercept cross-lagged panel model
 (RI-CLPM) using the <code>powRICLPM</code> package. Throughout, an
 illustrating example will be used in which we wish to detect a small
 cross-lagged effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>Î²</mi><mn>2</mn></msub><annotation encoding="application/x-tex">\beta_{2}</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mn>2</mn></msub><annotation encoding="application/x-tex">\beta_{2}</annotation></semantics></math>
 (defined here as the effect of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>a</mi><mn>1</mn><mo>*</mo></msubsup><annotation encoding="application/x-tex">a_{1}^{*}</annotation></semantics></math>
 to
@@ -114,41 +114,41 @@ can be extended later.</p>
 the RI-CLPM. This requires the specification of:</p>
 <ul>
 <li>
-<code>lagged_effects</code>: Standardized autoregressive and
-cross-lagged effects for the within-unit components of the model. These
-values are collected in a matrix, <em>with columns representing
-predictors and rows representing outcomes</em>.</li>
+<code>Phi</code>: Standardized autoregressive and cross-lagged
+effects for the within-unit components of the model. These values are
+collected in a matrix, <em>with columns representing predictors and rows
+representing outcomes</em>.</li>
 <li>
 <code>within_cor</code>: A correlation for the within-unit
 components.</li>
 <li>
-<code>intraclass_correlation</code>: The proportion of variance at
-the between-unit level (relative to the total variance).</li>
+<code>ICC</code>: The proportion of variance at the between-unit
+level (relative to the total variance).</li>
 <li>
 <code>RI_cor</code>: The correlation between the random
 intercepts.</li>
 </ul>
 <p>For our example, the parameter values are set to:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lagged_effects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>, <span class="fl">.3</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">Phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>, <span class="fl">.3</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span><span class="co"># The .2 refers to our standardized cross-lagged effect of interest</span></span>
 <span><span class="va">within_cor</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span>
-<span><span class="va">intraclass_correlation</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">ICC</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
 <span><span class="va">RI_cor</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span></code></pre></div>
-<p>If you are unsure if you have specified the
-<code>lagged_effects</code> matrix as intended, you can use the
-<code><a href="../reference/check_lagged_effects.html">check_lagged_effects()</a></code> function to give you a summary of
-how the lagged effects are interpreted.</p>
+<p>If you are unsure if you have specified the <code>Phi</code> matrix
+as intended, you can use the <code><a href="../reference/check_Phi.html">check_Phi()</a></code> function to give
+you a summary of how the effects in your <code>Phi</code> are
+interpreted.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://jeroendmulder.github.io/powRICLPM/">powRICLPM</a></span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Check `lagged_effects` argument</span></span>
-<span><span class="fu"><a href="../reference/check_lagged_effects.html">check_lagged_effects</a></span><span class="op">(</span><span class="va">lagged_effects</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## According to `lagged_effects`, the lagged effects are:</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">â€¢</span> Autoregressive effect of A: 0.4</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">â€¢</span> Autoregressive effect of B: 0.3</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">â€¢</span> Cross-lagged effect of A -&gt; B: 0.2</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">â€¢</span> Cross-lagged effect of B -&gt; A: 0.1</span></span></code></pre>
+<code class="sourceCode R"><span><span class="co"># Check `Phi` argument</span></span>
+<span><span class="fu"><a href="../reference/check_Phi.html">check_Phi</a></span><span class="op">(</span><span class="va">Phi</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## According to this `Phi`, the lagged effects are:</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">•</span> Autoregressive effect of A: 0.4</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">•</span> Autoregressive effect of B: 0.3</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">•</span> Cross-lagged effect of A -&gt; B: 0.2</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">•</span> Cross-lagged effect of B -&gt; A: 0.1</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="steps-3-5-perform-the-power-analysis">Steps 3-5: Perform the power analysis<a class="anchor" aria-label="anchor" href="#steps-3-5-perform-the-power-analysis"></a>
@@ -165,9 +165,8 @@ directly by providing a vector of sample sizes to the
 <code>sample_size</code> argument),</li>
 <li>the number of time points for the simulated data using the
 <code>time_points</code> argument,</li>
-<li>the population values <code>lagged_effects</code>,
-<code>within_cor</code>, <code>intraclass_correlation</code>, and
-<code>RI_cor</code>, and</li>
+<li>the population values <code>Phi</code>, <code>within_cor</code>,
+<code>ICC</code>, and <code>RI_cor</code>, and</li>
 <li>the number of Monte Carlo replications we want to perform per
 experimental condition in the <code>reps</code> argument.</li>
 </ul>
@@ -179,7 +178,7 @@ criterion (default: 0.05).</li>
 <li>
 <code>seed</code>: An integer to control the starting point of the
 random number generator. This is important to use if you want to
-replicate the results. When no seed is specified, a random seed will be
+replicate the results. When no seed it specified, a random seed will be
 generated and reported back to you.</li>
 </ul>
 <p>Options to extend this basic power analysis setup are described in
@@ -195,9 +194,9 @@ the Vignette <a href="https://jeroendmulder.github.io/powRICLPM/articles/extensi
 <span>  search_upper <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  search_step <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  time_points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>  intraclass_correlation <span class="op">=</span> <span class="va">intraclass_correlation</span>,</span>
+<span>  ICC <span class="op">=</span> <span class="va">ICC</span>,</span>
 <span>  RI_cor <span class="op">=</span> <span class="va">RI_cor</span>, </span>
-<span>  lagged_effects <span class="op">=</span> <span class="va">lagged_effects</span>,</span>
+<span>  Phi <span class="op">=</span> <span class="va">Phi</span>,</span>
 <span>  within_cor <span class="op">=</span> <span class="fl">0.3</span>,</span>
 <span>  reps <span class="op">=</span> <span class="va">n_reps</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -209,7 +208,7 @@ replications, and across multiple experimental conditions can be
 time-consuming. To speed up the process, it is recommended to perform
 the power analysis <em>across simulation conditions</em> in parallel
 (i.e., on multiple cores). To this end, the <code><a href="../reference/powRICLPM.html">powRICLPM()</a></code>
-function has implemented <code>future</code>â€™s parallel processing
+function has implemented <code>future</code>’s parallel processing
 capabilities.</p>
 <p>Load the <code>future</code> package, and use its <code><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan()</a></code>
 function to change the power analysis execution from <em>sequential</em>
@@ -245,7 +244,7 @@ the below code for the example:</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://progressr.futureverse.org" class="external-link">progressr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Check how many cores are available</span></span>
-<span><span class="fu">parallelly</span><span class="fu">::</span><span class="fu"><a href="https://parallelly.futureverse.org/reference/availableCores.html" class="external-link">availableCores</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://parallelly.futureverse.org/reference/availableCores.html" class="external-link">availableCores</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Plan powRICLPM analysis to run on 1 core less than number of available cores</span></span>
 <span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span>, workers <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="co"># For the case of 8 available cores</span></span>
@@ -258,9 +257,9 @@ the below code for the example:</p>
 <span>    search_upper <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    search_step <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>    time_points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>    intraclass_correlation <span class="op">=</span> <span class="va">intraclass_correlation</span>,</span>
+<span>    ICC <span class="op">=</span> <span class="va">ICC</span>,</span>
 <span>    RI_cor <span class="op">=</span> <span class="va">RI_cor</span>, </span>
-<span>    lagged_effects <span class="op">=</span> <span class="va">lagged_effects</span>,</span>
+<span>    Phi <span class="op">=</span> <span class="va">Phi</span>,</span>
 <span>    within_cor <span class="op">=</span> <span class="fl">0.3</span>,</span>
 <span>    reps <span class="op">=</span> <span class="va">n_reps</span></span>
 <span>  <span class="op">)</span></span>
@@ -287,17 +286,16 @@ output any performance metrics computed by the power analysis.</p>
 <p><code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> can be used in one of four ways. First,
 summary can be used simply like <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> to get information
 about the design of the power analysis (the different experimental
-conditions), as well as the number of problems that occurred per
+conditions), as well as the number of problems the occurred per
 condition (e.g., non-convergence, fatal estimation errors, or
 inadmissible results). Second, by specifying the
 <code>parameter = "..."</code> argument in <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, the
 function will print the results specifically for that parameter across
 all experimental conditions. Third, if you specify a specific
-experimental condition using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>â€™s
-<code>sample_size</code>, <code>time_points</code>,
-<code>intraclass_correlation</code> and <code>reliability</code>
-arguments, performance measures are outputted for all parameters in that
-experimental condition.</p>
+experimental condition using <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>’s
+<code>sample_size</code>, <code>time_points</code>, <code>ICC</code> and
+<code>reliability</code> arguments, performance measures are outputted
+for all parameters in that experimental condition.</p>
 <p>The interpretation of the various performance measures available is
 explained in the function documentation <a href="https://jeroendmulder.github.io/powRICLPM/reference/summary.powRICLPM.html"><code>?summary.powRICLPM()</code></a>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -307,8 +305,8 @@ explained in the function documentation <a href="https://jeroendmulder.github.io
 <span><span class="co"># Summary of results for a specific parameter, across simulation conditions</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">output</span>, parameter <span class="op">=</span> <span class="st">"wB2~wA1"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Summary of all parameters for a specific simulation condition</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">output</span>, sample_size <span class="op">=</span> <span class="fl">500</span>, time_points <span class="op">=</span> <span class="fl">4</span>, intraclass_correlation <span class="op">=</span> <span class="fl">0.5</span>, reliability <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Summary of all parameter for a specific simulation condition</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">output</span>, sample_size <span class="op">=</span> <span class="fl">500</span>, time_points <span class="op">=</span> <span class="fl">4</span>, ICC <span class="op">=</span> <span class="fl">0.5</span>, reliability <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/give.html">give()</a></code> extracts various bits of information from an
 <code>powRICLPM</code> object. The exact information to be extracted is
 given by the <code>what = "..."</code> argument:</p>
@@ -316,21 +314,20 @@ given by the <code>what = "..."</code> argument:</p>
 <li>
 <code>what = "conditions"</code> gives the different experimental
 conditions per row, where each condition is defined by a unique
-combination of sample size, number of time points, and intraclass
-correlation.</li>
+combination of sample size, number of time points and ICC.</li>
 <li>
 <code>what = "estimation_problems"</code> gives the proportion of
 fatal errors, inadmissible values, or non-converged estimations
 (columns) per experimental conditions (row).</li>
 <li>
 <code>what = "results"</code> gives the average estimate
-<code>average</code>, minimum estimate <code>minimum</code>, empirical
-standard error of parameter estimates <code>EmpSE</code>, the average
-standard error <code>SEAvg</code>, the mean square error
-<code>MSE</code>, the average width of the confidence interval
-<code>accuracy</code>, the coverage rate <code>coverage</code>, and the
-proportion of times the <em>p</em>-value was lower than the significance
-criterion <code>power</code>. It requires setting the
+<code>average</code>, minimum estimate <code>minimum</code>, standard
+deviation of parameter estimates <code>SD</code>, the average standard
+error <code>SEavg</code>, the mean square error <code>MSE</code>, the
+average width of the confidence interval <code>accuracy</code>, the
+coverage rate <code>coverage</code>, and the proportion of times the
+<em>p</em>-value was lower than the significance criterion
+<code>power</code>. It requires setting the
 <code>parameter = "..."</code> argument.</li>
 <li>
 <code>what = "names"</code> gives the parameter names contained
@@ -386,12 +383,12 @@ x-axis:</p>
 <div class="section level2">
 <h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
 <div id="ref-mulder_power_2023" class="csl-entry">
-Mulder, Jeroen D. 2023. <span>â€œPower Analysis for the Random Intercept
-Cross-Lagged Panel Model Using the powRICLPM r-Package.â€</span>
+Mulder, Jeroen D. 2023. <span>“Power Analysis for the Random Intercept
+Cross-Lagged Panel Model Using the powRICLPM r-Package.”</span>
 <em>Structural Equation Modeling: A Multidisciplinary Journal</em> 30
-(4): 645â€“58. <a href="https://doi.org/10.1080/10705511.2022.2122467" class="external-link">https://doi.org/10.1080/10705511.2022.2122467</a>.
+(4): 645–58. <a href="https://doi.org/10.1080/10705511.2022.2122467" class="external-link">https://doi.org/10.1080/10705511.2022.2122467</a>.
 </div>
 </div>
 </div>

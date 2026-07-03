@@ -168,7 +168,7 @@ test_that("check_loadings() writes loading interpretation", {
   expect_error(check_loadings(loading_vector, time_points = 4, model = "RICLPM", extra = TRUE), "Unexpected argument")
   expect_error(
     check_loadings(c(NA, 1, 0.8, 1.1), model = "RICLPM"),
-    "only valid for DPM loadings"
+    "must not contain missing values"
   )
 })
 
@@ -287,6 +287,12 @@ test_that("icheck_loadings() works", {
     icheck_loadings(c(1, Inf, 2), 3, "lavaan"),
     "contains: c\\(1, Inf, 2\\)"
   )
+  expect_error(icheck_loadings(NA_real_, 3, "lavaan"), "must not contain missing values")
+  expect_error(icheck_loadings(c(1, NA, 2), 3, "lavaan"), "must not contain missing values")
+  expect_error(
+    icheck_loadings(matrix(c(1, NA, 1, 1, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
+    "must not contain missing values"
+  )
   expect_error(
     icheck_loadings(c(0.8, 1, 1), 3, "lavaan"),
     "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
@@ -303,6 +309,8 @@ test_that("icheck_moment() works", {
   expect_null(icheck_moment(0.3))
   expect_error(icheck_moment("a"))
   expect_error(icheck_moment(c(0.2, 0.5)))
+  expect_error(icheck_moment(NA_real_, arg = "skewness"), "skewness.*non-missing")
+  expect_error(icheck_moment(NA_real_, arg = "kurtosis"), "kurtosis.*non-missing")
 })
 
 test_that("icheck_significance_criterion() works", {
@@ -310,6 +318,53 @@ test_that("icheck_significance_criterion() works", {
   expect_error(icheck_significance_criterion(c(0.05, 0.10)))
   expect_error(icheck_significance_criterion(-0.05))
   expect_error(icheck_significance_criterion("a"))
+  expect_error(icheck_significance_criterion(NA_real_), "non-missing")
+})
+
+test_that("ignored vector names and matrix dimnames are reported", {
+  expect_message(
+    inote_ignored_input_names(c(wave_1 = 1, wave_2 = 0.8), "loadings", "Loading values"),
+    "names are ignored.*supplied order"
+  )
+  expect_message(
+    inote_ignored_input_names(c(free = "RI_loadings_free", time = "lagged"), "constraints", "Constraint values"),
+    "names are ignored.*supplied order"
+  )
+  expect_message(
+    inote_ignored_input_names(
+      matrix(
+        c(1, 0.8, 1, 1.2),
+        nrow = 2,
+        dimnames = list(c("first_factor", "second_factor"), c("first_wave", "second_wave"))
+      ),
+      "loadings",
+      "Loading values"
+    ),
+    "dimnames are ignored.*matrix position"
+  )
+  expect_message(
+    inote_ignored_input_names(
+      matrix(
+        c(0.8, 0.9, 0.7, 0.85),
+        nrow = 2,
+        dimnames = list(c("A_name", "B_name"), c("condition_1", "condition_2"))
+      ),
+      "reliability",
+      "Reliability values"
+    ),
+    "dimnames are ignored.*matrix position"
+  )
+})
+
+test_that("restrictive misspecification informs without interactive confirmation", {
+  misspecification <- list(
+    restrictive = TRUE,
+    restrictive_reasons = "Measurement error was generated but not estimated"
+  )
+  expect_message(
+    expect_true(confirm_restrictive_misspecification(misspecification)),
+    "Measurement error was generated but not estimated"
+  )
 })
 
 test_that("icheck_ME() works", {
@@ -317,6 +372,7 @@ test_that("icheck_ME() works", {
   expect_error(icheck_ME(c(T, F)))
   expect_error(icheck_ME("T"))
   expect_error(icheck_ME(1))
+  expect_error(icheck_ME(NA), "TRUE or FALSE")
 })
 
 test_that("icheck_reps() works", {
@@ -325,6 +381,8 @@ test_that("icheck_reps() works", {
   expect_error(icheck_reps(1000.5))
   expect_error(icheck_reps(0), "positive")
   expect_error(icheck_reps(-1000))
+  expect_error(icheck_reps(NA_real_), "non-missing")
+  expect_error(icheck_reps(c(10, 20)), "single")
 })
 
 test_that("icheck_seed() works", {
@@ -332,6 +390,7 @@ test_that("icheck_seed() works", {
   expect_warning(icheck_seed(NA), "No seed was specified")
   expect_error(icheck_seed("1234"))
   expect_error(icheck_seed(1234.5))
+  expect_error(icheck_seed(c(1234, 5678)), "single")
 })
 
 test_that("icheck_constraints() works", {
@@ -472,15 +531,15 @@ test_that("RI-CLPM misspecification detection distinguishes restrictive cases", 
   expect_false(general$restrictive)
   expect_true(general$general)
 
-  expect_error(
+  expect_message(
     confirm_RICLPM_restrictive_misspecification(generated_ME),
     "Measurement error was generated but not estimated"
   )
-  confirmation_error <- tryCatch(
+  confirmation_message <- capture.output(
     confirm_RICLPM_restrictive_misspecification(generated_ME),
-    error = conditionMessage
+    type = "message"
   )
-  expect_false(grepl("more restrictive", confirmation_error, fixed = TRUE))
+  expect_false(any(grepl("more restrictive", confirmation_message, fixed = TRUE)))
 })
 
 test_that("icheck_estimator() works", {

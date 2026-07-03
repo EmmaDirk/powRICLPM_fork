@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Using Mplus â€¢ powRICLPM</title>
+<title>Using Mplus • powRICLPM</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">powRICLPM</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0.9001</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,24 +70,24 @@
     
     
 <p>This vignette details how you can automatically create Mplus model
-syntax for performing a power analysis for the RI-CLPM and STARTS model
+syntax for performing a power analysis for the RI-CLPM and STARTS modl
 using the Mplus software package. This might be preferred by some
 researchers as Monte Carlo simulations are much faster in Mplus than in
 R, or for reasons of convention. A disadvantage of using Mplus is that
-output must be inspected per generated input file, it requires
-additional effort to understand all of the output one gets, and it is a
-paid option.</p>
+power analysis cannot be performed across multiple experimental
+conditions simultaneously, it requires additional effort to understand
+all of the output one gets, and that it is a paid option.</p>
 <p>In the <code><a href="../reference/powRICLPM.html">powRICLPM()</a></code> function, set the
 <code>software = ...</code> argument to <code>"Mplus"</code>. This
 creates Mplus model syntax for multiple experimental conditions
-simultaneously, and saves the files to the folder specified in the
-<code>save_path = "..."</code> argument. After the Mplus input files
+simultaneously, and saves them the folder specified in the
+<code>save_path = "..."</code> argument. After the Mplus input-files
 (.inp) have been created, you can edit them, run them one-by-one in
 Mplus, or run them simultaneously from R using the
 <code>runModels()</code> function from the MplusAutomation R
 package.</p>
 <p>Let us use the same illustrating example as explained in the Vignette
-<a href="https://jeroendmulder.github.io/powRICLPM/articles/introduction.html">Get
+<a href="https://jeroendmulder.github.io/powRICLPM/articles/start.html">Get
 started</a>.</p>
 <div class="section level2">
 <h2 id="steps-1-and-2-experimental-conditions-and-population-parameter-values">Steps 1 and 2: Experimental conditions and population parameter
@@ -98,13 +98,13 @@ standardized cross-lagged effect of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>0.2</mn><annotation encoding="application/x-tex">0.2</annotation></semantics></math>
 for sample sizes from 100 to 1000 (with incremental steps of 50) for an
 RI-CLPM with 3, 4 and 5 repeated measures. In total, this results in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>19</mn><mo>Ã—</mo><mn>3</mn><mo>=</mo><mn>57</mn></mrow><annotation encoding="application/x-tex">19 \times 3 = 57</annotation></semantics></math>
-experimental conditions. Moreover, following the example in the <a href="https://jeroendmulder.github.io/powRICLPM/articles/introduction.html">Get
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>19</mn><mo>×</mo><mn>3</mn><mo>=</mo><mn>57</mn></mrow><annotation encoding="application/x-tex">19 \times 3 = 57</annotation></semantics></math>
+experimental conditions. Moreover, following the example in the <a href="https://jeroendmulder.github.io/powRICLPM/articles/start.html">Get
 started</a> Vignette, our population parameter values are:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lagged_effects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>, <span class="fl">.3</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">Phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>, <span class="fl">.3</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">T</span><span class="op">)</span> </span>
 <span><span class="co"># The .2 refers to our standardized cross-lagged effect of interest</span></span>
-<span><span class="va">intraclass_correlation</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
+<span><span class="va">ICC</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
 <span><span class="va">RI_cor</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -118,43 +118,40 @@ function, and set <code>software = "Mplus"</code>. You must provide:</p>
 <code>search_step</code> arguments,</li>
 <li>the number of repeated measures using the <code>time_points</code>
 argument,</li>
-<li>the population values <code>lagged_effects</code>,
-<code>within_cor</code>, <code>intraclass_correlation</code>, and
-<code>RI_cor</code>,</li>
-<li>the number of Monte Carlo replications you want to perform per
-condition in the <code>reps</code> argument,</li>
+<li>the population values <code>Phi</code>, <code>wSigma</code>,
+<code>ICC</code>, and <code>RI_cor</code>,</li>
+<li>the number of MCMC replications you want to perform per condition in
+the <code>reps</code> argument,</li>
 <li>a <code>seed</code> to control the starting point of the random
 number generator, and</li>
-<li>a <code>save_path</code>, denoting the directory where the Mplus
-input files should be saved.</li>
+<li>a <code>save_path</code>, denoting the directory to which to save
+the Mplus input file to.</li>
 </ul>
 <p>For our example, we would specify:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/powRICLPM.html">powRICLPM</a></span><span class="op">(</span></span>
-<span>  search_lower <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  search_upper <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  search_step <span class="op">=</span> <span class="fl">50</span>,</span>
-<span>  time_points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span>,</span>
-<span>  intraclass_correlation <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  RI_cor <span class="op">=</span> <span class="fl">0.3</span>,</span>
-<span>  lagged_effects <span class="op">=</span> <span class="va">lagged_effects</span>,</span>
-<span>  within_cor <span class="op">=</span> <span class="fl">0.3</span>,</span>
-<span>  reps <span class="op">=</span> <span class="fl">10000</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">123456</span>,</span>
-<span>  save_path <span class="op">=</span> <span class="st">"./saved"</span>,</span>
-<span>  software <span class="op">=</span> <span class="st">"Mplus"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">powRICLPM</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">search_lower =</span> <span class="dv">100</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">search_upper =</span> <span class="dv">1000</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">search_step =</span> <span class="dv">50</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">time_points =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">ICC =</span> <span class="fl">0.5</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">RI_cor =</span> <span class="fl">0.3</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="at">Phi =</span> Phi,</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">within_cor =</span> <span class="fl">0.3</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">reps =</span> <span class="dv">10000</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123456</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">save_path =</span> <span class="st">"./saved"</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  <span class="at">software =</span> <span class="st">"Mplus"</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>)</span></code></pre></div>
 <p>Optionally, you can extend this power analysis as described in the
 Vignette <a href="https://jeroendmulder.github.io/powRICLPM/articles/extensions.html">Extensions</a>.</p>
 <div class="callout-warning">
 <p>Note that it is not possible to generate skewed or kurtosed data in
 Mplus via the <code>powRICLPM</code> package. Furthermore, bounded
-estimation and time-varying random-intercept loadings (both for data
-generation and estimation) are not available for Mplus. The
-<code>ME</code> constraint can be combined with other Mplus-supported
-constraints when <code>estimate_ME = TRUE</code>.</p>
+estimation is not available in Mplus. Therefore, the
+<code>skewness</code>, <code>kurtosis</code>, and <code>bounds</code>
+will be ignored when <code>software = "Mplus"</code>.</p>
 </div>
-<p><code><a href="../reference/powRICLPM.html">powRICLPM()</a></code> creates an Mplus input file (or multiple
+<p>The <code><a href="../reference/powRICLPM.html">powRICLPM()</a></code> creates an Mplus input file (or multiple
 files when multiple experimental conditions are specified) and writes it
 to the specified directory. The file contains the Mplus model syntax
 needed to run a power analysis for the RI-CLPM in Mplus. More
@@ -166,17 +163,17 @@ information about Monte Carlo simulations in Mplus can be found at <a href="http
 <p>To get output, run each Mplus model syntax file in Mplus. Each time,
 an output file is created summarizing the results of the Mplus power
 analysis. A good source for interpreting this output in the context of a
-MONTECARLO study is <span class="citation">MuthÃ©n and MuthÃ©n
+MONTECARLO study is <span class="citation">Muthén and Muthén
 (2002)</span>.</p>
 </div>
 <div class="section level2 unnumbered">
 <h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
 <div id="ref-muthen_monte-carlo_2002" class="csl-entry">
-MuthÃ©n, Linda K., and Bengt O. MuthÃ©n. 2002. <span>â€œ<span class="nocase">How to use a Monte Carlo study to decide on sample size
-and determine power</span>.â€</span> <em>Structural Equation
-Modeling</em> 9 (4): 599â€“620. <a href="https://doi.org/10.1207/S15328007SEM0904_8" class="external-link">https://doi.org/10.1207/S15328007SEM0904_8</a>.
+Muthén, Linda K., and Bengt O. Muthén. 2002. <span>“<span class="nocase">How to use a Monte Carlo study to decide on sample size
+and determine power</span>.”</span> <em>Structural Equation
+Modeling</em> 9 (4): 599–620. <a href="https://doi.org/10.1207/S15328007SEM0904_8" class="external-link">https://doi.org/10.1207/S15328007SEM0904_8</a>.
 </div>
 </div>
 </div>

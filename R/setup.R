@@ -46,6 +46,7 @@ create_conditions <- function(
     kurtosis = kurtosis,
     significance_criterion = significance_criterion,
     estimate_ME = estimate_ME,
+    software = software,
     model = model,
     stringsAsFactors = FALSE
   )

@@ -116,7 +116,7 @@ test_that("check_loadings() writes DPM loading interpretation", {
   )
   expect_error(
     check_loadings(c(1, NA), model = "DPM"),
-    "finite values"
+    "must not contain missing values"
   )
   expect_error(
     check_loadings(c(1, Inf), model = "DPM"),
@@ -156,11 +156,15 @@ test_that("icheck_loadings() supports DPM loading specifications", {
   )
   expect_error(
     icheck_loadings(c(.8, 1), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "first DPM loading must be 1"
+    "accumulating factor A is 0.8"
   )
   expect_error(
     icheck_loadings(matrix(c(.8, 1, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "first DPM loading must be 1"
+    "accumulating factor A is 0.8"
+  )
+  expect_error(
+    icheck_loadings(matrix(c(1, 0.8, 0.7, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
+    "accumulating factor B is 0.7"
   )
   expect_error(
     icheck_loadings(matrix(c(1, .8, 1, 1.2), nrow = 1, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
@@ -172,11 +176,11 @@ test_that("icheck_loadings() supports DPM loading specifications", {
   )
   expect_error(
     icheck_loadings(c(1, NA), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "finite values"
+    "must not contain missing values"
   )
   expect_error(
     icheck_loadings(matrix(c(NaN, .8, 1, 1.2), nrow = 2, byrow = TRUE), 3, "lavaan", "AF_loadings_free", model = "DPM"),
-    "finite values"
+    "must not contain missing values"
   )
   expect_error(
     icheck_loadings(c(1, .8), c(3, 4), "lavaan", "AF_loadings_free", model = "DPM"),

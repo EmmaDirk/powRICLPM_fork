@@ -31,9 +31,11 @@ test_that("give() works", {
   expect_error(give(out1, "AF_proportion"), "only available for DPM")
 
   expect_s3_class(df_conditions, "data.frame")
-  expect_equal(dim(df_conditions), c(2, 5))
+  expect_equal(dim(df_conditions), c(2, 6))
   expect_equal(names(df_conditions)[1], "condition")
   expect_equal(names(df_conditions)[4], "ICC")
+  expect_equal(names(df_conditions)[5], "software")
+  expect_equal(df_conditions$software, c("lavaan", "lavaan"))
   expect_false("loadings" %in% names(df_conditions))
   expect_equal(names(df_condition_alias)[4], "intraclass_correlation")
   expect_equal(names(df_condition_icc)[4], "ICC")
@@ -42,8 +44,9 @@ test_that("give() works", {
   expect_equal(df_condition_icc, df_conditions)
 
   expect_s3_class(df_problems, "data.frame")
-  expect_equal(dim(df_problems), c(2, 9))
+  expect_equal(dim(df_problems), c(2, 10))
   expect_equal(names(df_problems)[1], "condition")
+  expect_equal(df_problems$reps, c(2, 2))
   expect_false("loadings" %in% names(df_problems))
 
   expect_true(is.matrix(loadings))
@@ -52,7 +55,7 @@ test_that("give() works", {
   expect_s3_class(df_results, "data.frame")
   expect_equal(
     names(df_results),
-    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power", "reps", "errors", "not_converged", "inadmissible")
+    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power")
   )
 
   expect_s3_class(df_uncertainty, "data.frame")
@@ -63,6 +66,26 @@ test_that("give() works", {
 
   expect_type(df_names, "character")
   expect_equal(length(df_names), 20)
+})
+
+test_that("give() returns default loadings for older objects without stored loadings", {
+  object <- list(
+    conditions = list(
+      list(sample_size = 500, time_points = 3, ICC = 0.4, reliability = 1),
+      list(sample_size = 500, time_points = 4, ICC = 0.4, reliability = 1)
+    ),
+    session = list(
+      model = "RICLPM",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  loadings <- give(object, "loadings")
+
+  expect_true(is.list(loadings))
+  expect_equal(unname(loadings$condition_1), matrix(1, nrow = 2, ncol = 3))
+  expect_equal(unname(loadings$condition_2), matrix(1, nrow = 2, ncol = 4))
 })
 
 test_that("give() labels DPM proportion conditions", {
@@ -87,7 +110,9 @@ test_that("give() labels DPM proportion conditions", {
   expect_error(give(object, "intraclass_correlation"), "not available for DPM")
   expect_error(give(object, "ICC"), "not available for DPM")
   expect_false("reliability" %in% names(give(object, "conditions")))
-  expect_error(give(object, "reliability"), "not available for DPM")
+  reliability_error <- expect_error(give(object, "reliability"), "not available for DPM")
+  expect_match(conditionMessage(reliability_error), "give\\(object, 'conditions'\\)")
+  expect_false(grepl("AF_proportion", conditionMessage(reliability_error), fixed = TRUE))
   expect_equal(
     give(object, "loadings"),
     structure(
@@ -154,11 +179,9 @@ test_that("give() uses condition numbers for DPM parameter results", {
   results <- give(object, "results", parameter = "B2~A1")
   expect_equal(
     names(results),
-    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power", "reps", "errors", "not_converged", "inadmissible")
+    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power")
   )
   expect_equal(results$condition, 1)
-  expect_equal(results$reps, 1)
-  expect_equal(results$errors, 0)
   expect_false(any(c("sample_size", "time_points", "AF_proportion") %in% names(results)))
 
   uncertainty <- give(object, "uncertainty", parameter = "B2~A1")
@@ -280,15 +303,15 @@ test_that("small custom loading matrices print inside condition tables", {
   expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
 })
 
-test_that("eight-wave custom loadings print inspection note only", {
+test_that("six-wave custom loadings print inspection note only", {
   condition <- list(
     sample_size = 600,
-    time_points = 8,
+    time_points = 6,
     ICC = 0.5,
     reliability = 1,
     loadings = matrix(
-      c(1, .8, 1, 1, 1, .9, 1.1, .95,
-        1, 1.2, 1, 1, 1, 1.1, .85, 1),
+      c(1, .8, 1, 1, 1, .9,
+        1, 1.2, 1, 1, 1, 1.1),
       nrow = 2,
       byrow = TRUE
     ),
@@ -307,7 +330,8 @@ test_that("eight-wave custom loadings print inspection note only", {
   print_output <- capture.output(print(object))
   expect_false(any(grepl("DATA-GENERATING LOADINGS", print_output, fixed = TRUE)))
   expect_false(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
-  expect_true(any(grepl("give(<your_object>, \"loadings\")", print_output, fixed = TRUE)))
+  expect_true(any(grepl("give(object, \"loadings\")", print_output, fixed = TRUE)))
+  expect_true(any(grepl("loadings matrix", print_output, fixed = TRUE)))
   expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
 })
 

@@ -403,6 +403,15 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
       call = call
     )
   }
+  if (anyNA(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must not contain missing values.",
+        i = "If you do not want to specify custom loadings, omit the {.arg {arg}} argument."
+      ),
+      call = call
+    )
+  }
   if (!all(is.finite(x))) {
     cli::cli_abort(
       c(
@@ -456,11 +465,15 @@ icheck_DPM_loadings <- function(x, time_points, constraints, arg, t_arg, con_arg
     first_loadings <- x[1]
   }
   if (!all(first_loadings == 1)) {
+    offending <- which(first_loadings != 1)[1]
+    factor_label <- c("A", "B")[offending]
     cli::cli_abort(
       c(
-        "The first DPM loading must be 1:",
-        i = "The first supplied DPM loading is the wave-2 accumulating-factor loading.",
-        x = paste0("The first supplied loading is ", paste(first_loadings, collapse = ", "), ".")
+        "The first DPM loading must be 1.",
+        x = paste0(
+          "The first supplied loading for accumulating factor ",
+          factor_label, " is ", first_loadings[offending], "."
+        )
       ),
       call = call
     )

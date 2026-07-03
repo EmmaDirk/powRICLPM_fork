@@ -4,11 +4,29 @@
 #'
 #' @noRd
 icheck_target <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!is.double(x)) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a numeric:",
-        x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(x) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("Your {.arg {arg}} has length ", length(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!is.finite(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a non-missing finite numeric value:",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
       ),
       call = call
     )
@@ -18,7 +36,8 @@ icheck_target <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_en
       c(
         "{.arg {arg}} must be between 0 and 1:",
         x = paste0("Your {.arg {arg}} is ", x, ".")
-      )
+      ),
+      call = call
     )
   }
 }
@@ -214,7 +233,26 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       c(
         "{.arg {arg}} must be a numeric vector:",
         x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
-      )
+      ),
+      call = call
+    )
+  }
+  if (length(x) == 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain at least one value:",
+        x = "Your {.arg {arg}} has length 0."
+      ),
+      call = call
+    )
+  }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite, non-missing values:",
+        x = paste0("Your {.arg {arg}} contains: ", paste(as.character(x), collapse = ", "), ".")
+      ),
+      call = call
     )
   }
   if (!all(x > 0 & x < 1)) {
@@ -222,7 +260,8 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       c(
         "Elements in {.arg {arg}} must be between 0 and 1:",
         x = "Some elements in {.arg {arg}} are smaller than 0 or larger than 1."
-      )
+      ),
+      call = call
     )
   }
   if (!all(x < .99)) {
@@ -230,7 +269,8 @@ icheck_ICC <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
       c(
         "Elements in {.arg {arg}} are very close to 1:",
         i = "This can lead to problems with estimation. Use a maximum of .99."
-      )
+      ),
+      call = call
     )
   }
 }
@@ -286,7 +326,26 @@ icheck_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlang::c
       c(
         "{.arg {arg}} must be a matrix:",
         x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
-      )
+      ),
+      call = call
+    )
+  }
+  if (!is.numeric(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a numeric matrix:",
+        x = paste0("Your {.arg {arg}} is a matrix of ", typeof(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite, non-missing values:",
+        x = paste0("Your {.arg {arg}} contains: ", paste(as.character(x), collapse = ", "), ".")
+      ),
+      call = call
     )
   }
   if (!is_unit(x)) {
@@ -295,7 +354,8 @@ icheck_lagged_effects <- function(x, arg = rlang::caller_arg(x), call = rlang::c
         "{.arg {arg}} must specify a stationary process:",
         i = "Use smaller autoregressive and/or cross-lagged effects.",
         x = "The largest absolute eigenvalue of {.arg {arg}} must be smaller than 1."
-      )
+      ),
+      call = call
     )
   }
 }
@@ -483,7 +543,8 @@ inormalize_reliability_label <- function(x) {
 }
 
 ireliability_selector_label <- function(x) {
-  if (is.numeric(x) && is.null(dim(x)) && length(x) == 2L) {
+  if (is_combined_reliability_selector(x)) {
+    x <- x[c("A", "B")]
     return(ireliability_condition_label(matrix(x, nrow = 2, ncol = 1)))
   }
   as.character(x)
@@ -598,6 +659,15 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       call = call
     )
   }
+  if (anyNA(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must not contain missing values.",
+        i = "If you do not want to specify custom loadings, omit the {.arg {arg}} argument."
+      ),
+      call = call
+    )
+  }
   if (is.matrix(x)) {
     if (nrow(x) != 2L) {
       row_label <- if (nrow(x) == 1L) "row" else "rows"
@@ -636,16 +706,6 @@ icheck_loadings <- function(x, time_points, software, constraints = "none",
       )
     }
     first_loadings <- x[1]
-  }
-  if (any(is.na(x))) {
-    cli::cli_abort(
-      c(
-        "{.arg {arg}} contains `NA`, which is only valid for DPM loadings:",
-        i = "If these are accumulating-factor loadings, use `model = 'DPM'`.",
-        i = "For the RI-CLPM, loadings must be finite and the first loading must be 1."
-      ),
-      call = call
-    )
   }
   if (!all(is.finite(x))) {
     cli::cli_abort(
@@ -690,9 +750,31 @@ inormalize_loadings <- function(loadings, time_points, model = "RICLPM") {
     return(matrix(1, nrow = 2, ncol = time_points))
   }
   if (is.matrix(loadings)) {
-    return(loadings)
+    return(unname(loadings))
   }
-  rbind(loadings, loadings)
+  rbind(unname(loadings), unname(loadings))
+}
+
+inote_ignored_input_names <- function(x, arg, value_label = "values",
+                                      position_label = "supplied order") {
+  if (is.null(x)) {
+    return(invisible(NULL))
+  }
+  if (is.matrix(x)) {
+    dimnames_present <- !is.null(rownames(x)) || !is.null(colnames(x))
+    if (dimnames_present) {
+      cli::cli_alert_info(
+        "{.arg {arg}} has row or column names.\n\nThe dimnames are ignored. {value_label} are used by matrix position."
+      )
+    }
+    return(invisible(NULL))
+  }
+  if (is.atomic(x) && is.null(dim(x)) && !is.null(names(x)) && any(nzchar(names(x)))) {
+    cli::cli_alert_info(
+      "{.arg {arg}} is a named vector.\n\nThe names are ignored. {value_label} are used in the {position_label}."
+    )
+  }
+  invisible(NULL)
 }
 
 inote_custom_loadings_interpretation <- function(loadings, time_points,
@@ -747,21 +829,32 @@ format_scalar_value <- function(x) {
 #'
 #' @noRd
 icheck_moment <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!is.numeric(x)) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a numeric (vector):",
-        x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
-      )
+        "{.arg {arg}} must be a single numeric value:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
     )
   }
-  if (length(x) != 1) {
+  if (length(x) != 1L) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} should be of length 1:",
+        "{.arg {arg}} must be a single numeric value:",
         i = "This version of `powRICLPM` only accepts a single value for this factor.",
-        x = paste0("Your {.arg {arg}} is of length ", length(x), ".")
-      )
+        x = paste0("Your {.arg {arg}} has length ", length(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!is.finite(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a non-missing numeric value.",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
+      ),
+      call = call
     )
   }
 }
@@ -779,7 +872,8 @@ icheck_significance_criterion <- function(x, arg = rlang::caller_arg(x), call = 
       c(
         "{.arg {arg}} must be a single numeric value:",
         x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
-      )
+      ),
+      call = call
     )
   }
   if (length(x) != 1L) {
@@ -787,7 +881,17 @@ icheck_significance_criterion <- function(x, arg = rlang::caller_arg(x), call = 
       c(
         "{.arg {arg}} must be a single numeric value:",
         x = paste0("You've provided ", length(x), " values.")
-      )
+      ),
+      call = call
+    )
+  }
+  if (!is.finite(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a non-missing finite numeric value:",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
+      ),
+      call = call
     )
   }
   if (1 < x || x < 0) {
@@ -796,7 +900,8 @@ icheck_significance_criterion <- function(x, arg = rlang::caller_arg(x), call = 
         "{.arg {arg}} must be between 0 and 1:",
         x = paste0("Your {.arg {arg}} is ", x, ".")
 
-      )
+      ),
+      call = call
     )
   }
 }
@@ -812,15 +917,26 @@ icheck_ME <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env())
       c(
         "{.arg {arg}} must be a logical:",
         x = paste0("Your {.arg {arg}} is a ", class(x), ".")
-      )
+      ),
+      call = call
     )
   }
-  if (length(x) > 1) {
+  if (length(x) != 1L) {
     cli::cli_abort(
       c(
         "{.arg {arg}} should be of length 1:",
         x = paste0("Your {.arg {arg}} is of length ", length(x), ".")
-      )
+      ),
+      call = call
+    )
+  }
+  if (is.na(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be TRUE or FALSE:",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
+      ),
+      call = call
     )
   }
 }
@@ -831,12 +947,31 @@ icheck_ME <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env())
 #'
 #' @noRd
 icheck_reps <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!is.numeric(x)) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be an integer:",
-        x = paste0("Your {.arg {arg}} is a ", typeof(x), ".")
-      )
+        "{.arg {arg}} must be a single positive integer:",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(x) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single positive integer:",
+        x = paste0("Your {.arg {arg}} has length ", length(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (!is.finite(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a non-missing finite integer:",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
+      ),
+      call = call
     )
   }
   if (x %% 1 != 0) {
@@ -844,7 +979,8 @@ icheck_reps <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
       c(
         "{.arg {arg}} must be an integer:",
         x = paste0("Your {.arg {arg}} is not a 'whole' number.")
-      )
+      ),
+      call = call
     )
   }
   if (x <= 0) {
@@ -852,7 +988,8 @@ icheck_reps <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
       c(
         "{.arg {arg}} must be a positive integer:",
         x = paste0("Your {.arg {arg}} is: ", x, ".")
-      )
+      ),
+      call = call
     )
   }
 }
@@ -864,6 +1001,15 @@ icheck_reps <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
 #'
 #' @noRd
 icheck_seed <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (length(x) != 1L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single integer seed:",
+        x = paste0("Your {.arg {arg}} has length ", length(x), ".")
+      ),
+      call = call
+    )
+  }
   if (is.na(x)) {
     x <- floor(stats::runif(1, 0, 1000000))
     cli::cli_warn(
@@ -876,14 +1022,25 @@ icheck_seed <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env(
       c(
         "{.arg {arg}} must be a numeric:",
         x = paste0("Your {.arg {arg}} is a {typeof(x)}.")
-      )
+      ),
+      call = call
+    )
+  }
+  if (!is.finite(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a finite integer seed:",
+        x = paste0("Your {.arg {arg}} is ", format_scalar_value(x), ".")
+      ),
+      call = call
     )
   } else if (x %% 1 != 0) {
     cli::cli_abort(
       c(
         "{.arg {arg}} should be an integer:",
         x = "Your {.arg {arg}} is not a 'whole' number."
-      )
+      ),
+      call = call
     )
   }
   return(x)
@@ -1089,12 +1246,31 @@ icheck_Psi <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()
 #' @noRd
 icheck_N <- function(x, t, constraints = "none", ME = FALSE, model = "RICLPM",
                      arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!all(is.numeric(x))) {
+  if (!is.numeric(x) || !is.null(dim(x))) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must be an integer vector:",
-        x = "Not all elements are numeric."
-      )
+        x = paste0("Your {.arg {arg}} is ", format_object_type(x), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(x) == 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain at least one sample size:",
+        x = "Your {.arg {arg}} has length 0."
+      ),
+      call = call
+    )
+  }
+  if (!all(is.finite(x))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite, non-missing values:",
+        x = paste0("Your {.arg {arg}} contains: ", paste(as.character(x), collapse = ", "), ".")
+      ),
+      call = call
     )
   }
   if (!all(x %% 1 == 0)) {
@@ -1102,7 +1278,8 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, model = "RICLPM",
       c(
         "{.arg {arg}} must be an integer vector:",
         x = "Not all elements are integers."
-      )
+      ),
+      call = call
     )
   }
   if (!all(x > 0)) {
@@ -1110,7 +1287,8 @@ icheck_N <- function(x, t, constraints = "none", ME = FALSE, model = "RICLPM",
       c(
         "{.arg {arg}} must only contain positive integers:",
         x = "Your {.arg {arg}} contains negative numbers."
-      )
+      ),
+      call = call
     )
   }
   n_parameters_by_time <- vapply(
@@ -1286,7 +1464,7 @@ normalize_constraints <- function(x) {
   if (is.list(x) && length(x) == 1) {
     x <- x[[1]]
   }
-  unique(x)
+  unname(unique(x))
 }
 
 
@@ -1432,21 +1610,7 @@ confirm_restrictive_misspecification <- function(misspecification,
     return(invisible(TRUE))
   }
   message <- imisspecification_warning_text(misspecification$restrictive_reasons)
-  if (!interactive()) {
-    cli::cli_abort(
-      c(
-        message,
-        i = "Run interactively and type YES to continue."
-      ),
-      call = call
-    )
-  }
   cli::cli_alert_info(message)
-  cat("\nType YES to continue: ", sep = "")
-  answer <- readline()
-  if (!identical(answer, "YES")) {
-    cli::cli_abort("Simulation aborted because YES was not entered.", call = call)
-  }
   invisible(TRUE)
 }
 

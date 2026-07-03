@@ -18,6 +18,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Jeroen Mulder \email{j.d.mulder@uu.nl} (\href{https://orcid.org/0000-0002-5553-0856}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Jeroen Mulder \email{j.d.mulder@uu.nl} (\href{https://orcid.org/0000-0002-5553-0856}{ORCID}) [copyright holder]
+}
+
 Other contributors:
 \itemize{
   \item Netherlands Organization for Scientific Research [funder]
