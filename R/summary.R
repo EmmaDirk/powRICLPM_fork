@@ -24,6 +24,7 @@
 #' }
 #' \subsection{Interpretation Output}{Depending on the arguments that you set, \code{summary()} prints a table with different analysis outcomes in the columns and where each row refers to a different experimental condition. The following information is available:
 #'  \itemize{
+#'   \item \code{Condition}: The numbered experimental condition. In no-argument summaries, this is shown with the full condition definition and estimation-problem counts. In parameter summaries, it is used as a compact reference to that no-argument condition table.
 #'   \item \code{Sample size}, \code{Time points}, \code{ICC} or \code{AF proportion}, and \code{Reliability} when applicable: The experimental condition that the row refers to.
 #'   \item \code{Population}: The true value of the parameter.
 #'   \item \code{Avg}: The average (across replications) parameter estimate.
@@ -177,19 +178,17 @@ summary.powRICLPM <- function(
 
     # Collect information for print.summary.powRICLPM.parameter()
     parameter_df <- give_powRICLPM_results(object, parameter)
-    replications_df <- give_powRICLPM_estimation_problems(object)
-    parameter_summary <- merge(parameter_df, replications_df, by = icondition_key_columns(parameter_df))
-    parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
+    parameter_summary <- idrop_DPM_reliability_column(object, parameter_df)
     condition_cols <- c(
       "sample_size", "time_points", "ICC",
-      ireliability_columns(parameter_summary)
+      ireliability_columns(parameter_summary),
+      iloading_columns(parameter_summary)
     )
-    parameter_summary <- parameter_summary[, c(
-      condition_cols,
-      setdiff(names(parameter_summary), condition_cols)
-    ), drop = FALSE]
-    parameter_col_names <- icondition_table_names(object, parameter_summary, icc_table_label)
-    colnames(parameter_summary) <- c(parameter_col_names, "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible")
+    parameter_summary <- cbind(
+      condition = seq_len(nrow(parameter_summary)),
+      parameter_summary[, setdiff(names(parameter_summary), condition_cols), drop = FALSE]
+    )
+    colnames(parameter_summary) <- c("Condition", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
     invisible(parameter_summary)
 
@@ -199,8 +198,9 @@ summary.powRICLPM <- function(
     ## Summary of analysis
     replications_df <- give_powRICLPM_estimation_problems(object)
     replications_df <- idrop_DPM_reliability_column(object, replications_df)
+    replications_df <- cbind(condition = seq_len(nrow(replications_df)), replications_df)
     replications_col_names <- icondition_table_names(object, replications_df, icc_table_label)
-    colnames(replications_df) <- c(replications_col_names, "Error", "Not converged", "Inadmissible")
+    colnames(replications_df) <- c("Condition", replications_col_names, "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM(replications_df, object = object)
     invisible(replications_df)
   }

@@ -100,7 +100,7 @@ give_powRICLPM_conditions <- function(object) {
     )
   }))
   d <- icollapse_equal_reliability_columns(d)
-  cbind(d, icondition_loading_columns(object))
+  iwith_condition_loading_columns(object, d)
 }
 
 give_powRICLPM_loadings <- function(object) {
@@ -307,6 +307,16 @@ icondition_loading_columns <- function(object) {
   out
 }
 
+iwith_condition_loading_columns <- function(object, x) {
+  x <- cbind(x, icondition_loading_columns(object))
+  ireorder_condition_columns(x)
+}
+
+ireorder_condition_columns <- function(x) {
+  condition_cols <- intersect(icondition_key_columns(x), names(x))
+  x[, c(condition_cols, setdiff(names(x), condition_cols)), drop = FALSE]
+}
+
 ishow_loading_condition_columns <- function(object) {
   if (!ihas_custom_loadings(object)) {
     return(FALSE)
@@ -371,7 +381,7 @@ iprint_custom_loadings_note <- function(object) {
     return(invisible(NULL))
   }
   cat(
-    "\nCustom data-generating loadings were supplied. Inspect them with give(<your_object>, \"loadings\").\n"
+    "\nCustom loadings were supplied. Inspect them with give(<your_object>, \"loadings\").\n"
   )
   invisible(NULL)
 }
@@ -441,7 +451,7 @@ give_powRICLPM_estimation_problems <- function(object) {
     )
   }))
   d <- icollapse_equal_reliability_columns(d)
-  cbind(d, icondition_loading_columns(object))
+  iwith_condition_loading_columns(object, d)
 }
 
 give_powRICLPM_results <- function(object, parameter = NULL) {
@@ -506,7 +516,7 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
     )
   }))
   d <- icollapse_equal_reliability_columns(d)
-  cbind(d, icondition_loading_columns(object))
+  iwith_condition_loading_columns(object, d)
 }
 
 give_powRICLPM_parameter_names <- function(object) {
@@ -559,7 +569,7 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
     )
   }))
   d <- icollapse_equal_reliability_columns(d)
-  cbind(d, icondition_loading_columns(object))
+  iwith_condition_loading_columns(object, d)
 }
 
 icheck_give_parameter <- function(parameter, object, what = "results",

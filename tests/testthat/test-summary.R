@@ -14,7 +14,7 @@ test_that("all columns from summary.powRICLMP(...) are named", {
   )
 
   table_parameter <- summary(out, parameter = "wB2~wA1")
-  expect_equal(colnames(table_parameter), c("Sample size", "Time points", "ICC", "Reliability", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Error", "Not converged", "Inadmissible"))
+  expect_equal(colnames(table_parameter), c("Condition", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
 
   table_condition <- summary(out, sample_size = 500, intraclass_correlation = 0.4, time_points = 3, reliability = 1)
   expect_equal(colnames(table_condition), c("Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power"))
@@ -73,8 +73,8 @@ test_that("summary.powRICLPM labels intraclass correlation from the selected arg
     seed = 1234
   )
 
-  table_parameter <- summary(out, parameter = "wB2~wA1")
-  expect_equal(colnames(table_parameter)[3], "Intraclass correlation")
+  overview <- summary(out)
+  expect_equal(colnames(overview)[4], "Intraclass correlation")
 })
 
 test_that("summary.powRICLPM handles vector reliability conditions", {
@@ -258,11 +258,12 @@ test_that("matrix reliability collapses when variables match in every condition"
   expect_equal(conditions$reliability, c("0.7", "0.8", "0.9"))
 
   overview <- summary(object)
-  expect_equal(colnames(overview)[4], "Reliability")
+  expect_equal(colnames(overview)[5], "Reliability")
   expect_false(any(grepl("Reliability A|Reliability B", colnames(overview))))
 
   parameter_summary <- summary(object, parameter = "A1~~A1")
-  expect_equal(colnames(parameter_summary)[4], "Reliability")
+  expect_equal(colnames(parameter_summary)[1], "Condition")
+  expect_false("Reliability" %in% colnames(parameter_summary))
 
   selected <- summary(
     object,
@@ -344,7 +345,11 @@ test_that("mixed matrix reliability conditions keep stable condition columns", {
   expect_equal(conditions$reliability_B, c("0.8", "0.7"))
 
   parameter_summary <- summary(object, parameter = "A1~~A1")
-  expect_equal(colnames(parameter_summary)[4:5], c("Reliability A", "Reliability B"))
+  expect_equal(colnames(parameter_summary)[1], "Condition")
+  expect_false(any(grepl("Reliability A|Reliability B", colnames(parameter_summary))))
+
+  overview <- summary(object)
+  expect_equal(colnames(overview)[5:6], c("Reliability A", "Reliability B"))
 })
 
 test_that("parameter-not-found and no-usable-estimates errors differ", {
@@ -448,7 +453,7 @@ test_that("summary.powRICLPM omits reliability column for DPM objects", {
   table_parameter <- summary(object, parameter = "B2~A1")
   expect_false("Reliability" %in% colnames(table_parameter))
   expect_false("Loadings" %in% colnames(table_parameter))
-  expect_equal(colnames(table_parameter)[3], "AF proportion")
+  expect_equal(colnames(table_parameter)[1], "Condition")
 
   overview_output <- capture.output(summary(object))
   expect_true(any(grepl("Dynamic Panel Model \\(DPM\\)", overview_output)))
@@ -459,4 +464,78 @@ test_that("summary.powRICLPM omits reliability column for DPM objects", {
     summary(object, sample_size = 800, time_points = 3, ICC = 0.2),
     "not available for DPM"
   )
+})
+
+test_that("DPM custom loadings stay with condition columns in summaries", {
+  object <- list(
+    conditions = list(list(
+      sample_size = 800,
+      time_points = 4,
+      ICC = 0.2,
+      reliability = 1,
+      loadings = matrix(
+        c(1, 0.8, 1.1,
+          1, 0.8, 1.1),
+        nrow = 2,
+        byrow = TRUE
+      ),
+      estimates = data.frame(
+        parameter = "B2~A1",
+        population_value = 0.2,
+        average = 0.2,
+        bias = 0,
+        minimum = 0.1,
+        EmpSE = 0.05,
+        SEAvg = 0.05,
+        MSE = 0.0025,
+        accuracy = 0.2,
+        coverage = 0.95,
+        power = 0.8
+      ),
+      estimation_information = list(
+        n_error = 1,
+        n_nonconvergence = 0,
+        n_inadmissible = 0,
+        n_completed = 0
+      )
+    )),
+    session = list(
+      model = "DPM",
+      version = "0.2.1",
+      reps = 1,
+      bounds = FALSE,
+      constraints = "AF_loadings_free",
+      estimate_ME = FALSE,
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  estimation_problems <- give(object, "estimation_problems")
+  expect_equal(
+    names(estimation_problems),
+    c("sample_size", "time_points", "AF_proportion", "loadings", "errors", "not_converged", "inadmissible")
+  )
+  expect_equal(estimation_problems$loadings, "c(1, 0.8, 1.1)")
+  expect_equal(estimation_problems$errors, 1)
+  expect_equal(estimation_problems$inadmissible, 0)
+
+  overview <- NULL
+  capture.output(overview <- summary(object))
+  expect_equal(
+    colnames(overview),
+    c("Condition", "Sample size", "Time points", "AF proportion", "Loadings", "Error", "Not converged", "Inadmissible")
+  )
+  expect_equal(overview$Condition, 1)
+  expect_equal(overview$Loadings, "c(1, 0.8, 1.1)")
+  expect_equal(overview$Error, 1)
+  expect_equal(overview$Inadmissible, 0)
+
+  parameter_summary <- NULL
+  capture.output(parameter_summary <- summary(object, parameter = "B2~A1"))
+  expect_equal(
+    colnames(parameter_summary),
+    c("Condition", "Population", "Avg", "Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
+  )
+  expect_equal(parameter_summary$Condition, 1)
 })

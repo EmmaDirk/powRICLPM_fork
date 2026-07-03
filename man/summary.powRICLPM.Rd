@@ -50,6 +50,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 }
 \subsection{Interpretation Output}{Depending on the arguments that you set, \code{summary()} prints a table with different analysis outcomes in the columns and where each row refers to a different experimental condition. The following information is available:
 \itemize{
+\item \code{Condition}: The numbered experimental condition. In no-argument summaries, this is shown with the full condition definition and estimation-problem counts. In parameter summaries, it is used as a compact reference to that no-argument condition table.
 \item \code{Sample size}, \code{Time points}, \code{ICC} or \code{AF proportion}, and \code{Reliability} when applicable: The experimental condition that the row refers to.
 \item \code{Population}: The true value of the parameter.
 \item \code{Avg}: The average (across replications) parameter estimate.
