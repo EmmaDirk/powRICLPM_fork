@@ -181,7 +181,7 @@ summary.powRICLPM <- function(
     parameter_df <- give_powRICLPM_results(object, parameter)
     parameter_summary <- idrop_DPM_reliability_column(object, parameter_df)
     condition_cols <- c(
-      "sample_size", "time_points", "ICC", "software",
+      "sample_size", "time_points", "ICC",
       ireliability_columns(parameter_summary),
       iloading_columns(parameter_summary)
     )

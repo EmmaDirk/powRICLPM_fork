@@ -281,11 +281,12 @@ test_that("matrix reliability collapses when variables match in every condition"
   class(object) <- c("powRICLPM", "list")
 
   conditions <- give(object, "conditions")
-  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "software", "reliability"))
+  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "reliability"))
   expect_equal(conditions$reliability, c("0.7", "0.8", "0.9"))
 
   overview <- summary(object)
-  expect_equal(colnames(overview)[5:6], c("Software", "Reliability"))
+  expect_equal(colnames(overview)[5], "Reliability")
+  expect_false("Software" %in% colnames(overview))
   expect_false(any(grepl("Reliability A|Reliability B", colnames(overview))))
 
   parameter_summary <- summary(object, parameter = "A1~~A1")
@@ -367,7 +368,7 @@ test_that("mixed matrix reliability conditions keep stable condition columns", {
   class(object) <- c("powRICLPM", "list")
 
   conditions <- give(object, "conditions")
-  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "software", "reliability_A", "reliability_B"))
+  expect_equal(names(conditions), c("condition", "sample_size", "time_points", "ICC", "reliability_A", "reliability_B"))
   expect_equal(conditions$reliability_A, c("0.8", "0.8"))
   expect_equal(conditions$reliability_B, c("0.8", "0.7"))
 
@@ -376,7 +377,8 @@ test_that("mixed matrix reliability conditions keep stable condition columns", {
   expect_false(any(grepl("Reliability A|Reliability B", colnames(parameter_summary))))
 
   overview <- summary(object)
-  expect_equal(colnames(overview)[5:7], c("Software", "Reliability A", "Reliability B"))
+  expect_equal(colnames(overview)[5:6], c("Reliability A", "Reliability B"))
+  expect_false("Software" %in% colnames(overview))
 })
 
 test_that("parameter-not-found and no-usable-estimates errors differ", {
@@ -541,7 +543,7 @@ test_that("DPM custom loadings stay with condition columns in summaries", {
   estimation_problems <- give(object, "estimation_problems")
   expect_equal(
     names(estimation_problems),
-    c("condition", "sample_size", "time_points", "AF_proportion", "software", "loadings", "reps", "errors", "not_converged", "inadmissible")
+    c("condition", "sample_size", "time_points", "AF_proportion", "loadings", "reps", "errors", "not_converged", "inadmissible")
   )
   expect_equal(estimation_problems$condition, 1)
   expect_equal(estimation_problems$reps, 1)
@@ -553,7 +555,7 @@ test_that("DPM custom loadings stay with condition columns in summaries", {
   capture.output(overview <- summary(object))
   expect_equal(
     colnames(overview),
-    c("Condition", "Sample size", "Time points", "AF proportion", "Software", "Loadings", "Reps", "Error", "Not converged", "Inadmissible")
+    c("Condition", "Sample size", "Time points", "AF proportion", "Loadings", "Reps", "Error", "Not converged", "Inadmissible")
   )
   expect_equal(overview$Condition, 1)
   expect_equal(overview$Loadings, "c(1, 0.8, 1.1)")

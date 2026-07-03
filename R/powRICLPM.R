@@ -429,7 +429,7 @@ irun_power_analysis <- function(
     seed <- icheck_seed(seed)
 
     # Inform user that simulations in lavaan have started
-    cli::cli_h2("\nPerforming Simulations Using lavaan")
+    cli::cli_h2("\nPerforming Simulations")
 
     # Prepare progress bar
     p <- progressr::progressor(steps = (length(conditions) * reps))
@@ -492,7 +492,7 @@ irun_power_analysis <- function(
     return(out)
   } else if (software == "Mplus") {
     # Inform user that simulations in Mplus have started
-    cli::cli_h2("\nPerforming Simulations Using Mplus")
+    cli::cli_h2("\nPerforming Simulations")
 
     # Inform user of results
     print.powRICLPM.Mplus(

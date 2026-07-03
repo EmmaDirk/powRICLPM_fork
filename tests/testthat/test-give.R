@@ -31,11 +31,10 @@ test_that("give() works", {
   expect_error(give(out1, "AF_proportion"), "only available for DPM")
 
   expect_s3_class(df_conditions, "data.frame")
-  expect_equal(dim(df_conditions), c(2, 6))
+  expect_equal(dim(df_conditions), c(2, 5))
   expect_equal(names(df_conditions)[1], "condition")
   expect_equal(names(df_conditions)[4], "ICC")
-  expect_equal(names(df_conditions)[5], "software")
-  expect_equal(df_conditions$software, c("lavaan", "lavaan"))
+  expect_false("software" %in% names(df_conditions))
   expect_false("loadings" %in% names(df_conditions))
   expect_equal(names(df_condition_alias)[4], "intraclass_correlation")
   expect_equal(names(df_condition_icc)[4], "ICC")
@@ -44,7 +43,7 @@ test_that("give() works", {
   expect_equal(df_condition_icc, df_conditions)
 
   expect_s3_class(df_problems, "data.frame")
-  expect_equal(dim(df_problems), c(2, 10))
+  expect_equal(dim(df_problems), c(2, 9))
   expect_equal(names(df_problems)[1], "condition")
   expect_equal(df_problems$reps, c(2, 2))
   expect_false("loadings" %in% names(df_problems))

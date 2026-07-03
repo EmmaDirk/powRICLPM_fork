@@ -123,7 +123,6 @@ give_powRICLPM_conditions <- function(object) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
-        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition)
@@ -290,16 +289,6 @@ icondition_reliability_columns <- function(condition) {
   data.frame(reliability = condition$reliability, stringsAsFactors = FALSE)
 }
 
-icondition_software <- function(condition, object = NULL) {
-  if (!is.null(condition$software)) {
-    return(condition$software)
-  }
-  if (!is.null(object$session$software)) {
-    return(object$session$software)
-  }
-  NA_character_
-}
-
 icollapse_equal_reliability_columns <- function(x) {
   if (!is.data.frame(x) || !all(c("reliability_A", "reliability_B") %in% names(x))) {
     return(x)
@@ -391,14 +380,11 @@ format_loading_condition_value <- function(x) {
 }
 
 icondition_key_columns <- function(x) {
-  c("sample_size", "time_points", "ICC", "software", ireliability_columns(x), iloading_columns(x))
+  c("sample_size", "time_points", "ICC", ireliability_columns(x), iloading_columns(x))
 }
 
 icondition_table_names <- function(object, x, icc_table_label) {
   col_names <- c("Sample size", "Time points", icc_table_label)
-  if ("software" %in% names(x)) {
-    col_names <- c(col_names, "Software")
-  }
   if ("reliability" %in% names(x)) {
     col_names <- c(col_names, "Reliability")
   }
@@ -498,7 +484,6 @@ give_powRICLPM_estimation_problems <- function(object) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
-        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition),
@@ -578,7 +563,6 @@ give_powRICLPM_results <- function(object, parameter = NULL) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
-        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition),
@@ -632,7 +616,6 @@ give_powRICLPM_MCSE_parameter <- function(object, parameter) {
         sample_size = condition$sample_size,
         time_points = condition$time_points,
         ICC = icondition_proportion(condition),
-        software = icondition_software(condition, object),
         stringsAsFactors = FALSE
       ),
       icondition_reliability_columns(condition),
