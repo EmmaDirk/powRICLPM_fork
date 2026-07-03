@@ -36,6 +36,7 @@
 #'   \item \code{Accuracy}: The average (across replications) width of the confidence interval.
 #'   \item \code{Cover}: The coverage rate, representing the proportion of times (across replications) the true parameter estimate fell in the confidence interval.
 #'   \item \code{Power}: The proportion of replications in which the parameter's \emph{p}-value is smaller than the specified significance criterion.
+#'   \item \code{Reps}: The number of completed replications that contributed usable results.
 #'   \item \code{Error}: The number of replications that failed to run (i.e., \code{lavaan()} produced an error).
 #'   \item \code{Not converged}: The number of replications that did not converge to a solution.
 #'   \item \code{Inadmissible}: The number of replications that converged to an inadmissible solution (e.g., a variance estimated to be lower than zero).
@@ -178,7 +179,12 @@ summary.powRICLPM <- function(
 
     # Collect information for print.summary.powRICLPM.parameter()
     parameter_df <- give_powRICLPM_results(object, parameter)
-    parameter_summary <- idrop_DPM_reliability_column(object, parameter_df)
+    replications_df <- give_powRICLPM_estimation_problems(object)
+    parameter_summary <- cbind(
+      parameter_df,
+      replications_df[, c("reps", "errors", "not_converged", "inadmissible"), drop = FALSE]
+    )
+    parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
     condition_cols <- c(
       "sample_size", "time_points", "ICC",
       ireliability_columns(parameter_summary),
@@ -188,7 +194,7 @@ summary.powRICLPM <- function(
       condition = seq_len(nrow(parameter_summary)),
       parameter_summary[, setdiff(names(parameter_summary), condition_cols), drop = FALSE]
     )
-    colnames(parameter_summary) <- c("Condition", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
+    colnames(parameter_summary) <- c("Condition", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Reps", "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
     invisible(parameter_summary)
 
@@ -200,7 +206,7 @@ summary.powRICLPM <- function(
     replications_df <- idrop_DPM_reliability_column(object, replications_df)
     replications_df <- cbind(condition = seq_len(nrow(replications_df)), replications_df)
     replications_col_names <- icondition_table_names(object, replications_df, icc_table_label)
-    colnames(replications_df) <- c("Condition", replications_col_names, "Error", "Not converged", "Inadmissible")
+    colnames(replications_df) <- c("Condition", replications_col_names, "Reps", "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM(replications_df, object = object)
     invisible(replications_df)
   }

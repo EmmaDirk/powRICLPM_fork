@@ -62,6 +62,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \item \code{Accuracy}: The average (across replications) width of the confidence interval.
 \item \code{Cover}: The coverage rate, representing the proportion of times (across replications) the true parameter estimate fell in the confidence interval.
 \item \code{Power}: The proportion of replications in which the parameter's \emph{p}-value is smaller than the specified significance criterion.
+\item \code{Reps}: The number of completed replications that contributed usable results.
 \item \code{Error}: The number of replications that failed to run (i.e., \code{lavaan()} produced an error).
 \item \code{Not converged}: The number of replications that did not converge to a solution.
 \item \code{Inadmissible}: The number of replications that converged to an inadmissible solution (e.g., a variance estimated to be lower than zero).

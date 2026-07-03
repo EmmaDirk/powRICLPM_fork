@@ -31,27 +31,33 @@ test_that("give() works", {
   expect_error(give(out1, "AF_proportion"), "only available for DPM")
 
   expect_s3_class(df_conditions, "data.frame")
-  expect_equal(dim(df_conditions), c(2, 4))
-  expect_equal(names(df_conditions)[3], "ICC")
+  expect_equal(dim(df_conditions), c(2, 5))
+  expect_equal(names(df_conditions)[1], "condition")
+  expect_equal(names(df_conditions)[4], "ICC")
   expect_false("loadings" %in% names(df_conditions))
-  expect_equal(names(df_condition_alias)[3], "intraclass_correlation")
-  expect_equal(names(df_condition_icc)[3], "ICC")
+  expect_equal(names(df_condition_alias)[4], "intraclass_correlation")
+  expect_equal(names(df_condition_icc)[4], "ICC")
   names(df_condition_alias) <- names(df_conditions)
   expect_equal(df_condition_alias, df_conditions)
   expect_equal(df_condition_icc, df_conditions)
 
   expect_s3_class(df_problems, "data.frame")
-  expect_equal(dim(df_problems), c(2, 7))
+  expect_equal(dim(df_problems), c(2, 9))
+  expect_equal(names(df_problems)[1], "condition")
   expect_false("loadings" %in% names(df_problems))
 
   expect_true(is.matrix(loadings))
   expect_equal(unname(loadings), matrix(1, nrow = 2, ncol = 3))
 
   expect_s3_class(df_results, "data.frame")
-  expect_equal(dim(df_results), c(2, 14))
+  expect_equal(
+    names(df_results),
+    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power", "reps", "errors", "not_converged", "inadmissible")
+  )
 
   expect_s3_class(df_uncertainty, "data.frame")
   expect_equal(nrow(df_uncertainty), 2)
+  expect_equal(names(df_uncertainty)[1], "condition")
   expect_true(all(c("MCSE_average", "MCSE_EmpSE", "MCSE_accuracy") %in% names(df_uncertainty)))
   expect_true("MCSE_SD" %in% names(df_uncertainty))
 
@@ -76,8 +82,8 @@ test_that("give() labels DPM proportion conditions", {
   )
   class(object) <- c("powRICLPM", "list")
 
-  expect_equal(names(give(object, "conditions"))[3], "AF_proportion")
-  expect_equal(names(give(object, "AF_proportion"))[3], "AF_proportion")
+  expect_equal(names(give(object, "conditions"))[4], "AF_proportion")
+  expect_equal(names(give(object, "AF_proportion"))[4], "AF_proportion")
   expect_error(give(object, "intraclass_correlation"), "not available for DPM")
   expect_error(give(object, "ICC"), "not available for DPM")
   expect_false("reliability" %in% names(give(object, "conditions")))
@@ -93,6 +99,71 @@ test_that("give() labels DPM proportion conditions", {
   print_output <- capture.output(print(object))
   expect_true(any(grepl("Dynamic Panel Model \\(DPM\\)", print_output)))
   expect_false(any(grepl("Reliability", print_output, fixed = TRUE)))
+})
+
+test_that("give() uses condition numbers for DPM parameter results", {
+  object <- list(
+    conditions = list(list(
+      sample_size = 800,
+      time_points = 4,
+      ICC = 0.2,
+      reliability = 1,
+      estimates = data.frame(
+        parameter = "B2~A1",
+        population_value = 0.2,
+        average = 0.222,
+        bias = 0.022,
+        minimum = 0.222,
+        EmpSE = NA_real_,
+        SEAvg = 0.074,
+        MSE = 0.001,
+        accuracy = 0.288,
+        coverage = 1,
+        power = 1
+      ),
+      MCSEs = data.frame(
+        MCSE_average = 0.01,
+        MCSE_bias = 0.01,
+        MCSE_MSE = 0.01,
+        MCSE_coverage = 0.01,
+        MCSE_SEAvg = 0.01,
+        MCSE_EmpSE = NA_real_,
+        MCSE_SD = NA_real_,
+        MCSE_accuracy = 0.01,
+        MCSE_power = 0.01
+      ),
+      estimation_information = list(
+        n_error = 0,
+        n_nonconvergence = 0,
+        n_inadmissible = 0,
+        n_completed = 1
+      )
+    )),
+    session = list(
+      model = "DPM",
+      version = "0.2.1",
+      reps = 1,
+      bounds = FALSE,
+      constraints = "residuals",
+      estimate_ME = FALSE,
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  results <- give(object, "results", parameter = "B2~A1")
+  expect_equal(
+    names(results),
+    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power", "reps", "errors", "not_converged", "inadmissible")
+  )
+  expect_equal(results$condition, 1)
+  expect_equal(results$reps, 1)
+  expect_equal(results$errors, 0)
+  expect_false(any(c("sample_size", "time_points", "AF_proportion") %in% names(results)))
+
+  uncertainty <- give(object, "uncertainty", parameter = "B2~A1")
+  expect_equal(names(uncertainty)[1], "condition")
+  expect_false(any(c("sample_size", "time_points", "AF_proportion") %in% names(uncertainty)))
 })
 
 test_that("give() notes free-loading anchor for condition tables", {

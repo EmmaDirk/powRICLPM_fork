@@ -1,6 +1,6 @@
 #' Extract Information From \code{powRICLPM} Object
 #'
-#' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. Condition information is presented by experimental condition (i.e., sample size, number of time points, intraclass correlation or accumulating-factor proportion, reliability when applicable, and compact custom loadings when applicable). Full data-generating loadings can be returned separately.
+#' Extract information stored within a \code{powRICLPM} object (internally used by \code{\link{print.powRICLPM}} and \code{\link{summary.powRICLPM}}). See "Details" for which pieces of information can be extracted. Condition information is presented by experimental condition (i.e., a numbered condition, sample size, number of time points, intraclass correlation or accumulating-factor proportion, reliability when applicable, and compact custom loadings when applicable). Full data-generating loadings can be returned separately.
 #'
 #' @param from A \code{powRICLPM} object
 #' @param what A character string, denoting the information to extract, such as "conditions", "estimation_problems", "loadings", "results", or "names" (see "Details").
@@ -10,13 +10,13 @@
 #' The following information can be extracted from the \code{powRICLPM} object:
 #'
 #' \itemize{
-#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row, where each condition is defined by a unique combination of sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B} when the reliabilities differ between variables A and B; if they match in every condition, a single \code{reliability} column is shown. Compact custom data-generating loadings are shown as \code{loadings}, \code{loadings_RI_A}, and \code{loadings_RI_B}, or the DPM accumulating-factor equivalents. Use \code{give(object, "loadings")} to inspect full loading matrices.
+#'   \item \code{conditions}: A \code{data.frame} with the different experimental conditions per row. The \code{condition} column numbers the experimental conditions. The remaining columns define each condition through sample size, number of time points, intraclass correlation or DPM accumulating-factor proportion, and reliability when applicable. Matrix reliability specifications are shown as \code{reliability_A} and \code{reliability_B} when the reliabilities differ between variables A and B; if they match in every condition, a single \code{reliability} column is shown. Compact custom data-generating loadings are shown as \code{loadings}, \code{loadings_RI_A}, and \code{loadings_RI_B}, or the DPM accumulating-factor equivalents. Use \code{give(object, "loadings")} to inspect full loading matrices.
 #'   \item \code{sample_size}, \code{time_points}, \code{intraclass_correlation}, \code{ICC}, \code{AF_proportion}, or \code{reliability}: The same conditions \code{data.frame}. \code{reliability} is available for DPM objects when measurement error is part of the DPM conditions.
-#'   \item \code{estimation_problems}: The number of fatal errors, inadmissible solutions, or non-converged estimations across replications for each experimental condition.
+#'   \item \code{estimation_problems}: The completed replications and the number of fatal errors, inadmissible solutions, or non-converged estimations for each experimental condition.
 #'   \item \code{loadings}: The data-generating loadings matrix. If an object contains multiple loading matrices because conditions have different numbers of waves, a list of matrices is returned.
-#'   \item \code{results}: The average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), and the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}). It requires setting the \code{parameter = "..."} argument.
+#'   \item \code{results}: The numbered \code{condition}, average estimate (\code{average}), signed difference between the average estimate and population value (\code{bias}), minimum estimate (\code{minimum}), empirical standard error of parameter estimates (\code{EmpSE}), the average standard error (\code{SEAvg}), the mean square error (\code{MSE}), the average width of the confidence interval (\code{accuracy}), the coverage rate (\code{coverage}), the proportion of times the \emph{p}-value was lower than the significance criterion (\code{power}), completed replications, and estimation-problem counts. It requires setting the \code{parameter = "..."} argument.
 #'   \item \code{names}: Parameter names available in every experimental condition.
-#'   \item \code{uncertainty}: Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
+#'   \item \code{uncertainty}: Numbered \code{condition} and Monte Carlo standard errors for a specific parameter. It requires setting the \code{parameter = "..."} argument.
 #' }
 #'
 #' @return A \code{data.frame}, character vector, matrix, or list, depending on \code{what}.
@@ -75,6 +75,11 @@ give <- function(from, what, parameter = NULL) {
     return(give_powRICLPM_loadings(object = from))
   } else if (what == "results") {
       out <- give_powRICLPM_results(object = from, parameter = parameter)
+      estimation_problems <- give_powRICLPM_estimation_problems(object = from)
+      out <- cbind(
+        out,
+        estimation_problems[, c("reps", "errors", "not_converged", "inadmissible"), drop = FALSE]
+      )
   } else if (what == "names") {
       out <- give_powRICLPM_parameter_names(object = from)
   } else if (what == "uncertainty") {
@@ -82,7 +87,36 @@ give <- function(from, what, parameter = NULL) {
   }
 
   out <- idrop_DPM_reliability_column(from, out)
+  out <- iprepare_public_give_output(out, what)
   ilabel_icc_column(out, icc_column_label)
+}
+
+iprepare_public_give_output <- function(x, what) {
+  if (!is.data.frame(x)) {
+    return(x)
+  }
+  if (what %in% c("results", "uncertainty")) {
+    return(icompact_give_parameter_output(x))
+  }
+  if (what %in% c(
+    "conditions", "sample_size", "time_points", "intraclass_correlation",
+    "reliability", "estimation_problems"
+  )) {
+    return(iwith_give_condition_column(x))
+  }
+  x
+}
+
+icompact_give_parameter_output <- function(x) {
+  condition_cols <- intersect(icondition_key_columns(x), names(x))
+  cbind(
+    condition = seq_len(nrow(x)),
+    x[, setdiff(names(x), condition_cols), drop = FALSE]
+  )
+}
+
+iwith_give_condition_column <- function(x) {
+  cbind(condition = seq_len(nrow(x)), x)
 }
 
 give_powRICLPM_conditions <- function(object) {
@@ -443,6 +477,7 @@ give_powRICLPM_estimation_problems <- function(object) {
       ),
       icondition_reliability_columns(condition),
       data.frame(
+        reps = icondition_completed_reps(condition),
         errors = condition$estimation_information$n_error,
         not_converged = condition$estimation_information$n_nonconvergence,
         inadmissible = condition$estimation_information$n_inadmissible,
@@ -452,6 +487,14 @@ give_powRICLPM_estimation_problems <- function(object) {
   }))
   d <- icollapse_equal_reliability_columns(d)
   iwith_condition_loading_columns(object, d)
+}
+
+icondition_completed_reps <- function(condition) {
+  completed <- condition$estimation_information$n_completed
+  if (is.null(completed)) {
+    return(NA_integer_)
+  }
+  completed
 }
 
 give_powRICLPM_results <- function(object, parameter = NULL) {
