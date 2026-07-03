@@ -179,12 +179,7 @@ summary.powRICLPM <- function(
 
     # Collect information for print.summary.powRICLPM.parameter()
     parameter_df <- give_powRICLPM_results(object, parameter)
-    replications_df <- give_powRICLPM_estimation_problems(object)
-    parameter_summary <- cbind(
-      parameter_df,
-      replications_df[, c("reps", "errors", "not_converged", "inadmissible"), drop = FALSE]
-    )
-    parameter_summary <- idrop_DPM_reliability_column(object, parameter_summary)
+    parameter_summary <- idrop_DPM_reliability_column(object, parameter_df)
     condition_cols <- c(
       "sample_size", "time_points", "ICC",
       ireliability_columns(parameter_summary),
@@ -194,7 +189,7 @@ summary.powRICLPM <- function(
       condition = seq_len(nrow(parameter_summary)),
       parameter_summary[, setdiff(names(parameter_summary), condition_cols), drop = FALSE]
     )
-    colnames(parameter_summary) <- c("Condition", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power", "Reps", "Error", "Not converged", "Inadmissible")
+    colnames(parameter_summary) <- c("Condition", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
     invisible(parameter_summary)
 
