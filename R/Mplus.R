@@ -151,6 +151,12 @@ create_Mplus <- function(condition, reps, seed) {
     significance_criterion = condition[["significance_criterion"]],
     estimates = NA,
     MCSEs = NA,
+    estimation_information = list(
+      n_error = NA_integer_,
+      n_nonconvergence = NA_integer_,
+      n_inadmissible = NA_integer_,
+      n_completed = NA_integer_
+    ),
     reps = NA,
     condition_id = condition[["condition_id"]]
   )

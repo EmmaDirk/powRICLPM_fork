@@ -75,6 +75,15 @@ summary.powRICLPM <- function(
 
   call_summary <- match.call()
   icheck_object_summary(object)
+  if (identical(object$session$software, "Mplus")) {
+    cli::cli_abort(
+      c(
+        "`summary()` is not available for Mplus setup objects:",
+        i = "`powRICLPM(..., software = 'Mplus')` generates Mplus input files, but does not run the simulations or read Mplus output back into R.",
+        i = "Use `give(object, 'conditions')` to inspect the generated condition setup, or inspect the saved Mplus input/output files."
+      )
+    )
+  }
   dpm_object <- iis_DPM_object(object)
   riclpm_icc_supplied <- !is.null(intraclass_correlation) || !is.null(ICC)
   if (!is.null(ICC) && !is.null(intraclass_correlation)) {

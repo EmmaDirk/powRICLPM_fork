@@ -505,7 +505,36 @@ irun_power_analysis <- function(
       }
     )
 
-    invisible()
+    # End time
+    time_end <- proc.time()
+    time_taken <- time_end - time_start
+
+    out <- list(
+      conditions = conditions,
+      session = list(
+        estimate_ME = estimate_ME,
+        model = model,
+        reps = reps,
+        target_power = target_power,
+        constraints = constraints,
+        bounds = bounds,
+        estimator = estimator,
+        software = software,
+        save_path = save_path,
+        misspecified_restrictive = if (is.null(misspecification)) FALSE else misspecification$restrictive,
+        misspecified_general = if (is.null(misspecification)) FALSE else misspecification$general,
+        misspecification_reasons = if (is.null(misspecification)) character() else misspecification$reasons,
+        misspecification_restrictive_reasons = if (is.null(misspecification)) character() else misspecification$restrictive_reasons,
+        misspecification_general_reasons = if (is.null(misspecification)) character() else misspecification$general_reasons,
+        time_taken = time_taken,
+        version = utils::packageVersion("powRICLPM"),
+        call = call,
+        argument_names = argument_names
+      )
+    )
+    class(out) <- c("powRICLPM", "powRICLPM.Mplus", class(out))
+
+    return(out)
   }
 }
 

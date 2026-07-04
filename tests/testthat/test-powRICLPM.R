@@ -673,7 +673,7 @@ test_that("bounded estimation for STARTS model in powRICLPM() works", {
 })
 
 test_that("power analysis using Mplus works", {
-  powRICLPM(
+  out <- powRICLPM(
     sample_size = 1000,
     time_points = 4,
     ICC = 0.5,
@@ -685,6 +685,9 @@ test_that("power analysis using Mplus works", {
     save_path = tempdir(),
     software = "Mplus"
   )
+  expect_s3_class(out, "powRICLPM")
+  expect_equal(out$session$software, "Mplus")
+  expect_equal(give(out, "conditions")$sample_size, 1000)
 
   if (.Platform$OS.type %in% c("windows", "mac")) {
     path <- normalizePath(
@@ -731,6 +734,11 @@ test_that("power analysis for the STARTS model using Mplus works", {
     save_path = tempdir()
   )
 
+  expect_s3_class(out_constrained, "powRICLPM")
+  expect_equal(out_constrained$session$software, "Mplus")
+  expect_equal(give(out_constrained, "conditions")$reliability, 0.85)
+  expect_error(summary(out_constrained), "not available for Mplus setup objects")
+
   expect_error(
     powRICLPM(
       target_power = 0.8,
@@ -769,5 +777,30 @@ test_that("power analysis for the STARTS model using Mplus works", {
   )
   expect_true(file.exists(file.path(vector_reliability_save_path, "Condition1.inp")))
   expect_true(file.exists(file.path(vector_reliability_save_path, "Condition2.inp")))
+
+  matrix_reliability_save_path <- tempfile()
+  dir.create(matrix_reliability_save_path)
+  out_matrix_reliability <- powRICLPM(
+    target_power = 0.8,
+    sample_size = c(2000),
+    time_points = 4,
+    ICC = .5,
+    RI_cor = 0.3,
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reliability = matrix(c(.85, .8, .9, .75), nrow = 2, byrow = TRUE),
+    estimate_ME = TRUE,
+    constraints = "ME",
+    reps = 2,
+    seed = 1234,
+    software = "Mplus",
+    save_path = matrix_reliability_save_path
+  )
+  matrix_conditions <- give(out_matrix_reliability, "conditions")
+  expect_equal(matrix_conditions$reliability_A, c("0.85", "0.8"))
+  expect_equal(matrix_conditions$reliability_B, c("0.9", "0.75"))
+  expect_error(summary(out_matrix_reliability), "not available for Mplus setup objects")
+  expect_true(file.exists(file.path(matrix_reliability_save_path, "Condition1.inp")))
+  expect_true(file.exists(file.path(matrix_reliability_save_path, "Condition2.inp")))
 
 })
