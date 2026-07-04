@@ -1,19 +1,8 @@
 # powRICLPM 0.2.1
 
 ## Minor improvements and fixes
-* Preserved RI-CLPM/STARTS lavaan condition constraints so condition-level logic can detect stationarity and freely estimated loadings after condition construction.
-* Fixed public-method dependency metadata, Monte Carlo error handling, stationarity lavaan fitting performance, README DPM coverage, p-value based power wording, safer parallel examples, and small `give()`/`plot()` helper inefficiencies.
-* Improved consistency of DPM and RI-CLPM validation, summaries, and helper output. Reliability conditions now use clearer labels in tables, loading conditions are shown compactly when they vary, and restrictive misspecification checks use a shared confirmation message.
-* Added `powDPM()` for lavaan-only power analysis of the dynamic panel model with accumulating factors, observed-level lagged effects, DPM stationarity equations, DPM-specific arguments (`AF_proportion`, `AF_cor`, `dynamics_cor`), and `constraints = "AF_loadings_free"` for freely estimated accumulating-factor loadings.
-* Added a lavaan-only `loadings` argument to `powRICLPM()` for specifying time-varying random-intercept loadings in the data-generating model. The first occasion must be fixed to 1, and later loadings can vary over time and across variables. Supplying `loadings` requires `constraints = "RI_loadings_free"` so the estimation model frees the corresponding random-intercept loadings.
-* Added `check_loadings()` to help users check how a loading vector or matrix maps onto the random-intercept loadings used in the data-generating model.
-* Restored vector `reliability` values as separate experimental conditions for all variables and occasions. Matrix input now specifies variable-specific reliability conditions for variables A and B, with each column defining one experimental condition.
-* Added `check_reliability()` to help users check how a reliability value, vector, or matrix maps onto the measurement-error reliabilities used in the data-generating model.
-* Standardized the user-facing performance-measure name for the empirical standard error to `EmpSE`, matching the stored results column. `plot(y = "SD")` remains available as a backwards-compatible alias for `plot(y = "EmpSE")`.
-* Added vector-valued constraint specifications to `powRICLPM()`, so users can combine compatible constraints explicitly, such as `constraints = c("lagged", "residuals")`. For Mplus, this vector form is accepted as equivalent to `constraints = "within"`. Added `constraints = "RI_loadings_free"` for lavaan analyses, which frees random-intercept factor loadings in the estimation model while leaving the data-generating model unchanged. The `constraints = "within"` option remains available as shorthand for `c("lagged", "residuals")`.
-* Added clearer argument names `intraclass_correlation` and `lagged_effects` to `powRICLPM()` and `summary.powRICLPM()`, and added `check_lagged_effects()` as the clearer helper for checking lagged-effect matrices. The legacy `ICC`, `Phi`, and `check_Phi()` names remain available for backwards compatibility. Internally, lagged effects are now carried forward as `lagged_effects`; `Phi` is only handled as a legacy input alias.
 * Fixed a bug in version 0.2.0, in which some of the column names of the summary tables from `summary.powRICLPM.parameter()` and `summary.powRICLM.condition()` were misaligned due to a missing column name. 
-* Fixed a bug in version 0.2.0, in which population values were not correctly parsed when setting the `constraints = ...` argument of `powRICLPM()` to anything other than `constraints = "none"` (the default). This resulted in incorrect estimates of bias, mean square error (`MSE`), and coverage (`Cover`). Estimates of power, minimum estimate (`Min`), empirical standard error (`EmpSE`), average standard error (`SEAvg`) and accuracy were unaffected and thus remained valid.
+* Fixed a bug in version 0.2.0, in which population values were not correctly parsed when setting the `constraints = ...` argument of `powRICLPM()` to anything other than `constraints = "none"` (the default). This resulted in incorrect estimates of bias, mean square error (`MSE`), and coverage (`Cover`). Estimates of power, minimum estimate (`Min`), empirical standard deviation (`SD`), average standard error (`SE Avg`) and accuracy were unaffected and thus remained valid.
 * Added additional documentation to `summary.powRICLPM()` about the interpretation of information in the summary table. 
 
 
@@ -25,7 +14,7 @@
 * The argument `alpha` has been superseded by the `significance_criterion` argument. 
 
 ## Minor improvements and fixes
-* The `reliability` argument gained support for multiple scalar reliability conditions in version 0.2.0; this behavior was superseded in version 0.2.1 by time-varying reliability specifications.
+* The `reliability` argument can now take in a vector of reliabilities to simulate performance metrics under various levels of item reliability. 
 * The `powRICLPM` package now does not import the packages `dplyr` and `purrr` anymore. 
 * The `cli` package is now used for error handling. 
 * Slight speed and stability improvements when using `software = "lavaan"`. 

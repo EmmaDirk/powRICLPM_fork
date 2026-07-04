@@ -97,6 +97,15 @@ test_that("summary.powRICLPM handles vector reliability conditions", {
 
   expect_equal(give(out, "conditions")$reliability, c(0.8, 0.9, 1))
 
+  table_reliability <- summary(out, reliability = 0.9)
+  expect_equal(nrow(table_reliability), 1)
+  expect_equal(table_reliability$Condition, 2)
+  expect_equal(table_reliability$Reliability, 0.9)
+
+  parameter_reliability <- summary(out, parameter = "wB2~wA1", reliability = 0.9)
+  expect_equal(nrow(parameter_reliability), 1)
+  expect_equal(parameter_reliability$Condition, 2)
+
   table_condition <- summary(
     out,
     sample_size = 500,

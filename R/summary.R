@@ -110,6 +110,12 @@ summary.powRICLPM <- function(
   }
   if (!is.null(reliability)) {icheck_reliability_summary(reliability, object)}
 
+  condition_selector_supplied <- isummary_condition_selector_supplied(
+    sample_size = sample_size,
+    time_points = time_points,
+    ICC = ICC,
+    reliability = reliability
+  )
 
   # Summarize
   if (!is.null(sample_size) && !is.null(time_points) && !is.null(ICC)) {
@@ -180,15 +186,33 @@ summary.powRICLPM <- function(
     # Collect information for print.summary.powRICLPM.parameter()
     parameter_df <- give_powRICLPM_results(object, parameter)
     parameter_summary <- idrop_DPM_reliability_column(object, parameter_df)
+    condition_indices <- NULL
+    if (condition_selector_supplied) {
+      condition_indices <- imatch_condition_indices_summary(
+        object = object,
+        sample_size = sample_size,
+        time_points = time_points,
+        ICC = ICC,
+        reliability = reliability
+      )
+      parameter_summary <- parameter_summary[condition_indices, , drop = FALSE]
+      rownames(parameter_summary) <- NULL
+    }
+    condition_numbers <- if (is.null(condition_indices)) {
+      seq_len(nrow(parameter_summary))
+    } else {
+      unname(condition_indices)
+    }
     condition_cols <- c(
       "sample_size", "time_points", "ICC",
       ireliability_columns(parameter_summary),
       iloading_columns(parameter_summary)
     )
     parameter_summary <- cbind(
-      condition = seq_len(nrow(parameter_summary)),
+      condition = condition_numbers,
       parameter_summary[, setdiff(names(parameter_summary), condition_cols), drop = FALSE]
     )
+    rownames(parameter_summary) <- NULL
     colnames(parameter_summary) <- c("Condition", "Population", "Avg","Bias", "Min", "EmpSE", "SEAvg", "MSE", "Accuracy", "Cover", "Power")
     print.summary.powRICLPM.parameter(parameter_summary, parameter = parameter, object = object)
     invisible(parameter_summary)
@@ -200,6 +224,17 @@ summary.powRICLPM <- function(
     replications_df <- give_powRICLPM_estimation_problems(object)
     replications_df <- idrop_DPM_reliability_column(object, replications_df)
     replications_df <- cbind(condition = seq_len(nrow(replications_df)), replications_df)
+    if (condition_selector_supplied) {
+      condition_indices <- imatch_condition_indices_summary(
+        object = object,
+        sample_size = sample_size,
+        time_points = time_points,
+        ICC = ICC,
+        reliability = reliability
+      )
+      replications_df <- replications_df[condition_indices, , drop = FALSE]
+      rownames(replications_df) <- NULL
+    }
     replications_col_names <- icondition_table_names(object, replications_df, icc_table_label)
     colnames(replications_df) <- c("Condition", replications_col_names, "Reps", "Error", "Not converged", "Inadmissible")
     print.summary.powRICLPM(replications_df, object = object)

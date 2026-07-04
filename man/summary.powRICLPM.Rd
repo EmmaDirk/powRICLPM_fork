@@ -10,10 +10,8 @@
   parameter = NULL,
   sample_size = NULL,
   time_points = NULL,
-  intraclass_correlation = NULL,
-  AF_proportion = NULL,
-  reliability = NULL,
-  ICC = NULL
+  ICC = NULL,
+  reliability = NULL
 )
 }
 \arguments{
@@ -27,13 +25,9 @@
 
 \item{time_points}{(optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.}
 
-\item{intraclass_correlation}{(optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.}
+\item{ICC}{(optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.}
 
-\item{AF_proportion}{(optional) A \code{double}, denoting the accumulating-factor variance proportion of the DPM experimental condition of interest.}
-
-\item{reliability}{(optional) A single \code{numeric} reliability or a named two-value numeric vector such as \code{c(A = .7, B = .6)} for matrix-reliability conditions. Character strings such as \code{"A = .7, B = .6"} are not supported. This is available for DPM objects when measurement error is part of the DPM conditions.}
-
-\item{ICC}{Alternative name for \code{intraclass_correlation}.}
+\item{reliability}{(optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.}
 }
 \value{
 No return value, called for side effects.
@@ -44,25 +38,23 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \details{
 \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 \itemize{
-\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} or \code{AF_proportion = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
+\item When \code{sample_size = ...}, \code{time_points = ...}, \code{ICC = ...}, and \code{reliability} are set: Estimation information and results for all parameters across experimental conditions.
 \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 }
 \subsection{Interpretation Output}{Depending on the arguments that you set, \code{summary()} prints a table with different analysis outcomes in the columns and where each row refers to a different experimental condition. The following information is available:
 \itemize{
-\item \code{Condition}: The numbered experimental condition. In no-argument summaries, this is shown with the full condition definition and estimation-problem counts. In parameter summaries, it is used as a compact reference to that no-argument condition table.
-\item \code{Sample size}, \code{Time points}, \code{ICC} or \code{AF proportion}, and \code{Reliability} when applicable: The experimental condition that the row refers to.
+\item \code{Sample size}, \code{Time points}, \code{ICC}, \code{Reliability}: The experimental condition that the row refers to.
 \item \code{Population}: The true value of the parameter.
 \item \code{Avg}: The average (across replications) parameter estimate.
-\item \code{Bias}: The signed difference between the average parameter estimate and the population value.
+\item \code{Bias}: The difference between the population value and the average parameter estimate.
 \item \code{Min}: The lowest (across replications) parameter estimate.
-\item \code{EmpSE}: The empirical standard error, computed as the standard deviation of the parameter estimate over replications.
+\item \code{SD}: The standard deviation of the parameter estimate over replications.
 \item \code{SEAvg}: The average (across replications) standard error of the parameter estimate.
 \item \code{MSE}: The parameter mean square error, combining a parameter's bias and efficiency.
 \item \code{Accuracy}: The average (across replications) width of the confidence interval.
 \item \code{Cover}: The coverage rate, representing the proportion of times (across replications) the true parameter estimate fell in the confidence interval.
-\item \code{Power}: The proportion of replications in which the parameter's \emph{p}-value is smaller than the specified significance criterion.
-\item \code{Reps}: The number of repetitions requested for the condition.
+\item \code{Power}: The proportion of times (across replications) the confidence interval did not contain zero.
 \item \code{Error}: The number of replications that failed to run (i.e., \code{lavaan()} produced an error).
 \item \code{Not converged}: The number of replications that did not converge to a solution.
 \item \code{Inadmissible}: The number of replications that converged to an inadmissible solution (e.g., a variance estimated to be lower than zero).
@@ -78,11 +70,6 @@ summary(out_preliminary)
 summary(out_preliminary, parameter = "wB2~wA1")
 
 # Performance measures for all parameters, for specific experimental condition
-summary(out_preliminary,
-  sample_size = 700,
-  time_points = 4,
-  intraclass_correlation = .3,
-  reliability = 1
-)
+summary(out_preliminary, sample_size = 700, time_points = 4, ICC = .3, reliability = 1)
 
 }

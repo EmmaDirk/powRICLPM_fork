@@ -215,15 +215,65 @@ format_reliability_names <- function(x) {
   paste(x, collapse = ", ")
 }
 
+isummary_condition_selector_supplied <- function(sample_size = NULL, time_points = NULL,
+                                                 ICC = NULL, reliability = NULL) {
+  !is.null(sample_size) ||
+    !is.null(time_points) ||
+    !is.null(ICC) ||
+    !is.null(reliability)
+}
+
+imatch_condition_indices_summary <- function(object, sample_size = NULL, time_points = NULL,
+                                             ICC = NULL, reliability = NULL,
+                                             call = rlang::caller_env()) {
+  matches <- vapply(object$conditions, function(x) {
+    (is.null(sample_size) || x$sample_size == sample_size) &&
+      (is.null(time_points) || x$time_points == time_points) &&
+      (is.null(ICC) || icondition_proportion(x) == ICC) &&
+      (is.null(reliability) || ireliability_matches(reliability, x$reliability))
+  }, logical(1))
+
+  if (!any(matches)) {
+    cli::cli_abort(
+      c(
+        "No experimental condition matches the supplied condition arguments:",
+        i = "Check the combination of {.arg sample_size}, {.arg time_points}, {.arg intraclass_correlation}, and {.arg reliability}.",
+        x = paste0(
+          "Supplied values: sample_size = ", isummary_selector_value(sample_size),
+          ", time_points = ", isummary_selector_value(time_points),
+          ", intraclass_correlation = ", isummary_selector_value(ICC),
+          ", reliability = ", isummary_selector_value(reliability), "."
+        )
+      ),
+      call = call
+    )
+  }
+
+  which(matches)
+}
+
+isummary_selector_value <- function(x) {
+  if (is.null(x)) {
+    return("not supplied")
+  }
+  if (length(x) > 1L) {
+    return(paste(x, collapse = ", "))
+  }
+  as.character(x)
+}
+
 
 imatch_condition_summary <- function(object, sample_size, time_points, ICC, reliability = NULL,
                                      call = rlang::caller_env()) {
-  matches <- Filter(function(x) {
-    x$sample_size == sample_size &&
-      x$time_points == time_points &&
-      icondition_proportion(x) == ICC &&
-      (is.null(reliability) || ireliability_matches(reliability, x$reliability))
-  }, object$conditions)
+  match_indices <- imatch_condition_indices_summary(
+    object = object,
+    sample_size = sample_size,
+    time_points = time_points,
+    ICC = ICC,
+    reliability = reliability,
+    call = call
+  )
+  matches <- object$conditions[match_indices]
 
   if (length(matches) == 0) {
     supplied_reliability <- if (is.null(reliability)) {
