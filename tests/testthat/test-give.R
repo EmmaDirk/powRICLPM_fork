@@ -20,6 +20,7 @@ test_that("give() works", {
   df_condition_alias <- give(out1, "intraclass_correlation")
   df_condition_icc <- give(out1, "ICC")
   df_problems <- give(out1, "estimation_problems")
+  loadings <- give(out1, "loadings")
   df_results <- give(out1, what = "results", parameter = "wB2~wA1")
   df_uncertainty <- give(out1, what = "uncertainty", parameter = "wB2~wA1")
   df_names <- give(out1, "names")
@@ -27,27 +28,388 @@ test_that("give() works", {
   # Run tests
   expect_error(give(1, "conditions"))
   expect_error(give(out1, "results"))
+  expect_error(give(out1, "AF_proportion"), "only available for DPM")
 
   expect_s3_class(df_conditions, "data.frame")
-  expect_equal(dim(df_conditions), c(2, 4))
-  expect_equal(names(df_conditions)[3], "ICC")
-  expect_equal(names(df_condition_alias)[3], "intraclass_correlation")
-  expect_equal(names(df_condition_icc)[3], "ICC")
+  expect_equal(dim(df_conditions), c(2, 5))
+  expect_equal(names(df_conditions)[1], "condition")
+  expect_equal(names(df_conditions)[4], "ICC")
+  expect_false("software" %in% names(df_conditions))
+  expect_false("loadings" %in% names(df_conditions))
+  expect_equal(names(df_condition_alias)[4], "intraclass_correlation")
+  expect_equal(names(df_condition_icc)[4], "ICC")
   names(df_condition_alias) <- names(df_conditions)
   expect_equal(df_condition_alias, df_conditions)
   expect_equal(df_condition_icc, df_conditions)
 
   expect_s3_class(df_problems, "data.frame")
-  expect_equal(dim(df_problems), c(2, 7))
+  expect_equal(dim(df_problems), c(2, 9))
+  expect_equal(names(df_problems)[1], "condition")
+  expect_equal(df_problems$reps, c(2, 2))
+  expect_false("loadings" %in% names(df_problems))
+
+  expect_true(is.matrix(loadings))
+  expect_equal(unname(loadings), matrix(1, nrow = 2, ncol = 3))
 
   expect_s3_class(df_results, "data.frame")
-  expect_equal(dim(df_results), c(2, 14))
+  expect_equal(
+    names(df_results),
+    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power")
+  )
 
   expect_s3_class(df_uncertainty, "data.frame")
   expect_equal(nrow(df_uncertainty), 2)
+  expect_equal(names(df_uncertainty)[1], "condition")
   expect_true(all(c("MCSE_average", "MCSE_EmpSE", "MCSE_accuracy") %in% names(df_uncertainty)))
   expect_true("MCSE_SD" %in% names(df_uncertainty))
 
   expect_type(df_names, "character")
   expect_equal(length(df_names), 20)
+})
+
+test_that("give() returns default loadings for older objects without stored loadings", {
+  object <- list(
+    conditions = list(
+      list(sample_size = 500, time_points = 3, ICC = 0.4, reliability = 1),
+      list(sample_size = 500, time_points = 4, ICC = 0.4, reliability = 1)
+    ),
+    session = list(
+      model = "RICLPM",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  loadings <- give(object, "loadings")
+
+  expect_true(is.list(loadings))
+  expect_equal(unname(loadings$condition_1), matrix(1, nrow = 2, ncol = 3))
+  expect_equal(unname(loadings$condition_2), matrix(1, nrow = 2, ncol = 4))
+})
+
+test_that("give() labels DPM proportion conditions", {
+  object <- list(
+    conditions = list(list(
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.2,
+      reliability = 1,
+      loadings = matrix(1, nrow = 2, ncol = 2)
+    )),
+    session = list(
+      model = "DPM",
+      version = "0.2.1",
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  expect_equal(names(give(object, "conditions"))[4], "AF_proportion")
+  expect_equal(names(give(object, "AF_proportion"))[4], "AF_proportion")
+  expect_error(give(object, "intraclass_correlation"), "not available for DPM")
+  expect_error(give(object, "ICC"), "not available for DPM")
+  expect_false("reliability" %in% names(give(object, "conditions")))
+  reliability_error <- expect_error(give(object, "reliability"), "not available for DPM")
+  expect_match(conditionMessage(reliability_error), "give\\(object, 'conditions'\\)")
+  expect_false(grepl("AF_proportion", conditionMessage(reliability_error), fixed = TRUE))
+  expect_equal(
+    give(object, "loadings"),
+    structure(
+      matrix(1, nrow = 2, ncol = 2),
+      dimnames = list(c("AF_A", "AF_B"), c("wave_2", "wave_3"))
+    )
+  )
+
+  print_output <- capture.output(print(object))
+  expect_true(any(grepl("Dynamic Panel Model \\(DPM\\)", print_output)))
+  expect_false(any(grepl("Reliability", print_output, fixed = TRUE)))
+})
+
+test_that("give() uses condition numbers for DPM parameter results", {
+  object <- list(
+    conditions = list(list(
+      sample_size = 800,
+      time_points = 4,
+      ICC = 0.2,
+      reliability = 1,
+      estimates = data.frame(
+        parameter = "B2~A1",
+        population_value = 0.2,
+        average = 0.222,
+        bias = 0.022,
+        minimum = 0.222,
+        EmpSE = NA_real_,
+        SEAvg = 0.074,
+        MSE = 0.001,
+        accuracy = 0.288,
+        coverage = 1,
+        power = 1
+      ),
+      MCSEs = data.frame(
+        MCSE_average = 0.01,
+        MCSE_bias = 0.01,
+        MCSE_MSE = 0.01,
+        MCSE_coverage = 0.01,
+        MCSE_SEAvg = 0.01,
+        MCSE_EmpSE = NA_real_,
+        MCSE_SD = NA_real_,
+        MCSE_accuracy = 0.01,
+        MCSE_power = 0.01
+      ),
+      estimation_information = list(
+        n_error = 0,
+        n_nonconvergence = 0,
+        n_inadmissible = 0,
+        n_completed = 1
+      )
+    )),
+    session = list(
+      model = "DPM",
+      version = "0.2.1",
+      reps = 1,
+      bounds = FALSE,
+      constraints = "residuals",
+      estimate_ME = FALSE,
+      argument_names = list(intraclass_correlation = "AF_proportion")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  results <- give(object, "results", parameter = "B2~A1")
+  expect_equal(
+    names(results),
+    c("condition", "population_value", "average", "bias", "minimum", "EmpSE", "SEAvg", "MSE", "accuracy", "coverage", "power")
+  )
+  expect_equal(results$condition, 1)
+  expect_false(any(c("sample_size", "time_points", "AF_proportion") %in% names(results)))
+
+  uncertainty <- give(object, "uncertainty", parameter = "B2~A1")
+  expect_equal(names(uncertainty)[1], "condition")
+  expect_false(any(c("sample_size", "time_points", "AF_proportion") %in% names(uncertainty)))
+})
+
+test_that("give() notes free-loading anchor for condition tables", {
+  object_dpm <- list(
+    conditions = list(list(
+      sample_size = 1000,
+      time_points = 3,
+      AF_proportion = 0.2,
+      reliability = 1,
+      constraints = "AF_loadings_free"
+    )),
+    session = list(
+      model = "DPM",
+      argument_names = list(AF_proportion = "AF_proportion")
+    )
+  )
+  class(object_dpm) <- c("powDPM", "powRICLPM", "list")
+
+  object_riclpm <- list(
+    conditions = list(list(
+      sample_size = 1000,
+      time_points = 3,
+      ICC = 0.5,
+      reliability = 1,
+      constraints = "RI_loadings_free"
+    )),
+    session = list(
+      model = "RICLPM",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object_riclpm) <- c("powRICLPM", "list")
+
+  expect_silent(give(object_dpm, "conditions"))
+  expect_silent(give(object_riclpm, "conditions"))
+  expect_silent(inote_condition_loading_anchor(object_dpm, "AF_A=~A3"))
+})
+
+test_that("condition tables show compact custom loading values and give() returns loadings", {
+  base_condition <- list(
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = 1,
+    loadings = matrix(1, nrow = 2, ncol = 4),
+    constraints = "none",
+    estimation_information = list(
+      n_error = 0,
+      n_nonconvergence = 0,
+      n_inadmissible = 0
+    )
+  )
+  object <- list(
+    conditions = list(
+      base_condition,
+      modifyList(base_condition, list(constraints = "RI_loadings_free")),
+      modifyList(base_condition, list(loadings = matrix(c(1, .8, 1, 1, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE))),
+      modifyList(base_condition, list(
+        loadings = matrix(c(1, .8, 1, 1, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE),
+        constraints = "RI_loadings_free"
+      ))
+    ),
+    session = list(
+      model = "RICLPM",
+      version = "0.2.1",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  expect_true(all(c("loadings_RI_A", "loadings_RI_B") %in% names(give(object, "conditions"))))
+  expect_true(all(c("loadings_RI_A", "loadings_RI_B") %in% names(give(object, "estimation_problems"))))
+  expect_equal(
+    give(object, "conditions")$loadings_RI_A,
+    c("c(1, 1, 1, 1)", "c(1, 1, 1, 1)", "c(1, 0.8, 1, 1)", "c(1, 0.8, 1, 1)")
+  )
+
+  custom_loadings <- give(object, "loadings")
+  expect_true(is.list(custom_loadings))
+  expect_equal(unname(custom_loadings[[2]]), matrix(c(1, .8, 1, 1, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE))
+
+  print_output <- capture.output(print(object))
+  expect_true(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
+  expect_false(any(grepl("give(<your_object>, \"loadings\")", print_output, fixed = TRUE)))
+  expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
+  expect_false(any(grepl("fixed*", print_output, fixed = TRUE)))
+  expect_false(any(grepl("free*", print_output, fixed = TRUE)))
+})
+
+test_that("small custom loading matrices print inside condition tables", {
+  loadings <- matrix(c(1, .8, 1, 1, 1, 1.2, 1, 1), nrow = 2, byrow = TRUE)
+  condition <- list(
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = 1,
+    loadings = loadings,
+    constraints = "RI_loadings_free"
+  )
+  object <- list(
+    conditions = list(condition),
+    session = list(
+      model = "RICLPM",
+      version = "0.2.1",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  print_output <- capture.output(print(object))
+  expect_false(any(grepl("DATA-GENERATING LOADINGS", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
+  expect_true(any(grepl("c(1, 0.8, 1, 1)", print_output, fixed = TRUE)))
+  expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
+})
+
+test_that("six-wave custom loadings print inspection note only", {
+  condition <- list(
+    sample_size = 600,
+    time_points = 6,
+    ICC = 0.5,
+    reliability = 1,
+    loadings = matrix(
+      c(1, .8, 1, 1, 1, .9,
+        1, 1.2, 1, 1, 1, 1.1),
+      nrow = 2,
+      byrow = TRUE
+    ),
+    constraints = "RI_loadings_free"
+  )
+  object <- list(
+    conditions = list(condition),
+    session = list(
+      model = "RICLPM",
+      version = "0.2.1",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  print_output <- capture.output(print(object))
+  expect_false(any(grepl("DATA-GENERATING LOADINGS", print_output, fixed = TRUE)))
+  expect_false(any(grepl("Loadings RI_A", print_output, fixed = TRUE)))
+  expect_true(any(grepl("give(object, \"loadings\")", print_output, fixed = TRUE)))
+  expect_true(any(grepl("loadings matrix", print_output, fixed = TRUE)))
+  expect_false(any(grepl("x$conditions", print_output, fixed = TRUE)))
+})
+
+test_that("restrictive misspecification print messages use concrete reasons", {
+  condition <- list(
+    sample_size = 600,
+    time_points = 4,
+    ICC = 0.5,
+    reliability = 0.8,
+    loadings = matrix(1, nrow = 2, ncol = 4)
+  )
+  object <- list(
+    conditions = list(condition),
+    session = list(
+      model = "RICLPM",
+      version = "0.2.1",
+      misspecified_restrictive = TRUE,
+      misspecification_restrictive_reasons = "Measurement error was generated but not estimated",
+      argument_names = list(intraclass_correlation = "ICC")
+    )
+  )
+  class(object) <- c("powRICLPM", "list")
+
+  print_output <- capture.output(print(object))
+  expect_true(any(grepl("Measurement error was generated but not estimated. Power may be overestimated", print_output, fixed = TRUE)))
+  expect_false(any(grepl("The estimation model was more restrictive", print_output, fixed = TRUE)))
+  expect_false(any(grepl("restrictive misspecification", print_output, fixed = TRUE)))
+})
+
+test_that("Mplus condition print uses variable-specific reliability columns", {
+  conditions <- list(
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.7, B = 0.6",
+      reliability_matrix = matrix(c(0.7, 0.6), nrow = 2, ncol = 5)
+    ),
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.8, B = 0.75",
+      reliability_matrix = matrix(c(0.8, 0.75), nrow = 2, ncol = 5)
+    )
+  )
+
+  print_output <- capture.output(
+    print.powRICLPM.Mplus(conditions, save_path = tempdir())
+  )
+
+  expect_true(any(grepl("Reliability A", print_output, fixed = TRUE)))
+  expect_true(any(grepl("Reliability B", print_output, fixed = TRUE)))
+  expect_false(any(grepl("A = 0.7, B = 0.6", print_output, fixed = TRUE)))
+})
+
+test_that("Mplus condition print collapses matching matrix reliability columns", {
+  conditions <- list(
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.7, B = 0.7",
+      reliability_matrix = matrix(0.7, nrow = 2, ncol = 5)
+    ),
+    list(
+      sample_size = 500,
+      time_points = 5,
+      ICC = 0.4,
+      reliability = "A = 0.8, B = 0.8",
+      reliability_matrix = matrix(0.8, nrow = 2, ncol = 5)
+    )
+  )
+
+  print_output <- capture.output(
+    print.powRICLPM.Mplus(conditions, save_path = tempdir())
+  )
+
+  expect_true(any(grepl("Reliability", print_output, fixed = TRUE)))
+  expect_false(any(grepl("Reliability A", print_output, fixed = TRUE)))
+  expect_false(any(grepl("Reliability B", print_output, fixed = TRUE)))
 })

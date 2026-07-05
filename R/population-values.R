@@ -48,7 +48,7 @@ compute_RI_cov <- function(RI_cor, RI_var) {
 #' Compute Measurement Error Variance
 #'
 #' @inheritParams compute_RI_cov
-#' @param reliability A numeric value between 0 and 1, denoting the reliability of the variables.
+#' @param reliability A numeric value or matrix between 0 and 1, denoting the reliability of the variables.
 #'
 #' @noRd
 compute_ME_var <- function(RI_var, reliability) {

@@ -17,8 +17,6 @@ The functionality previously provided by \code{powRICLPM_Mplus} has been replace
 }
 \examples{
 \dontrun{
-  lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
-
   # Use `software = "Mplus"` to setup power analysis for Mplus
   out_preliminary <- powRICLPM(
     target_power = 0.8,
@@ -26,10 +24,10 @@ The functionality previously provided by \code{powRICLPM_Mplus} has been replace
     search_upper = 700,
     search_step = 100,
     time_points = c(3, 4),
-    intraclass_correlation = c(0.4, 0.6),
+    ICC = c(0.4, 0.6),
     reliability = c(1, 0.8),
     RI_cor = 0.3,
-    lagged_effects = lagged_effects,
+    Phi = Phi,
     within_cor = 0.3,
     reps = 1000,
     seed = 1234,

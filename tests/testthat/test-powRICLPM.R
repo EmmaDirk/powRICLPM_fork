@@ -16,12 +16,12 @@ test_that("basic power analysis using lavaan runs", {
   expect_equal(length(out1$conditions), 1)
   expect_equal(
     c(
-      "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
-      "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
-      "kurtosis", "significance_criterion", "estimates", "MCSEs", "reps",
+      "sample_size", "time_points", "ICC", "software", "reliability", "RI_var", "RI_cov",
+      "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
+      "kurtosis", "significance_criterion", "misspecification", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 19)
+    rep(TRUE, times = 22)
   )
   expect_type(out1$conditions[[1]]$estimates, "list")
   expect_type(out1$conditions[[1]]$MCSEs, "list")
@@ -38,7 +38,45 @@ test_that("basic power analysis using lavaan runs", {
   )
 })
 
-test_that("lavaan supplied loadings require freed public estimation path", {
+test_that("powRICLPM defaults to MLR for nonnormal lavaan data", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  out <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      skewness = 1,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out$session$estimator, "MLR")
+
+  out_explicit <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 3,
+      intraclass_correlation = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      skewness = 1,
+      estimator = "ML",
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(out_explicit$session$estimator, "ML")
+})
+
+test_that("lavaan supplied fixed loadings can use the fixed public estimation path", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
   out_default <- suppressWarnings(
@@ -57,7 +95,7 @@ test_that("lavaan supplied loadings require freed public estimation path", {
 
   expect_equal(class(out_default), c("powRICLPM", "list"))
 
-  expect_error(
+  out_supplied <- suppressWarnings(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -69,9 +107,10 @@ test_that("lavaan supplied loadings require freed public estimation path", {
       loadings = c(1, 1, 1),
       reps = 1,
       seed = 123456
-    ),
-    "RI_loadings_free"
+    )
   )
+
+  expect_equal(class(out_supplied), c("powRICLPM", "list"))
 
   expect_error(
     powRICLPM(
@@ -125,11 +164,11 @@ test_that("lavaan supplied loadings require freed public estimation path", {
   )
 })
 
-test_that("lavaan custom loadings require freed public estimation path", {
+test_that("lavaan custom loadings can be fitted freely or flagged as restrictive", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   loadings <- matrix(c(1, 0, -1.2, 1, 2.5, 0.25), nrow = 2, byrow = TRUE)
 
-  expect_error(
+  expect_message(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
@@ -142,23 +181,27 @@ test_that("lavaan custom loadings require freed public estimation path", {
       reps = 1,
       seed = 123456
     ),
-    "RI_loadings_free"
+    "Custom random-intercept loadings were supplied, but loadings are estimated as fixed"
   )
 
-  out_free <- suppressWarnings(
-    powRICLPM(
-      target_power = 0.8,
-      sample_size = 1000,
-      time_points = 3,
-      ICC = 0.5,
-      RI_cor = 0.3,
-      lagged_effects = lagged_effects,
-      within_cor = 0.3,
-      loadings = loadings,
-      constraints = "RI_loadings_free",
-      reps = 1,
-      seed = 123456
-    )
+  out_free <- NULL
+  out_free_messages <- capture.output(
+    out_free <- suppressWarnings(
+      powRICLPM(
+        target_power = 0.8,
+        sample_size = 1000,
+        time_points = 3,
+        ICC = 0.5,
+        RI_cor = 0.3,
+        lagged_effects = lagged_effects,
+        within_cor = 0.3,
+        loadings = loadings,
+        constraints = c("lagged", "RI_loadings_free"),
+        reps = 1,
+        seed = 123456
+      )
+    ),
+    type = "message"
   )
 
   RI_loading_parameters <- c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3")
@@ -170,6 +213,38 @@ test_that("lavaan custom loadings require freed public estimation path", {
   expect_true(grepl("RI_B=~0.25*B3", out_free$conditions[[1]]$pop_synt, fixed = TRUE))
   expect_false(anyNA(index))
   expect_equal(out_free$conditions[[1]]$estimates$population_value[index], c(0, -1.2, 2.5, 0.25))
+  expect_true("loadings_RI_A" %in% names(give(out_free, "conditions")))
+  expect_true("loadings_RI_B" %in% names(give(out_free, "conditions")))
+  expect_equal(unname(give(out_free, "loadings")), loadings)
+  expect_true(any(grepl("specified ICC can only be interpreted as the ICC at wave 1", out_free_messages, fixed = TRUE)))
+})
+
+test_that("freely estimated default loadings do not become condition output", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out_free_default <- NULL
+  out_free_default_messages <- capture.output(
+    out_free_default <- suppressWarnings(
+      powRICLPM(
+        target_power = 0.8,
+        sample_size = 1000,
+        time_points = 4,
+        ICC = 0.5,
+        RI_cor = 0.3,
+        lagged_effects = lagged_effects,
+        within_cor = 0.3,
+        constraints = "RI_loadings_free",
+        reps = 1,
+        seed = 123456
+      )
+    ),
+    type = "message"
+  )
+
+  expect_false("loadings" %in% names(give(out_free_default, "conditions")))
+  expect_false("loadings_RI_A" %in% names(give(out_free_default, "conditions")))
+  expect_equal(unname(give(out_free_default, "loadings")), matrix(1, nrow = 2, ncol = 4))
+  expect_false(any(grepl("specified ICC can only be interpreted as the ICC at wave 1", out_free_default_messages, fixed = TRUE)))
 })
 
 test_that("ICOV no convergence warnings are recognized", {
@@ -320,6 +395,23 @@ test_that("powRICLPM requires sample_size or a complete search range", {
   expect_equal(out$conditions[[1]]$sample_size, 1000)
 })
 
+test_that("powRICLPM rejects missing skewness and kurtosis informatively", {
+  base <- list(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reps = 1,
+    seed = 123456
+  )
+
+  expect_error(do.call(powRICLPM, c(base, list(skewness = NA_real_))), "skewness.*non-missing")
+  expect_error(do.call(powRICLPM, c(base, list(kurtosis = NA_real_))), "kurtosis.*non-missing")
+})
+
 test_that("powRICLPM validation errors use user-facing alias names", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
@@ -415,12 +507,12 @@ test_that("basic power analysis with multiple experimental conditions works", {
   expect_equal(length(out1$conditions), 8)
   expect_equal(
     c(
-      "sample_size", "time_points", "ICC", "reliability", "RI_var", "RI_cov",
-      "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
-      "kurtosis", "significance_criterion", "estimates", "MCSEs", "reps",
+      "sample_size", "time_points", "ICC", "software", "reliability", "RI_var", "RI_cov",
+      "reliability_matrix", "pop_synt", "pop_tab", "est_synt", "est_tab", "estimate_ME", "skewness",
+      "kurtosis", "significance_criterion", "misspecification", "estimates", "MCSEs", "reps",
       "condition_id", "estimation_information"
     ) %in% names(out1$conditions[[1]]),
-    rep(TRUE, times = 19)
+    rep(TRUE, times = 22)
   )
 
 })
@@ -460,17 +552,18 @@ test_that("power analysis with constraints works", {
 
   test_summary_condition_stationarity <- summary(out_stationarity, sample_size = 1000, time_points = 3, ICC = 0.5, reliability = 1)
 
-  # No starting values, and hence zero population values for residual covariances (to aid convergence)
+  # Starting values preserve the implied residual covariances under stationarity.
   expect_equal(
     test_summary_condition_stationarity$Population,
-    c(1.000, 1.000, 0.300, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.400, 0.150, 0.200, 0.300, 0.400, 0.150, 0.200, 0.300, 0.300, 0.781, 0.781, 0.834, 0.834, 0, 0)
+    c(1.000, 1.000, 0.300, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.400, 0.150, 0.200, 0.300, 0.400, 0.150, 0.200, 0.300, 0.300, 0.781, 0.781, 0.834, 0.834, 0.130, 0.130)
   )
 })
 
 
 test_that("power analysis for the STARTS model works", {
-  expect_warning({
-    out <- powRICLPM(
+  warnings <- character()
+  out <- withCallingHandlers(
+    powRICLPM(
       target_power = 0.8,
       sample_size = c(500),
       time_points = 4,
@@ -482,8 +575,13 @@ test_that("power analysis for the STARTS model works", {
       estimate_ME = TRUE,
       reps = 1,
       seed = 1234
-    )
-  })
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("some estimated [ol]v variances are negative", warnings)))
 
   expect_equal(out$session$estimate_ME, TRUE)
   expect_equal(
@@ -492,10 +590,65 @@ test_that("power analysis for the STARTS model works", {
   )
 })
 
+test_that("reliability scenario paths run", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+
+  out_vector <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reliability = c(0.8, 0.7, 1),
+      estimate_ME = TRUE,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(length(out_vector$conditions), 3)
+  expect_equal(unname(vapply(out_vector$conditions, function(x) x$reliability, numeric(1))), c(0.8, 0.7, 1))
+  expect_equal(out_vector$conditions[[2]]$reliability_matrix, matrix(0.7, nrow = 2, ncol = 4))
+  expect_true(grepl("A2~~0.857142857142857*A2", out_vector$conditions[[2]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0.857142857142857*B3", out_vector$conditions[[2]]$pop_synt, fixed = TRUE))
+
+  reliability_matrix <- matrix(c(0.8, 0.7, 0.9, 0.85), nrow = 2, byrow = TRUE)
+  out_matrix <- suppressWarnings(
+    powRICLPM(
+      target_power = 0.8,
+      sample_size = 1000,
+      time_points = 4,
+      ICC = 0.5,
+      RI_cor = 0.3,
+      lagged_effects = lagged_effects,
+      within_cor = 0.3,
+      reliability = reliability_matrix,
+      estimate_ME = TRUE,
+      reps = 1,
+      seed = 123456
+    )
+  )
+
+  expect_equal(length(out_matrix$conditions), 2)
+  expect_equal(
+    unname(vapply(out_matrix$conditions, function(x) x$reliability, character(1))),
+    c("A = 0.8, B = 0.9", "A = 0.7, B = 0.85")
+  )
+  expect_equal(out_matrix$conditions[[2]]$reliability_matrix, matrix(c(0.7, 0.85), nrow = 2, ncol = 4))
+  expect_true(grepl("A2~~0.857142857142857*A2", out_matrix$conditions[[2]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("B2~~0.352941176470588*B2", out_matrix$conditions[[2]]$pop_synt, fixed = TRUE))
+  expect_true(grepl("A2~~start(0.857142857142857)*A2", out_matrix$conditions[[2]]$est_synt, fixed = TRUE))
+  expect_true(grepl("B2~~start(0.352941176470588)*B2", out_matrix$conditions[[2]]$est_synt, fixed = TRUE))
+})
+
 test_that("bounded estimation for STARTS model in powRICLPM() works", {
 
-  expect_warning({
-    out1 <- powRICLPM(
+  warnings <- character()
+  out1 <- withCallingHandlers(
+    powRICLPM(
       target_power = 0.8,
       sample_size = c(500),
       time_points = 4,
@@ -508,14 +661,19 @@ test_that("bounded estimation for STARTS model in powRICLPM() works", {
       bounds = TRUE,
       reps = 1,
       seed = 1234
-    )
-  })
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("some estimated [ol]v variances are negative", warnings)))
 
   expect_true(out1$session$bounds)
 })
 
 test_that("power analysis using Mplus works", {
-  powRICLPM(
+  out <- powRICLPM(
     sample_size = 1000,
     time_points = 4,
     ICC = 0.5,
@@ -527,6 +685,9 @@ test_that("power analysis using Mplus works", {
     save_path = tempdir(),
     software = "Mplus"
   )
+  expect_s3_class(out, "powRICLPM")
+  expect_equal(out$session$software, "Mplus")
+  expect_equal(give(out, "conditions")$sample_size, 1000)
 
   if (.Platform$OS.type %in% c("windows", "mac")) {
     path <- normalizePath(
@@ -573,6 +734,11 @@ test_that("power analysis for the STARTS model using Mplus works", {
     save_path = tempdir()
   )
 
+  expect_s3_class(out_constrained, "powRICLPM")
+  expect_equal(out_constrained$session$software, "Mplus")
+  expect_equal(give(out_constrained, "conditions")$reliability, 0.85)
+  expect_error(summary(out_constrained), "not available for Mplus setup objects")
+
   expect_error(
     powRICLPM(
       target_power = 0.8,
@@ -591,5 +757,50 @@ test_that("power analysis for the STARTS model using Mplus works", {
       save_path = tempdir()
     )
   )
+
+  vector_reliability_save_path <- tempfile()
+  dir.create(vector_reliability_save_path)
+  powRICLPM(
+    target_power = 0.8,
+    sample_size = c(2000),
+    time_points = 4,
+    ICC = .5,
+    RI_cor = 0.3,
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reliability = c(.85, .8),
+    estimate_ME = TRUE,
+    reps = 2,
+    seed = 1234,
+    software = "Mplus",
+    save_path = vector_reliability_save_path
+  )
+  expect_true(file.exists(file.path(vector_reliability_save_path, "Condition1.inp")))
+  expect_true(file.exists(file.path(vector_reliability_save_path, "Condition2.inp")))
+
+  matrix_reliability_save_path <- tempfile()
+  dir.create(matrix_reliability_save_path)
+  out_matrix_reliability <- powRICLPM(
+    target_power = 0.8,
+    sample_size = c(2000),
+    time_points = 4,
+    ICC = .5,
+    RI_cor = 0.3,
+    lagged_effects = matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE),
+    within_cor = 0.3,
+    reliability = matrix(c(.85, .8, .9, .75), nrow = 2, byrow = TRUE),
+    estimate_ME = TRUE,
+    constraints = "ME",
+    reps = 2,
+    seed = 1234,
+    software = "Mplus",
+    save_path = matrix_reliability_save_path
+  )
+  matrix_conditions <- give(out_matrix_reliability, "conditions")
+  expect_equal(matrix_conditions$reliability_A, c("0.85", "0.8"))
+  expect_equal(matrix_conditions$reliability_B, c("0.9", "0.75"))
+  expect_error(summary(out_matrix_reliability), "not available for Mplus setup objects")
+  expect_true(file.exists(file.path(matrix_reliability_save_path, "Condition1.inp")))
+  expect_true(file.exists(file.path(matrix_reliability_save_path, "Condition2.inp")))
 
 })

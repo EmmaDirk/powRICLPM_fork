@@ -21,7 +21,7 @@ is_PD <- function(x) {
 
 #' Check if the implied process is stationary
 #'
-#' \code{is_unit()} checks if the process implied by the regression matrix \code{x} is stationary, by testing if its eigenvalues lie within the unit circle.
+#' \code{is_unit()} checks if the process implied by the regression matrix \code{x} is stationary, by testing if its largest absolute eigenvalue is smaller than 1.
 #'
 #' @param x A square matrix.
 #'

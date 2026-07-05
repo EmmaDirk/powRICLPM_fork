@@ -10,8 +10,18 @@ test_that("icheck_T() works", {
   expect_error(icheck_T(Inf, ME = FALSE), "finite")
   expect_error(icheck_T(NA_real_, ME = FALSE), "finite")
   expect_error(icheck_T(c(2, 3), ME = FALSE))
-  expect_warning(icheck_T(c(3:30), ME = FALSE))
-  expect_error(icheck_T(c(3, 4), ME = TRUE))
+  expect_warning(icheck_T(c(3:30), ME = FALSE), "large number of time points")
+  expect_null(icheck_T(c(3, 4), ME = TRUE), c(3, 4))
+})
+
+test_that("icheck_model() works", {
+  expect_equal(icheck_model("RICLPM"), "RICLPM")
+  expect_equal(icheck_model("DPM"), "DPM")
+  expect_error(icheck_model("CLPM"), "RICLPM.*DPM")
+  expect_error(icheck_model("dpm"), "RICLPM.*DPM.*dpm")
+  expect_error(icheck_model(c("RICLPM", "DPM")), "length 1")
+  expect_error(icheck_model(NA_character_), "RICLPM.*DPM.*NA")
+  expect_error(icheck_model(TRUE), "character string")
 })
 
 test_that("icheck_ICC() works", {
@@ -36,15 +46,25 @@ test_that("icheck_lagged_effects() works", {
 
   expect_null(icheck_lagged_effects(m1))
   expect_error(icheck_lagged_effects("m1"))
-  expect_error(icheck_lagged_effects(m2))
+  expect_error(icheck_lagged_effects(data.frame(A = c(.3, .2), B = c(.15, .2))), "matrix")
+  expect_error(icheck_lagged_effects(c(.3, .2, .15, .2)), "matrix")
+  expect_error(icheck_lagged_effects(m2), "largest absolute eigenvalue")
+  expect_error(icheck_lagged_effects(m2), "Use smaller autoregressive")
+  stationarity_error <- tryCatch(icheck_lagged_effects(m2), error = conditionMessage)
+  expect_false(grepl("unit circle", stationarity_error, fixed = TRUE))
 })
 
 test_that("check_lagged_effects() writes lagged effect interpretation", {
   m1 <- matrix(c(.3, .2, .15, .2), ncol = 2, byrow = TRUE)
 
-  expect_output(check_lagged_effects(m1), "According to `lagged_effects`")
+  expect_output(check_lagged_effects(m1), "According to `lagged_effects`, the data-generating lagged effects are")
+  expect_output(check_lagged_effects(m1, model = "DPM"), "data-generating lagged effects")
   expect_error(check_lagged_effects("m1"), "lagged_effects")
   expect_output(check_lagged_effects(Phi = m1), "According to `Phi`")
+  expect_output(check_Phi(Phi = m1), "According to `Phi`, the data-generating lagged effects are")
+  lagged_output <- capture.output(check_lagged_effects(m1, model = "DPM"))
+  expect_false(any(grepl("DPM lagged effects", lagged_output, fixed = TRUE)))
+  expect_false(any(grepl("RI-CLPM lagged effects", lagged_output, fixed = TRUE)))
   expect_error(check_lagged_effects(Phi = 1), "Phi")
   expect_error(check_lagged_effects(m1, extra = TRUE), "Unexpected argument")
   expect_error(
@@ -80,78 +100,147 @@ test_that("check_loadings() writes loading interpretation", {
   )
 
   expect_output(
-    check_loadings(loading_vector),
+    check_loadings(loading_vector, model = "RICLPM"),
     "According to `loadings`"
   )
   expect_output(
-    check_loadings(loading_vector),
+    check_loadings(loading_vector, model = "RICLPM"),
     "RI_A loads on A3 and RI_B loads on B3 with -1.2"
   )
   expect_output(
-    check_loadings(loading_vector),
+    check_loadings(loading_vector, model = "RICLPM"),
     "RI_A loads on A4 and RI_B loads on B4 with 2"
   )
   expect_output(
-    check_loadings(loading_matrix_same),
+    check_loadings(loading_matrix_same, model = "RICLPM"),
     "RI_A loads on A2 and RI_B loads on B2 with 0.5"
   )
-  loading_matrix_same_output <- capture.output(check_loadings(loading_matrix_same))
+  loading_matrix_same_output <- capture.output(check_loadings(loading_matrix_same, model = "RICLPM"))
   expect_equal(
     sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_same_output)),
     4
   )
 
   expect_output(
-    check_loadings(loading_matrix, time_points = 4),
+    check_loadings(loading_matrix, time_points = 4, model = "RICLPM"),
     "RI_A loads on A2 with 0"
   )
   expect_output(
-    check_loadings(loading_matrix, time_points = 4),
+    check_loadings(loading_matrix, time_points = 4, model = "RICLPM"),
     "RI_B loads on B2 with 2.5"
   )
   expect_output(
-    check_loadings(loading_matrix),
+    check_loadings(loading_matrix, model = "RICLPM"),
     "RI_B loads on B4 with -0.5"
   )
-  loading_matrix_output <- capture.output(check_loadings(loading_matrix))
+  loading_matrix_output <- capture.output(check_loadings(loading_matrix, model = "RICLPM"))
   expect_equal(
     sum(grepl("^\\s*[*\u2022] RI_", loading_matrix_output)),
     8
   )
 
   expect_error(check_loadings(), "must be supplied")
-  expect_error(check_loadings(loading_vector, time_points = 3), "length 4.*time_points.*= 3")
+  expect_error(check_loadings(loading_vector), "model.*must be supplied")
+  expect_error(check_loadings(loading_vector, time_points = 3, model = "RICLPM"), "length 4.*time_points.*= 3")
   expect_error(
-    check_loadings(c(0.8, 1, 1), time_points = 3),
+    check_loadings(c(0.8, 1, 1), time_points = 3, model = "RICLPM"),
     "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
   )
   expect_error(
     check_loadings(
       suppressWarnings(matrix(c(1, 0, 1, -0.5, 0.25), nrow = 2, byrow = TRUE)),
-      time_points = 3
+      time_points = 3,
+      model = "RICLPM"
     ),
     "first column.*RI_A = 1.*RI_B = -0.5.*matrix.*c\\(1, 1\\)"
   )
-  expect_error(check_loadings(list(c(1, 0, 1))), "numeric vector.*numeric matrix.*list")
-  expect_error(check_loadings(data.frame(a = c(1, 0, 1))), "numeric vector.*numeric matrix.*data frame")
-  expect_error(check_loadings(array(c(1, 0, -1, 2.5), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
-  expect_error(check_loadings(numeric(0)), "at least one value.*length 0")
-  expect_error(check_loadings(loading_vector, time_points = c(3, 4)), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
-  expect_error(check_loadings(loading_vector, time_points = 3.5), "positive whole number.*time_points.*= 3.5")
-  expect_error(check_loadings(loading_vector, time_points = "4"), 'positive whole number.*time_points.*= "4"')
-  expect_error(check_loadings(loading_vector, time_points = NA), "positive whole number.*time_points.*= NA")
-  expect_error(check_loadings(loading_vector, time_points = Inf), "positive whole number.*time_points.*= Inf")
-  expect_error(check_loadings(loading_vector, time_points = 0), "positive whole number.*time_points.*= 0")
-  expect_error(check_loadings(loading_vector, time_points = -4), "positive whole number.*time_points.*= -4")
-  expect_error(check_loadings(loading_vector, time_points = 4, extra = TRUE), "Unexpected argument")
+  expect_error(check_loadings(list(c(1, 0, 1)), model = "RICLPM"), "numeric vector.*numeric matrix.*list")
+  expect_error(check_loadings(data.frame(a = c(1, 0, 1)), model = "RICLPM"), "numeric vector.*numeric matrix.*data frame")
+  expect_error(check_loadings(array(c(1, 0, -1, 2.5), dim = c(2, 2, 1)), model = "RICLPM"), "numeric vector.*numeric matrix.*array")
+  expect_error(check_loadings(numeric(0), model = "RICLPM"), "at least one value.*length 0")
+  expect_error(check_loadings(loading_vector, time_points = c(3, 4), model = "RICLPM"), "multiple values.*powRICLPM.*calls.*time_points.*= 2")
+  expect_error(check_loadings(loading_vector, time_points = 3.5, model = "RICLPM"), "positive whole number.*time_points.*= 3.5")
+  expect_error(check_loadings(loading_vector, time_points = "4", model = "RICLPM"), 'positive whole number.*time_points.*= "4"')
+  expect_error(check_loadings(loading_vector, time_points = NA, model = "RICLPM"), "positive whole number.*time_points.*= NA")
+  expect_error(check_loadings(loading_vector, time_points = Inf, model = "RICLPM"), "positive whole number.*time_points.*= Inf")
+  expect_error(check_loadings(loading_vector, time_points = 0, model = "RICLPM"), "positive whole number.*time_points.*= 0")
+  expect_error(check_loadings(loading_vector, time_points = -4, model = "RICLPM"), "positive whole number.*time_points.*= -4")
+  expect_error(check_loadings(loading_vector, time_points = 4, model = "RICLPM", extra = TRUE), "Unexpected argument")
+  expect_error(
+    check_loadings(c(NA, 1, 0.8, 1.1), model = "RICLPM"),
+    "must not contain missing values"
+  )
+})
+
+test_that("check_reliability() writes reliability interpretation", {
+  reliability_vector <- c(0.8, 0.7, 1)
+  reliability_matrix_same <- matrix(
+    c(0.8, 0.7, 1, 0.8, 0.7, 1),
+    nrow = 2,
+    byrow = TRUE
+  )
+  reliability_matrix <- matrix(
+    c(0.8, 0.7, 1, 0.9, 0.85, 0.75),
+    nrow = 2,
+    byrow = TRUE
+  )
+
+  expect_output(check_reliability(0.8), "Variables A and B have reliability 0.8")
+  expect_output(check_reliability(reliability_vector), "In condition 2, variables A and B have reliability 0.7")
+  expect_output(check_reliability(reliability_matrix_same), "In condition 3, variables A and B have reliability 1")
+  reliability_matrix_same_output <- capture.output(check_reliability(reliability_matrix_same))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] In condition", reliability_matrix_same_output)),
+    3
+  )
+
+  expect_output(check_reliability(reliability_matrix, time_points = 4), "variable A has reliability 0.7 and variable B has reliability 0.85")
+  reliability_matrix_output <- capture.output(check_reliability(reliability_matrix))
+  reliability_scalar_output <- capture.output(check_reliability(0.8))
+  expect_equal(
+    sum(grepl("^\\s*[*\u2022] In condition", reliability_matrix_output)),
+    3
+  )
+  expect_false(any(grepl("at every time point", reliability_scalar_output, fixed = TRUE)))
+  expect_false(any(grepl("at every time point", reliability_matrix_output, fixed = TRUE)))
+
+  expect_error(check_reliability(), "must be supplied")
+  suppressWarnings(expect_error(
+    check_reliability(matrix(c(0.8, 0.7, 0.9, 0.85, 0.75), nrow = 2, byrow = TRUE), time_points = 3),
+    "rows with different lengths"
+  ))
+  expect_error(check_reliability(list(c(0.8, 0.7, 1))), "numeric vector.*numeric matrix.*list")
+  expect_error(check_reliability(data.frame(a = c(0.8, 0.7, 1))), "numeric vector.*numeric matrix.*data frame")
+  expect_error(check_reliability(array(c(0.8, 0.7, 1, 0.9), dim = c(2, 2, 1))), "numeric vector.*numeric matrix.*array")
+  expect_error(check_reliability(numeric(0)), "at least one value.*length 0")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = c(3, 4)), "one positive whole.*length.*= 2")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = 3.5), "positive whole")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = "3"), 'positive whole.*"3"')
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = NA), "positive whole.*NA")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = Inf), "positive whole.*Inf")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = 0), "positive whole.*0")
+  expect_error(check_reliability(c(0.8, 0.7, 1), time_points = -3), "positive whole.*-3")
+  expect_error(check_reliability(reliability_vector, time_points = 4, extra = TRUE), "Unexpected argument")
 })
 
 test_that("icheck_reliability() works", {
-  expect_null(icheck_rel(c(.8, .9)))
   expect_null(icheck_rel(.8))
-  expect_error(icheck_rel(8))
-  expect_error(icheck_rel("a"))
-  expect_error(icheck_rel(-.8))
+  expect_null(icheck_rel(.8, c(3, 4), "Mplus"))
+  expect_null(icheck_rel(c(.8, .9, 1), 3, "lavaan"))
+  expect_null(icheck_rel(matrix(c(.8, .9, 1, .7, .8, .9), nrow = 2, byrow = TRUE), 3, "lavaan"))
+  expect_null(icheck_rel(c(.8, .9, 1), c(3, 4), "Mplus"))
+  expect_null(icheck_rel(matrix(c(.8, .9, .7, .8), nrow = 2, byrow = TRUE), c(3, 4), "Mplus"))
+  expect_error(icheck_rel(8), "larger than 0.1.*at most 1")
+  expect_error(icheck_rel("a"), "numeric vector.*numeric matrix")
+  expect_error(icheck_rel(data.frame(a = c(.8, .9, 1)), 3, "lavaan"), "data frame")
+  expect_error(icheck_rel(array(c(.8, .9, 1, .7), dim = c(2, 2, 1)), 2, "lavaan"), "array")
+  expect_error(icheck_rel(numeric(0)), "at least one value.*length 0")
+  expect_error(icheck_rel(-.8), "larger than 0.1.*at most 1")
+  expect_error(icheck_rel(.1), "larger than 0.1.*at most 1")
+  expect_error(icheck_rel(c(.8, Inf, 1), 3, "lavaan"), "contains: c\\(0.8, Inf, 1\\)")
+  expect_error(icheck_rel(matrix(.8, nrow = 1, ncol = 3), 3, "lavaan"), "must have 2 rows.*has 1 row")
+  expect_error(icheck_rel(matrix(.8, nrow = 3, ncol = 3), 3, "lavaan"), "must have 2 rows.*has 3 rows")
+  expect_error(icheck_rel(matrix(numeric(0), nrow = 2, ncol = 0), 3, "lavaan"), "at least one column.*0 columns")
 })
 
 test_that("icheck_loadings() works", {
@@ -198,6 +287,12 @@ test_that("icheck_loadings() works", {
     icheck_loadings(c(1, Inf, 2), 3, "lavaan"),
     "contains: c\\(1, Inf, 2\\)"
   )
+  expect_error(icheck_loadings(NA_real_, 3, "lavaan"), "must not contain missing values")
+  expect_error(icheck_loadings(c(1, NA, 2), 3, "lavaan"), "must not contain missing values")
+  expect_error(
+    icheck_loadings(matrix(c(1, NA, 1, 1, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
+    "must not contain missing values"
+  )
   expect_error(
     icheck_loadings(c(0.8, 1, 1), 3, "lavaan"),
     "first entry.*0.8.*vector beginning with 1.*matrix.*c\\(1, 1\\)"
@@ -206,24 +301,16 @@ test_that("icheck_loadings() works", {
     icheck_loadings(matrix(c(1, 0.5, 1, 0.8, 1, 1), nrow = 2, byrow = TRUE), 3, "lavaan"),
     "first column.*RI_A = 1.*RI_B = 0.8.*matrix.*c\\(1, 1\\)"
   )
-  expect_error(
-    icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"),
-    "RI_loadings_free"
-  )
-  expect_error(
-    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
-    "in a constraint vector"
-  )
-  expect_error(
-    icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"),
-    "supplied.*loadings.*constraints.*= lagged"
-  )
+  expect_null(icheck_loadings(c(1, 0, -2), 3, "lavaan", "none"))
+  expect_null(icheck_loadings(c(1, 1, 1), 3, "lavaan", "lagged"))
 })
 
 test_that("icheck_moment() works", {
   expect_null(icheck_moment(0.3))
   expect_error(icheck_moment("a"))
   expect_error(icheck_moment(c(0.2, 0.5)))
+  expect_error(icheck_moment(NA_real_, arg = "skewness"), "skewness.*non-missing")
+  expect_error(icheck_moment(NA_real_, arg = "kurtosis"), "kurtosis.*non-missing")
 })
 
 test_that("icheck_significance_criterion() works", {
@@ -231,6 +318,53 @@ test_that("icheck_significance_criterion() works", {
   expect_error(icheck_significance_criterion(c(0.05, 0.10)))
   expect_error(icheck_significance_criterion(-0.05))
   expect_error(icheck_significance_criterion("a"))
+  expect_error(icheck_significance_criterion(NA_real_), "non-missing")
+})
+
+test_that("ignored vector names and matrix dimnames are reported", {
+  expect_message(
+    inote_ignored_input_names(c(wave_1 = 1, wave_2 = 0.8), "loadings", "Loading values"),
+    "names are ignored.*supplied order"
+  )
+  expect_message(
+    inote_ignored_input_names(c(free = "RI_loadings_free", time = "lagged"), "constraints", "Constraint values"),
+    "names are ignored.*supplied order"
+  )
+  expect_message(
+    inote_ignored_input_names(
+      matrix(
+        c(1, 0.8, 1, 1.2),
+        nrow = 2,
+        dimnames = list(c("first_factor", "second_factor"), c("first_wave", "second_wave"))
+      ),
+      "loadings",
+      "Loading values"
+    ),
+    "dimnames are ignored.*matrix position"
+  )
+  expect_message(
+    inote_ignored_input_names(
+      matrix(
+        c(0.8, 0.9, 0.7, 0.85),
+        nrow = 2,
+        dimnames = list(c("A_name", "B_name"), c("condition_1", "condition_2"))
+      ),
+      "reliability",
+      "Reliability values"
+    ),
+    "dimnames are ignored.*matrix position"
+  )
+})
+
+test_that("restrictive misspecification informs without interactive confirmation", {
+  misspecification <- list(
+    restrictive = TRUE,
+    restrictive_reasons = "Measurement error was generated but not estimated"
+  )
+  expect_message(
+    expect_true(confirm_restrictive_misspecification(misspecification)),
+    "Measurement error was generated but not estimated"
+  )
 })
 
 test_that("icheck_ME() works", {
@@ -238,20 +372,25 @@ test_that("icheck_ME() works", {
   expect_error(icheck_ME(c(T, F)))
   expect_error(icheck_ME("T"))
   expect_error(icheck_ME(1))
+  expect_error(icheck_ME(NA), "TRUE or FALSE")
 })
 
 test_that("icheck_reps() works", {
   expect_null(icheck_reps(1000))
   expect_error(icheck_reps("1000"))
   expect_error(icheck_reps(1000.5))
+  expect_error(icheck_reps(0), "positive")
   expect_error(icheck_reps(-1000))
+  expect_error(icheck_reps(NA_real_), "non-missing")
+  expect_error(icheck_reps(c(10, 20)), "single")
 })
 
 test_that("icheck_seed() works", {
   expect_equal(icheck_seed(1234), 1234)
-  expect_warning(icheck_seed(NA))
+  expect_warning(icheck_seed(NA), "No seed was specified")
   expect_error(icheck_seed("1234"))
   expect_error(icheck_seed(1234.5))
+  expect_error(icheck_seed(c(1234, 5678)), "single")
 })
 
 test_that("icheck_constraints() works", {
@@ -261,7 +400,12 @@ test_that("icheck_constraints() works", {
   expect_error(icheck_constraints("a", ME = F))
   expect_error(icheck_constraints(TRUE, ME = F))
   expect_error(icheck_constraints(c("none", "ME"), ME = F))
-  expect_error(icheck_constraints("ME", ME = F))
+  expect_error(icheck_constraints("ME", ME = F, arg = "constraints"), "Your `constraints` is ME")
+  expect_error(icheck_constraints(c("ME", "RI_loadings_free"), ME = F, arg = "constraints"), "c\\('ME', 'RI_loadings_free'\\)")
+  expect_error(icheck_constraints(c("none", "none"), ME = F), "c\\('none', 'none'\\)")
+  expect_error(icheck_constraints(c("lagged", "lagged", "residuals"), ME = F), "c\\('lagged', 'lagged', 'residuals'\\)")
+  expect_error(icheck_constraints(matrix("RI_loadings_free", nrow = 1), ME = F), "matrix or array")
+  expect_error(icheck_constraints(array(c("lagged", "RI_loadings_free"), dim = c(1, 2, 1)), ME = F), "matrix or array")
 })
 
 test_that("vector constraints validate and preserve within compatibility", {
@@ -287,8 +431,8 @@ test_that("vector constraints validate and preserve within compatibility", {
     "cannot combine 'stationarity'"
   )
   expect_error(
-    icheck_constraints(c("ME", "RI_loadings_free"), ME = FALSE),
-    "estimate_ME = TRUE"
+    icheck_constraints("loadings_free", ME = FALSE),
+    "invalid constraints"
   )
 
   expect_error(
@@ -323,12 +467,89 @@ test_that("constraint helpers interpret legacy within and explicit vectors", {
   )
 })
 
+test_that("RI-CLPM identification table is enforced", {
+  for (i in seq_len(nrow(RICLPM_identification_table))) {
+    row <- RICLPM_identification_table[i, ]
+    constraints <- if (identical(row$constraints_key, "none")) {
+      "none"
+    } else {
+      strsplit(row$constraints_key, "\\+", fixed = FALSE)[[1]]
+    }
+    constraints <- setdiff(constraints, "ME")
+    if (isTRUE(row$estimate_ME) && grepl("ME", row$constraints_key, fixed = TRUE)) {
+      constraints <- c(constraints, "ME")
+    }
+    if (isTRUE(row$RI_loadings_free)) {
+      constraints <- c(constraints, "RI_loadings_free")
+    }
+
+    expect_null(icheck_RICLPM_identification(
+      row$min_waves,
+      row$estimate_ME,
+      constraints
+    ))
+    expect_error(
+      icheck_RICLPM_identification(row$min_waves - 1, row$estimate_ME, constraints),
+      "not identified"
+    )
+  }
+})
+
+test_that("RI-CLPM misspecification detection distinguishes restrictive cases", {
+  expect_false(detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(1, nrow = 2, ncol = 3),
+    estimate_ME = FALSE,
+    loadings = matrix(1, nrow = 2, ncol = 3),
+    constraints = "none"
+  )$restrictive)
+
+  generated_ME <- detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(0.8, nrow = 2, ncol = 3),
+    estimate_ME = FALSE,
+    loadings = matrix(1, nrow = 2, ncol = 3),
+    constraints = "none"
+  )
+  expect_true(generated_ME$restrictive)
+  expect_match(generated_ME$reasons, "Measurement error was generated but not estimated", fixed = TRUE)
+
+  varying_loadings <- detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(1, nrow = 2, ncol = 3),
+    estimate_ME = FALSE,
+    loadings = matrix(c(1, 0.9, 0.8, 1, 1.1, 1.2), nrow = 2, byrow = TRUE),
+    constraints = "none"
+  )
+  expect_true(varying_loadings$restrictive)
+  expect_match(varying_loadings$reasons, "Custom random-intercept loadings", fixed = TRUE)
+  expect_match(varying_loadings$reasons, "estimated as fixed", fixed = TRUE)
+
+  general <- detect_RICLPM_restrictive_misspecification(
+    reliability_matrix = matrix(1, nrow = 2, ncol = 3),
+    estimate_ME = TRUE,
+    loadings = matrix(1, nrow = 2, ncol = 3),
+    constraints = "RI_loadings_free"
+  )
+  expect_false(general$restrictive)
+  expect_true(general$general)
+
+  expect_message(
+    confirm_RICLPM_restrictive_misspecification(generated_ME),
+    "Measurement error was generated but not estimated"
+  )
+  confirmation_message <- capture.output(
+    confirm_RICLPM_restrictive_misspecification(generated_ME),
+    type = "message"
+  )
+  expect_false(any(grepl("more restrictive", confirmation_message, fixed = TRUE)))
+})
+
 test_that("icheck_estimator() works", {
   expect_equal(icheck_estimator(NA, skewness = 0, kurtosis = 1), "MLR")
   expect_equal(icheck_estimator(NA, 0, 0), "ML")
   expect_equal(icheck_estimator(NA, skewness = 1, kurtosis = 0), "MLR")
+  expect_equal(icheck_estimator("ML", skewness = 1, kurtosis = 1), "ML")
   expect_error(icheck_estimator("a", skewness = 0, kurtosis = 0))
   expect_error(icheck_estimator(1, skewness = 0, kurtosis = 0))
+  expect_error(icheck_estimator(c("ML", "MLR"), skewness = 0, kurtosis = 0))
 })
 
 test_that("icheck_path() works", {
@@ -363,9 +584,10 @@ test_that("icheck_sample_size_search() works", {
 test_that("icheck_bounds() works", {
   expect_null(icheck_bounds(TRUE, "none", "lavaan"))
   expect_null(icheck_bounds(TRUE, "RI_loadings_free", "lavaan"))
+  expect_null(icheck_bounds(TRUE, "lagged", "lavaan"))
+  expect_null(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
   expect_error(icheck_bounds("TRUE", "none", "Mplus"))
-  expect_error(icheck_bounds(TRUE, "lagged", "lavaan"))
-  expect_error(icheck_bounds(TRUE, c("lagged", "RI_loadings_free"), "lavaan"))
+  expect_error(icheck_bounds(TRUE, "none", "Mplus"), "only be used with lavaan")
 })
 
 test_that("icheck_software() works", {
@@ -537,6 +759,35 @@ test_that("vector constraints are one condition and match within shorthand", {
 
   expect_true(grepl("MODEL CONSTRAINT", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
   expect_true(grepl("(MEvarA)", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("*0.13 (rcov2)", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+
+  conditions_mplus_stationarity <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_true(grepl("MODEL CONSTRAINT", conditions_mplus_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_false(grepl("(MEvarA)", conditions_mplus_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("*0.13 (rcov2)", conditions_mplus_stationarity[[1]]$Mplus_synt, fixed = TRUE))
 })
 
 test_that("RI_loadings_free changes lavaan estimation syntax only", {
@@ -575,6 +826,67 @@ test_that("RI_loadings_free changes lavaan estimation syntax only", {
   expect_true(grepl("RI_A=~lx3*start(1)*A3", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly2*start(1)*B2", condition$est_synt, fixed = TRUE))
   expect_true(grepl("RI_B=~ly3*start(1)*B3", condition$est_synt, fixed = TRUE))
+  expect_equal(condition$constraints, "RI_loadings_free")
+  expect_true(has_constraint(condition$constraints, "RI_loadings_free"))
+})
+
+test_that("lavaan RI-CLPM conditions preserve constraints for condition-level logic", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  stationarity_condition <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  free_loading_condition <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 1,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "RI_loadings_free",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  expect_equal(stationarity_condition$constraints, "stationarity")
+  expect_true(has_constraint(stationarity_condition$constraints, "stationarity"))
+  expect_equal(free_loading_condition$constraints, "RI_loadings_free")
+  expect_false("loadings" %in% names(give_powRICLPM_conditions(list(conditions = list(free_loading_condition)))))
+  expect_false("loadings_RI_A" %in% names(give_powRICLPM_conditions(list(conditions = list(free_loading_condition)))))
 })
 
 test_that("loadings update lavaan data generation syntax", {
@@ -652,6 +964,121 @@ test_that("loadings update lavaan data generation syntax", {
   expect_true(grepl("RI_A~~start(0.3)*RI_B", condition_matrix$est_synt, fixed = TRUE))
 })
 
+test_that("reliability updates lavaan measurement-error syntax", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  conditions_scalar <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = FALSE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "none",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+  condition_scalar <- conditions_scalar[[1]]
+  expect_equal(condition_scalar$reliability, 0.8)
+  expect_equal(condition_scalar$reliability_matrix, matrix(0.8, nrow = 2, ncol = 3))
+  expect_equal(condition_scalar$ME_var, matrix(0.5, nrow = 2, ncol = 3))
+  expect_true(grepl("A1~~0.5*A1", condition_scalar$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0.5*B3", condition_scalar$pop_synt, fixed = TRUE))
+
+  conditions_vector <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = c(0.8, 0.7, 1),
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "none",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+  expect_equal(length(conditions_vector), 3)
+  expect_equal(unname(vapply(conditions_vector, function(x) x$reliability, numeric(1))), c(0.8, 0.7, 1))
+  condition_vector <- conditions_vector[[2]]
+  expected_vector_ME <- matrix(6 / 7, nrow = 2, ncol = 3)
+  expect_equal(condition_vector$reliability, 0.7)
+  expect_equal(condition_vector$reliability_matrix, matrix(0.7, nrow = 2, ncol = 3))
+  expect_equal(condition_vector$ME_var, expected_vector_ME)
+  expect_true(grepl("A2~~0.857142857142857*A2", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("B3~~0.857142857142857*B3", condition_vector$pop_synt, fixed = TRUE))
+  expect_true(grepl("A2~~start(0.857142857142857)*A2", condition_vector$est_synt, fixed = TRUE))
+  expect_true(grepl("B3~~start(0.857142857142857)*B3", condition_vector$est_synt, fixed = TRUE))
+
+  reliability_matrix <- matrix(c(0.8, 0.7, 1, 0.9, 0.85, 0.75), nrow = 2, byrow = TRUE)
+  conditions_matrix <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 3,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = reliability_matrix,
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "ME",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )
+  expect_equal(length(conditions_matrix), 3)
+  expect_equal(
+    unname(vapply(conditions_matrix, function(x) x$reliability, character(1))),
+    c("A = 0.8, B = 0.9", "A = 0.7, B = 0.85", "A = 1, B = 0.75")
+  )
+  condition_matrix <- conditions_matrix[[2]]
+  expected_matrix <- matrix(c(0.7, 0.85), nrow = 2, ncol = 3)
+  expected_matrix_ME <- ((1 - expected_matrix) * 2) / expected_matrix
+  expected_A_start <- mean(expected_matrix_ME[1, ])
+  expected_B_start <- mean(expected_matrix_ME[2, ])
+  expect_equal(condition_matrix$reliability, "A = 0.7, B = 0.85")
+  expect_equal(condition_matrix$reliability_matrix, expected_matrix)
+  expect_equal(condition_matrix$ME_var, expected_matrix_ME)
+  expect_true(grepl("A2~~0.857142857142857*A2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl("B2~~0.352941176470588*B2", condition_matrix$pop_synt, fixed = TRUE))
+  expect_true(grepl(paste0("A1~~MEvarA*start(", expected_A_start, ")*A1"), condition_matrix$est_synt, fixed = TRUE))
+  expect_true(grepl(paste0("B1~~MEvarB*start(", expected_B_start, ")*B1"), condition_matrix$est_synt, fixed = TRUE))
+})
+
 test_that("RI_loadings_free combines with compatible lavaan constraints", {
   lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
   Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
@@ -701,12 +1128,21 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
     count_parameters(2, 3, "RI_loadings_free", FALSE),
     count_parameters(2, 3, "none", FALSE) + 4
   )
+  expect_gt(
+    count_parameters(2, 4, "stationarity", TRUE),
+    count_parameters(2, 4, c("stationarity", "ME"), TRUE)
+  )
+  expect_error(
+    icheck_RICLPM_identification(3, TRUE, "stationarity"),
+    "requires at least 4 waves"
+  )
+  expect_null(icheck_RICLPM_identification(3, TRUE, c("stationarity", "ME")))
 
   out <- suppressWarnings(
     powRICLPM(
       target_power = 0.8,
       sample_size = 1000,
-      time_points = 3,
+      time_points = 4,
       ICC = 0.5,
       RI_cor = 0.3,
       lagged_effects = lagged_effects,
@@ -720,8 +1156,64 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
 
   expect_true(out$session$bounds)
   expect_true(all(
-    c("RI_A=~A2", "RI_A=~A3", "RI_B=~B2", "RI_B=~B3") %in%
+    c("RI_A=~A2", "RI_A=~A3", "RI_A=~A4", "RI_B=~B2", "RI_B=~B3", "RI_B=~B4") %in%
       out$conditions[[1]]$estimates$parameter
   ))
 })
 
+test_that("stationarity does not constrain measurement error unless ME is supplied", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  stationarity_only <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  stationarity_ME <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("stationarity", "ME"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  expect_false(grepl("MEvarA", stationarity_only$est_synt, fixed = TRUE))
+  expect_true(grepl("A1~~start(", stationarity_only$est_synt, fixed = TRUE))
+  expect_true(grepl("MEvarA", stationarity_ME$est_synt, fixed = TRUE))
+})

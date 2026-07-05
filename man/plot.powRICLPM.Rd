@@ -43,7 +43,7 @@ Visualizes (using \pkg{ggplot2}) the results from a \code{powRICLPM} analysis, f
 \item \code{MSE}: The mean square error.
 \item \code{coverage}: The coverage rate
 \item \code{accuracy}: The average width of the confidence interval.
-\item \code{EmpSE}: Empirical standard error, computed as the standard deviation of parameter estimates over replications. \code{SD} is still accepted as an alias for \code{EmpSE}.
+\item \code{SD}: Standard deviation of parameter estimates.
 \item \code{SEAvg}: Average standard error.
 \item \code{bias}: The absolute difference between the average estimate and population value.
 }
@@ -53,7 +53,7 @@ The following variables can be mapped to color, shape, and facet:
 \itemize{
 \item \code{sample_size}: Sample size.
 \item \code{time_points}: Time points.
-\item \code{intraclass_correlation} or \code{ICC}: Intraclass correlation.
+\item \code{ICC}: Intraclass correlation (ICC).
 \item \code{reliability}: Item-reliablity.
 }
 }

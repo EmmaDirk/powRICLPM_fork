@@ -1,5 +1,5 @@
 Package: powRICLPM
-Title: Perform Power Analysis for the RI-CLPM and STARTS Model
+Title: Perform Power Analysis for the RI-CLPM, STARTS Model, and DPM
 Version: 0.2.1
 Date: 2024-10-26
 Authors@R: c(
@@ -9,12 +9,13 @@ Authors@R: c(
   )
 Maintainer: Jeroen Mulder <j.d.mulder@uu.nl>
 Description: Perform user-friendly power analyses for the random
-    intercept cross-lagged panel model (RI-CLPM) and the bivariate stable trait 
-    autoregressive trait state (STARTS) model. The strategy as proposed by 
-    Mulder (2023) <doi:10.1080/10705511.2022.2122467> is implemented. Extensions 
-    include the use of parameter constraints over time, bounded estimation,
-    generation of data with skewness and kurtosis, and the option to setup the power 
-    analysis for Mplus. 
+    intercept cross-lagged panel model (RI-CLPM), the bivariate stable trait
+    autoregressive trait state (STARTS) model, and the dynamic panel model
+    (DPM). The strategy as proposed by Mulder (2023)
+    <doi:10.1080/10705511.2022.2122467> is implemented. Extensions include the
+    use of parameter constraints over time, bounded estimation, generation of
+    data with skewness and kurtosis, and the option to setup the RI-CLPM power
+    analysis for Mplus.
 License: MIT + file LICENSE
 URL: https://jeroendmulder.github.io/powRICLPM/
 BugReports: https://github.com/JeroenDMulder/powRICLPM/issues/
@@ -25,13 +26,13 @@ Depends:
 Imports: 
     cli,
     future.apply,
+    knitr,
     lavaan (>= 0.6.7),
     progressr,
     rlang,
     ggplot2,
     future
 Suggests: 
-    knitr,
     rmarkdown,
     testthat,
     parallelly
@@ -40,5 +41,5 @@ VignetteBuilder:
 Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.0.0

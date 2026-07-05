@@ -1,6 +1,5 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/404.html</loc></url>
-<url><loc>https://jeroendmulder.github.io/powRICLPM/AGENTS.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/articles/extensions.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/articles/FAQ.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/articles/index.html</loc></url>
@@ -16,8 +15,7 @@
 <url><loc>https://jeroendmulder.github.io/powRICLPM/LICENSE-text.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/LICENSE.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/news/index.html</loc></url>
-<url><loc>https://jeroendmulder.github.io/powRICLPM/reference/check_lagged_effects.html</loc></url>
-<url><loc>https://jeroendmulder.github.io/powRICLPM/reference/check_loadings.html</loc></url>
+<url><loc>https://jeroendmulder.github.io/powRICLPM/reference/check_Phi.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/reference/give.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/reference/index.html</loc></url>
 <url><loc>https://jeroendmulder.github.io/powRICLPM/reference/plot.powRICLPM.html</loc></url>

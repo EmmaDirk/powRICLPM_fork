@@ -15,19 +15,20 @@ print.powRICLPM <- function(x, ...) {
   icc_table_label <- iicc_table_name(object = x)
 
   # Collect condition table
-  df_conditions <- do.call(rbind, lapply(x$conditions, function(condition) {
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = condition$ICC,
-      reliability = condition$reliability,
-      stringsAsFactors = FALSE
-    )
-  }))
+  df_conditions <- give_powRICLPM_conditions(x)
   df_conditions <- cbind(condition = 1:length(x$conditions), df_conditions)
+  df_conditions <- idrop_DPM_reliability_column(x, df_conditions)
+  condition_col_names <- c("Condition", icondition_table_names(x, df_conditions, icc_table_label))
 
   # Print header
-  cat("powRICLPM (", as.character(x$session$powRICLPM_version), ") simulated power for ", length(x$conditions), " experimental conditions:", sep = "")
+  n_conditions <- length(x$conditions)
+  cat(
+    "powRICLPM (", as.character(ipowRICLPM_version(x)), ") simulated power for the ",
+    imodel_display_name(x), " for ", n_conditions, " ",
+    iexperimental_condition_label(n_conditions), ":",
+    sep = ""
+  )
+  iprint_misspecification_warning(x)
 
   # Format condition table
   print(
@@ -35,9 +36,11 @@ print.powRICLPM <- function(x, ...) {
       df_conditions,
       format = "simple",
       align = rep("r", times = length(colnames(df_conditions))),
-      col.names = c("Condition", "Sample size", "Time points", icc_table_label, "Reliability")
+      col.names = condition_col_names
     )
   )
+  iprint_custom_loadings(x)
+  invisible(x)
 }
 
 
@@ -45,23 +48,32 @@ print.powRICLPM <- function(x, ...) {
 #' Print Summary Call powRICLPM
 #'
 #' @noRd
-print.summary.powRICLPM <- function(x, ..., powRICLPM_version) {
-  cat("powRICLPM (", as.character(powRICLPM_version), ") simulated power for ", nrow(x), " experimental conditions.", sep = "")
+print.summary.powRICLPM <- function(x, ..., object) {
+  n_conditions <- nrow(x)
+  cat(
+    "powRICLPM (", as.character(ipowRICLPM_version(object)), ") simulated power for the ",
+    imodel_display_name(object), " for ", n_conditions, " ",
+    iexperimental_condition_label(n_conditions), ".",
+    sep = ""
+  )
+  iprint_misspecification_warning(object)
   cat("\n")
   print(
     knitr::kable(
       x,
-      align = "rrrrrrr",
+      align = rep("r", times = length(colnames(x))),
       format = "simple",
       caption = "SUMMARY OF ANALYSIS PER EXPERIMENTAL CONDITION"
     )
   )
+  iprint_custom_loadings(object)
 }
 
 #' Print Summary Condition Call powRICLPM
 #'
 #' @noRd
-print.summary.powRICLPM.condition <- function(x, ...) {
+print.summary.powRICLPM.condition <- function(x, ..., object) {
+  iprint_misspecification_warning(object)
   cat("\n")
   print(
     knitr::kable(
@@ -77,7 +89,7 @@ print.summary.powRICLPM.condition <- function(x, ...) {
       x$summary_condition,
       align = "lr",
       format = "simple",
-      caption = "SUMMARY OF SIMULATION CONDITION"
+      caption = paste0("SUMMARY OF ", imodel_display_short(object), " SIMULATION CONDITION")
     )
   )
   cat("\n")
@@ -95,15 +107,28 @@ print.summary.powRICLPM.condition <- function(x, ...) {
 #' Print Summary Parameter Call powRICLPM
 #'
 #' @noRd
-print.summary.powRICLPM.parameter <- function(x, ..., parameter) {
+print.summary.powRICLPM.parameter <- function(x, ..., parameter, object) {
+  iprint_misspecification_warning(object)
   print(
     knitr::kable(
       x,
       format = "simple",
       align = rep("r", times = length(colnames(x))),
-      caption = paste0("SIMULATION RESULTS FOR ", parameter)
+      caption = paste0("SIMULATION RESULTS FOR ", parameter, " (", imodel_display_short(object), ")")
     )
   )
+}
+
+iprint_misspecification_warning <- function(object) {
+  if (!isTRUE(object$session$misspecified_restrictive)) {
+    return(invisible(NULL))
+  }
+  cat(
+    "\n\n",
+    imisspecification_warning_text(object$session$misspecification_restrictive_reasons, past = TRUE),
+    sep = ""
+  )
+  invisible(NULL)
 }
 
 #' Print Mplus Call powRICLPM
@@ -113,15 +138,28 @@ print.powRICLPM.Mplus <- function(x, ..., save_path, icc_label = "Intraclass cor
 
   # Collect condition table
   df_conditions <- do.call(rbind, lapply(x, function(condition) {
-    data.frame(
-      sample_size = condition$sample_size,
-      time_points = condition$time_points,
-      ICC = condition$ICC,
-      reliability = condition$reliability,
-      stringsAsFactors = FALSE
+    cbind(
+      data.frame(
+        sample_size = condition$sample_size,
+        time_points = condition$time_points,
+        ICC = condition$ICC,
+        stringsAsFactors = FALSE
+      ),
+      icondition_reliability_columns(condition)
     )
   }))
+  df_conditions <- icollapse_equal_reliability_columns(df_conditions)
   df_conditions <- cbind(condition = 1:length(x), df_conditions)
+  reliability_col_names <- character()
+  if ("reliability" %in% names(df_conditions)) {
+    reliability_col_names <- c(reliability_col_names, "Reliability")
+  }
+  if ("reliability_A" %in% names(df_conditions)) {
+    reliability_col_names <- c(reliability_col_names, "Reliability A")
+  }
+  if ("reliability_B" %in% names(df_conditions)) {
+    reliability_col_names <- c(reliability_col_names, "Reliability B")
+  }
 
   cli::cli_alert_info("Mplus input files for power analysis have been saved to {.path {save_path}}.\n
                       The conditions numbers correspond to the following conditions:")
@@ -132,7 +170,7 @@ print.powRICLPM.Mplus <- function(x, ..., save_path, icc_label = "Intraclass cor
       df_conditions,
       format = "simple",
       align = rep("r", times = length(colnames(df_conditions))),
-      col.names = c("Condition", "Sample size", "Time points", icc_label, "Reliability")
+      col.names = c("Condition", "Sample size", "Time points", icc_label, reliability_col_names)
     )
   )
 }

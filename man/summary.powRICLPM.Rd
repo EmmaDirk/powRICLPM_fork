@@ -11,6 +11,7 @@
   sample_size = NULL,
   time_points = NULL,
   intraclass_correlation = NULL,
+  AF_proportion = NULL,
   reliability = NULL,
   ICC = NULL
 )
@@ -26,11 +27,13 @@
 
 \item{time_points}{(optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.}
 
-\item{intraclass_correlation}{(optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.}
+\item{intraclass_correlation}{to be added}
+
+\item{AF_proportion}{to be added}
 
 \item{reliability}{(optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.}
 
-\item{ICC}{Alternative name for \code{intraclass_correlation}.}
+\item{ICC}{to be added}
 }
 \value{
 No return value, called for side effects.
@@ -41,7 +44,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \details{
 \code{summary.powRICLPM} provides a different summary of the \code{powRICLPM} object, depending on the additional arguments that are set:
 \itemize{
-\item When \code{sample_size = ...}, \code{time_points = ...}, and \code{intraclass_correlation = ...} are set: Estimation information and results for all parameters in that experimental condition. If multiple conditions differ only by \code{reliability}, specify \code{reliability = ...} as well.
+\item When \code{sample_size = ...}, \code{time_points = ...}, \code{ICC = ...}, and \code{reliability} are set: Estimation information and results for all parameters across experimental conditions.
 \item When \code{parameter = "..."} is set: Estimation information and results for a specific parameter across all experimental conditions.
 \item No additional arguments: Characteristics of the different experimental conditions are summarized, as well as session info (information that applies to all conditions, such the number of replications, etc.).
 }
@@ -52,7 +55,7 @@ S3 method for class \code{powRICLPM}. \code{summary.powRICLPM} summarizes the se
 \item \code{Avg}: The average (across replications) parameter estimate.
 \item \code{Bias}: The difference between the population value and the average parameter estimate.
 \item \code{Min}: The lowest (across replications) parameter estimate.
-\item \code{EmpSE}: The empirical standard error, computed as the standard deviation of the parameter estimate over replications.
+\item \code{SD}: The standard deviation of the parameter estimate over replications.
 \item \code{SEAvg}: The average (across replications) standard error of the parameter estimate.
 \item \code{MSE}: The parameter mean square error, combining a parameter's bias and efficiency.
 \item \code{Accuracy}: The average (across replications) width of the confidence interval.
@@ -73,6 +76,6 @@ summary(out_preliminary)
 summary(out_preliminary, parameter = "wB2~wA1")
 
 # Performance measures for all parameters, for specific experimental condition
-summary(out_preliminary, sample_size = 700, time_points = 4, intraclass_correlation = .3, reliability = 1)
+summary(out_preliminary, sample_size = 700, time_points = 4, ICC = .3, reliability = 1)
 
 }

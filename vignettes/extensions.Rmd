@@ -8,93 +8,23 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The basic power analysis as described in the vignette [Getting Started](https://jeroendmulder.github.io/powRICLPM/articles/introduction.html) can be extended to using bounded estimation, estimation with constraints over time, inclusion of measurement error in the generated data and estimation model (i.e., the STARTS model), and generating data with skewness and kurtosis. These extensions are described below.
-
-```{r setup, message=FALSE}
-library(powRICLPM)
-```
+The basic power analysis as described in the vignette [Getting Started](https://jeroendmulder.github.io/powRICLPM/articles/start.html) can be extended to using bounded estimation, estimation with constraints over time, inclusion of measurement error in the generated data and estimation model (i.e., the STARTS model), and generating data with skewness and kurtosis. These extensions are described below.
 
 ## Bounded estimation with `lavaan`
-To prevent non-convergence for small sample sizes (say, less than 100), bounds can be imposed on the parameter space during estimation of the model using `bounds = TRUE` [@dejonckere_using_2022]. This can aid the optimization algorithm to find unique solutions and prevents it from searching in the completely wrong direction for one, or multiple parameters. Sensible lower bounds involve those on the (residual) variances of latent variables (e.g., the random intercept variances), as negative variances are theoretically not possible. Upper bounds for variances are determined based on the observed variances for each variable. In the context of the RI-CLPM, the factor loadings are usually fixed, and hence these parameters are not estimated. The lagged effects are theoretically infinite, and hence there are no sensible bounds we can place a priori on these parameters.
+To prevent non-convergence for small sample sizes (say, less than 100), bounds can be imposed on the parameter space during estimation of the model using `bounds = TRUE` [@dejonckere_using_2022]. This can aid the optimization algorithm to find unique solutions and prevents it from searching in the completely wrong direction for one, or multiple parameters. Sensible lower bounds involve those on the (residual) variances of latent variables (e.g., the random intercept variances), as negative variances are theoretically not possible. Upper bound for variances are determined based on the observed variances for variable. In the context of the RI-CLPM, the factor loadings are (usually) fixed, and hence these parameters are not estimated. The lagged effects are theoretically infinite, and hence there are no sensible bounds we can place à priori on these parameters. 
 
 The use of bounded estimation is theoretically appealing for models that are known to have convergence issues, such as the stable trait autoregressive trait state (STARTS) model. The Special Topics vignette [Measurement Error](https://jeroendmulder.github.io/powRICLPM/articles/measurement_error.html) uses the powRICLPM package to explore the impact of unmodeled measurement error in the RI-CLPM, and the use of bounded estimation to aid the convergence of the STARTS model. 
 
-Bounded estimation can only be used when no equality or time-invariance constraints are imposed on the estimation model, except for `constraints = "RI_loadings_free"` since it frees random-intercept loadings rather than constraining parameters. It still cannot be combined with equality or time-invariance constraints such as `constraints = "lagged"`, `constraints = "residuals"`, `constraints = "stationarity"`, or `constraints = "ME"`.
-
 ## Constraints over time
-`powRICLPM()` offers users the option to impose various constraints on the estimation model through the `constraints` argument. This has statistical advantages as constraints over time reduce model complexity, thereby potentially reducing convergence issues and increasing power. Moreover, some researchers are interested in so-called stationarity constraints for theoretical reasons. A disadvantage of such constraints is that they assume certain parameters to be time-invariant. This might not be an assumption researchers are willing to make, especially in developmental contexts where you expect lagged effects might change over time (e.g., the variable `wA` gets more important in driving `wB` as one gets older). Therefore, by default `constraints = "none"`, implying that all lagged effects and within-components (residual) variances and covariances are freely estimated over time.
+`powRICLPM()` offers users the option to impose various constraints over time on the estimation model through the `constraints` argument. This has statistical advantages as constraints over time reduce model complexity, thereby potentially reducing convergence issues and increasing power. Moreover, some researchers are interested in so called 'stationarity' constraints for theoretical reasons. A disadvantage of such constraints is that they assume certain parameters to be time-invariant. This might not be an assumption researchers are willing to make, especially in developmental contexts where you expect lagged effects might change over time (e.g., the variable `wA` gets more important in driving `wB` as one gets older). Therefore, by default `constraints = "none"`, implying that all lagged effects, and within-components (residual) variances and covariances are freely estimated over time. 
 
 Constraint options include:
 
 - `constraints = "lagged"`: Autoregressive and cross-lagged effects are constrained to be equal over time. 
-- `constraints = "residuals"`: Within-unit residual variances and covariances (from wave 2 onward) are constrained to be equal over time.
-- `constraints = "within"`: Both lagged effects and residual variances and covariances are constrained to be equal over time. This is equivalent to `constraints = c("lagged", "residuals")`.
-- `constraints = "stationarity"`: Constraints are imposed on the variances of the within-components at the first wave, and residual variances at wave 2 and further, such that the variances of the within-components themselves are all 1. This implies that the variances at the first wave are fixed to 1, and that the residual variances are a function of the lagged effects, and correlation between within-components at the same wave. These constraints are deduced in the supplementary materials of @mulder_three_2021, see the FAQ ["How can I constrain the *standardized* parameters to be invariant over time?"](https://jeroendmulder.github.io/RI-CLPM/faq.html#Standardization). This option cannot be combined with `constraints = "lagged"` or `constraints = "residuals"`.
+- `constraints = "residuals`: Within-unit residual variances and covariance (from wave 2 onward) are constrained to be equal over time.
+- `constraints = "within"`: Both lagged effects and residual variances and covariances are constrained to be equal over time.
+- `constraints = "stationary"`: Constraints are imposed on the variances of the within-components at the first wave, and residual variances at wave 2 and further, such that the variances of the within-components themselves are all 1. This implies that the variances at the first wave are fixed to 1, and that the residual variances are a function of the lagged effects, and correlation between within-components at the same wave. These constraints are deduced in the supplementary materials of @mulder_three_2021, see the FAQ ["How can I constrain the *standardized* parameters to be invariant over time?"](https://jeroendmulder.github.io/RI-CLPM/faq.html#Standardization).
 - `constraints = "ME"`: Constraints are imposed on the measurement error variances across time (separately for each variable). This constraint is only possible when `estimate_ME = TRUE`. 
-- `constraints = "RI_loadings_free"`: Freely estimated random-intercept factor loadings; see details below.
-
-The random-intercept factor loadings are a special case. In the standard RI-CLPM specification, these loadings are fixed to 1 so that each observed variable loads equally on its random intercept. The option `constraints = "RI_loadings_free"` relaxes this assumption in the estimation model by freely estimating the random-intercept factor loadings from the second wave onward. The first loading remains fixed to 1 for identification.
-
-Compatible options can be combined in a character vector. For example, `constraints = c("lagged", "RI_loadings_free")` constrains the lagged effects over time and freely estimates the random-intercept factor loadings from the second wave onward. Similarly, `constraints = c("lagged", "residuals")` imposes the same constraints as `constraints = "within"`. Some options cannot be combined because they impose overlapping or incompatible restrictions. For example, `constraints = "stationarity"` already imposes restrictions on the residual variances, so it cannot be combined with `constraints = "residuals"`. Similarly, because `constraints = "within"` already combines lagged and residual constraints, it cannot be combined with `"lagged"` or `"residuals"` in the same constraint vector.
-
-## Time-varying random-intercept loadings
-By default, all random-intercept loadings in the `lavaan` data-generating model are fixed to 1. In some applications, researchers may want to generate data where the random intercepts load differently across waves. Researchers can specify these time-varying loadings by passing a vector or a matrix to the `loadings` argument.
-
-When a vector is passed, the same loading pattern is used for the random intercept of A and the random intercept of B. The first loading must always be 1:
-
-```{r loading-vector}
-loadings <- c(1, .8, 1.1, .9)
-```
-
-When a matrix is passed, row 1 is used for variable A and row 2 is used for variable B. This allows the loading pattern to differ across variables:
-
-```{r loading-matrix}
-loadings <- matrix(
-  c(1, .8, 1.1, .9,
-    1, 1.2, .7, 1),
-  nrow = 2,
-  byrow = TRUE
-)
-```
-
-For example:
-
-```{r loading-analysis, eval = FALSE}
-out <- powRICLPM(
-  target_power = 0.8,
-  sample_size = 1000,
-  time_points = 4,
-  intraclass_correlation = 0.5,
-  RI_cor = 0.3,
-  lagged_effects = matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE),
-  within_cor = 0.3,
-  loadings = loadings,
-  constraints = "RI_loadings_free",
-  reps = 1000,
-  seed = 1234
-)
-```
-
-If you are unsure if you have specified the `loadings` vector or matrix as intended, you can use the `check_loadings()` function to print how the random-intercept loadings are interpreted.
-
-```{r check-loading-vector}
-check_loadings(c(1, .8, 1.1, .9))
-```
-
-```{r check-loading-matrix}
-check_loadings(loadings)
-```
-
-The estimated random-intercept loadings are returned as regular model parameters. Use `give(out, "names")` to inspect the available parameter names. Freed random-intercept loadings use lavaan loading syntax, such as `RI_A=~A2` or `RI_B=~B3`. They can then be inspected with the usual parameter workflow:
-
-```{r loading-results, eval = FALSE}
-give(out, "names")
-give(out, "results", parameter = "RI_A=~A2")
-summary(out, parameter = "RI_A=~A2")
-summary(out, sample_size = 1000, time_points = 4, intraclass_correlation = 0.5)
-```
-
-Supplying `loadings` requires `constraints = "RI_loadings_free"`, so that the estimation model freely estimates the corresponding random-intercept loadings from the second wave onward. When comparing power for multiple numbers of time points with time-varying random-intercept loadings, use separate `powRICLPM()` calls for each value of `time_points`.
 
 ## Measurement error
 While it is generally advisable to include measurement error when analyzing psychological data, the RI-CLPM does not include it. Adding measurement error to the model would result in the bivariate STARTS model by @kenny_trait-state_2001, and requires at least 4 waves of data to be identified. Users can add measurement error variances to the estimation model by specifying `estimate_ME = TRUE`. Measurement error can be added to the simulated data using the `reliability` argument.

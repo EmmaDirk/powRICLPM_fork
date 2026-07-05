@@ -19,7 +19,7 @@ icheck_plot_parameter <- function(parameter, object, arg = rlang::caller_arg(par
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character vector of size 1:",
-        "x" = "Your {.arg {arg}} is of length {length(sample_size)}."
+        "x" = "Your {.arg {arg}} is of length {length(parameter)}."
       ),
       call = call
     )
@@ -28,17 +28,13 @@ icheck_plot_parameter <- function(parameter, object, arg = rlang::caller_arg(par
   if (!is.character(parameter)) {
     cli::cli_abort(
       c(
-        "{.arg} must be a character string:",
-        x = paste0("Your {.arg {arg}} is of type {typeof(x)}.")
+        "{.arg {arg}} must be a character string:",
+        x = paste0("Your {.arg {arg}} is of type ", typeof(parameter), ".")
       )
     )
   }
 
-  # Check if available in all simulation conditions
-  condition_lengths <- sapply(object$conditions, function(x) {
-    length(x$estimates$parameter)
-  })
-  parameter_names <- object$conditions[[which.min(condition_lengths)]]$estimates$parameter
+  parameter_names <- give_powRICLPM_parameter_names(object)
 
   if (!any(parameter == parameter_names)) {
     cli::cli_abort(
@@ -78,8 +74,7 @@ icheck_y <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) 
   if (!any(x == c("power", "coverage", "accuracy", "MSE", "bias", "average", "EmpSE", "SD", "SEAvg"))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'power', 'coverage', 'accuracy', 'MSE', 'bias', 'average', 'EmpSE', or 'SEAvg':",
-        i = "'SD' is still accepted as an alias for 'EmpSE'.",
+        "{.arg {arg}} must be 'power', 'coverage', 'accuracy', 'MSE', 'bias', 'average', 'EmpSE' (or 'SD'), or 'SEAvg':",
         x = paste0("Your {.arg {arg}} is '", x, "'.")
       )
     )
@@ -107,10 +102,10 @@ icheck_plot_options <- function(x, arg = rlang::caller_arg(x), call = rlang::cal
     )
   }
   x <- normalize_intraclass_correlation_value(x)
-  if (!any(x == c("time_points", "intraclass_correlation", "reliability"))) {
+  if (!any(x == c("sample_size", "time_points", "intraclass_correlation", "AF_proportion", "reliability", "none"))) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be 'time_points', 'intraclass_correlation', 'ICC', or 'reliability':",
+        "{.arg {arg}} must be 'sample_size', 'time_points', 'intraclass_correlation', 'ICC', 'AF_proportion', 'reliability', or 'none':",
         x = "Your {.arg {arg}} is {.val {x}}."
       )
     )

@@ -27,7 +27,7 @@ powRICLPM(
   seed = NA,
   constraints = "none",
   bounds = FALSE,
-  estimator = "ML",
+  estimator = NA,
   save_path = NULL,
   software = "lavaan",
   ICC = NULL,
@@ -47,17 +47,17 @@ powRICLPM(
 
 \item{time_points}{An \code{integer} (vector) with elements at least larger than 3, indicating number of time points.}
 
-\item{intraclass_correlation}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of (true score) variance at the between-unit level. When measurement error is included in the data generating model, the intraclass correlation is computed as the variance of the random intercept factor divided by the true score variance (i.e., controlled for measurement error).}
+\item{intraclass_correlation}{to be added}
 
 \item{RI_cor}{A \code{double} between 0 and 1, denoting the correlation between random intercepts.}
 
-\item{lagged_effects}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+\item{lagged_effects}{to be added}
 
 \item{within_cor}{A \code{double} between 0 and 1, denoting the correlation between the within-unit components.}
 
 \item{reliability}{(optional) A \code{numeric} vector with elements between 0 and 1, denoting the reliability of the variables (see "Details").}
 
-\item{loadings}{(optional) A \code{numeric} vector or matrix specifying random-intercept loadings in the \pkg{lavaan} data-generating model (see "Details").}
+\item{loadings}{to be added}
 
 \item{skewness}{(optional) A \code{numeric}, denoting the skewness values for the observed variables (see \code{\link[lavaan]{simulateData}}).}
 
@@ -75,69 +75,63 @@ powRICLPM(
 
 \item{seed}{An \code{integer} of length 1. If multiple cores are used, a seed will be used to generate a full L'Ecuyer-CMRG seed for all cores.}
 
-\item{constraints}{(optional) A \code{character} vector, specifying the type of constraints that should be imposed on the estimation model (see "Details").}
+\item{constraints}{(optional) A \code{character} string, specifying the type of constraints that should be imposed on the estimation model (see "Details").}
 
 \item{bounds}{(optional) A \code{logical}, denoting if bounded estimation should be used for the latent variable variances in the model (see "Details").}
 
-\item{estimator}{(optional) A \code{character} string of length 1, denoting the estimator to be used (default: \code{ML}, see "Details").}
+\item{estimator}{to be added}
 
 \item{save_path}{A \code{character} string of length 1, naming the directory to save (data) files to (used for validation purposes of this package). Variables are saved in alphabetical and numerical order.}
 
 \item{software}{A \code{character} string of length, naming which software to use for simulations; either "lavaan" or "Mplus" (see "Details").}
 
-\item{ICC}{Alternative name for \code{intraclass_correlation}.}
+\item{ICC}{to be added}
 
-\item{Phi}{Alternative name for \code{lagged_effects}.}
+\item{Phi}{to be added}
 }
 \value{
 An object of class \code{powRICLPM}, upon which \code{summary()}, \code{print()}, and \code{plot()} can be used. The returned object is a \code{list} with a \code{conditions} and \code{session} element. \code{condition} itself is a \code{list} of experimental conditions, where each element is again a \code{list} containing the input and output of the power analysis for that particular experimental condition. \code{session} is a \code{list} containing information common to all experimental conditions.
 }
 \description{
-Perform a Monte Carlo power analysis for the random intercept cross-lagged panel model (RI-CLPM) and the stable trait autoregressive trait state model (STARTS). This function computes performance metrics such as bias, mean square error, coverage, power, etc, for all model parameters, and can perform power analyses across multiple experimental conditions simultaneously. Conditions are defined in terms of sample size, number of time points, proportion of between-unit variance (\code{intraclass_correlation}), and indicator reliability. See "Details" for information on (a) internal data simulation, (b) internal model estimation, (c) \code{powRICLPM}'s naming conventions of parameters, (d) parallel execution capabilities for speeding up the analysis, and (e) various extensions, such as the option to include measurement errors for data generation and estimation (i.e., the STARTS model), imposing various constraints over time, and many more.
+Perform a Monte Carlo power analysis for the random intercept cross-lagged panel model (RI-CLPM) and the stable trait autoregressive trait state model (STARTS). This function computes performance metrics such as bias, mean square error, coverage, power, etc, for all model parameters, and can perform power analyses across multiple experimental conditions simultaneously. Conditions are defined in terms of sample size, number of time points, proportion of between-unit variance (ICC), and indicator reliability. See "Details" for information on (a) internal data simulation, (b) internal model estimation, (c) \code{powRICLPM}'s naming conventions of parameters, (d) parallel execution capabilities for speeding up the analysis, and (e) various extensions, such as the option to include measurement errors for data generation and estimation (i.e., the STARTS model), imposing various constraints over time, and many more.
 }
 \details{
 A rationale for the power analysis strategy implemented in this package can be found in Mulder (2023).
 
-\subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{lagged_effects} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{lagged_effects} can be interpreted as standardized effects. By default, all random-intercept loadings in the data-generating model are fixed to 1. The \code{loadings} argument can be used to specify time-varying random-intercept loadings for lavaan data generation, with the first loading fixed to 1 and later loadings interpreted relative to the first occasion. Supplying \code{loadings} requires \code{constraints = "RI_loadings_free"} so that the estimation model also frees the corresponding random-intercept loadings.}
+\subsection{Data Generation}{Data are generated using \code{\link[lavaan]{simulateData}} from the \pkg{lavaan} package. Based on \code{Phi} and \code{within_cor}, the residual variances and covariances for the within-components at wave 2 and later are computed, such that the within-components themselves have a variance of 1. This implies that the lagged effects in \code{Phi} can be interpreted as standardized effects.}
 
 \subsection{Model Estimation using lavaan}{When \code{software = "lavaan"} (default), generated data are analyzed using \code{\link[lavaan]{lavaan}} from the \pkg{lavaan} package. The default estimator is maximum likelihood (\code{ML}). Other maximum likelihood based estimators implemented in \href{https://lavaan.ugent.be/tutorial/est.html}{\pkg{lavaan}} can be specified as well. When skewed or kurtosed data are generated (using the \code{skewness} and \code{kurtosis} arguments), the estimator defaults to robust maximum likelihood \code{MLR}. The population parameter values are used as starting values.
 
 Parameter estimates from non-converged model solutions are discarded from the results. When \code{bounds = FALSE}, inadmissible parameter estimates from converged solutions (e.g., a negative random intercept variance) are discarded. When \code{bounds = TRUE}, inadmissible parameter estimates are retained following advice by De Jonckere and Rosseel (2022). The results include the minimum estimates for all parameters across replications to diagnose which parameter(s) might be the cause of the inadmissible solution.}
 
-\subsection{Using Mplus}{When \code{software = "Mplus"}, Mplus input files will be generated and saved into \code{save_path}. Note that it is not possible to generate skewed or kurtosed data in Mplus via the \code{powRICLPM} package. Furthermore, bounded estimation and time-varying random-intercept loadings (both for data generation and estimation) are not available in Mplus. The \code{"ME"} constraint can be combined with other Mplus-supported constraints when \code{estimate_ME = TRUE}. }
+\subsection{Using Mplus}{When \code{software = "Mplus"}, Mplus input files will be generated and saved into \code{save_path}. Note that it is not possible to generate skewed or kurtosed data in Mplus via the \code{powRICLPM} package. Furthermore, bounded estimation is not available in Mplus. Therefore, the \code{skewness}, \code{kurtosis}, and \code{bounds} will be ignored when \code{software = "Mplus"}. }
 
 \subsection{Naming Conventions Observed and Latent Variables}{The observed variables in the RI-CLPM are given default names, namely capital letters in alphabetical order, with numbers denoting the measurement occasion. For example, for a bivariate RICLPM with 3 time points, we observe \code{A1}, \code{A2}, \code{A3}, \code{B1}, \code{B2}, and \code{B3}. Their within-components are denoted by \code{wA1}, \code{wA2}, ..., \code{wB3}, respectively. The between-components have \code{RI_} prepended to the variable name, resulting in \code{RI_A} and \code{RI_B}.
 
-Parameters are denoted using \pkg{lavaan} model syntax (see \href{https://lavaan.ugent.be/tutorial/syntax1.html}{the \pkg{lavaan} website}). For example, the random intercept variances are denoted by \code{RI_A~~RI_A} and \code{RI_B~~RI_B}, the cross-lagged effects at the first wave as \code{wB2~wA1} and \code{wA2~wB1}, and the autoregressive effects as \code{wA2~wA1} and \code{wB2~wB1}. When random-intercept factor loadings are freely estimated using \code{constraints = "RI_loadings_free"}, the freed loadings from the second wave onward are denoted by the corresponding \pkg{lavaan} loading syntax, for example \code{RI_A=~A2}, \code{RI_A=~A3}, \code{RI_B=~B2}, and \code{RI_B=~B3}. Use \code{give(object, "names")} to extract parameter names from the \code{powRICLPM} object.}
+Parameters are denoted using \pkg{lavaan} model syntax (see \href{https://lavaan.ugent.be/tutorial/syntax1.html}{the \pkg{lavaan} website}). For example, the random intercept variances are denoted by \code{RI_A~~RI_A} and \code{RI_B~~RI_B}, the cross-lagged effects at the first wave as \code{wB2~wA1} and \code{wA2~wB1}, and the autoregressive effects as \code{wA2~wA1} and \code{wB2~wB1}. Use \code{give(object, "names")} to extract parameter names from the \code{powRICLPM} object.}
 
 \subsection{Parallel Processing and Progress Bar}{To speed up the analysis, power analysis for multiple experimental conditions can be executed in parallel. This has been implemented using \pkg{future}. By default the analysis is executed sequentially (i.e., single-core). Parallel execution (i.e., multicore) can be setup using \code{\link[future]{plan}}, for example \code{plan(multisession, workers = 4)}. For more information and options, see \url{https://future.futureverse.org/articles/future-1-overview.html#controlling-how-futures-are-resolved}.
 
 A progress bar displaying the status of the power analysis has been implemented using \pkg{progressr}. By default, a simple progress bar will be shown. For more information on how to control this progress bar and several other notification options (e.g., auditory notifications), see \url{https://progressr.futureverse.org}.}
 
-\subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{intraclass_correlation} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
+\subsection{Extension: Measurement Errors (STARTS model)}{Including measurement error to the RI-CLPM makes the model equivalent to the bivariate STARTS model by Kenny and Zautra (2001) without constraints over time. Measurement error can be added to the generated data through the \code{reliability} argument. Setting the reliability-argument to 0.8 implies that 80 percent is the true score variance, and 20 measurement error variance. \code{ICC} then denotes the proportion of \emph{true score variance} captured by the random intercept factors. Estimating measurement errors (i.e., the STARTS model) is done by setting \code{estimate_ME = TRUE}.}
 
-\subsection{Extension: Imposing Constraints}{The following options can be supplied to the estimation model using the \code{constraints} argument. By default, \code{constraints = "none"}, and no equality or time-invariance constraints are imposed.
+\subsection{Extension: Imposing Constraints}{The following constraints can be imposed on the estimation model using the \code{constraints = "..."} argument:
 
 \itemize{
-\item \code{"lagged"}: Time-invariant autoregressive and cross-lagged effects.
-\item \code{"residuals"}: Time-invariant within-unit residual variances and covariances.
-\item \code{"within"}: Time-invariant lagged effects and within-unit residual variances and covariances. This is equivalent to \code{constraints = c("lagged", "residuals")}.
-\item \code{"stationarity"}: Constraints such that at the within-unit level a stationary process is estimated. This includes time-invariant lagged effects and constraints on the residual variances. It cannot be combined with \code{"lagged"} or \code{"residuals"}.
-\item \code{"ME"}: Time-invariant measurement error variances. Only possible when \code{estimate_ME = TRUE}.
-\item \code{"RI_loadings_free"}: Freely estimated random-intercept factor loadings; see details below.
+\item \code{lagged}: Time-invariant autoregressive and cross-lagged effects.
+\item \code{residuals}: Time-invariant residual variances.
+\item \code{within}: Time-invariant lagged effects and residual variances.
+\item \code{stationarity}: Constraints such that at the within-unit level a stationary process is estimated. This included time-invariant lagged effects, and constraints on the residual variances.
+\item \code{ME}: Time-invariant measurement error variances. Only possible when \code{estimate_ME = TRUE}.
+}
 }
 
-The random-intercept factor loadings are a special case. In the standard RI-CLPM specification, these loadings are fixed to 1 so that each observed variable loads equally on its random intercept. The option \code{constraints = "RI_loadings_free"} relaxes this assumption in the estimation model by freely estimating the random-intercept factor loadings from the second wave onward. The first loading remains fixed to 1 for identification.
-
-Compatible options can be combined in a character vector. For example, \code{constraints = c("lagged", "RI_loadings_free")} constrains the lagged effects over time and freely estimates the random-intercept factor loadings from the second wave onward. Similarly, \code{constraints = c("lagged", "residuals")} imposes the same constraints as \code{constraints = "within"}. Some options cannot be combined because they impose overlapping or incompatible restrictions. For example, \code{constraints = "stationarity"} already imposes restrictions on the residual variances, so it cannot be combined with \code{constraints = "residuals"}. Similarly, because \code{constraints = "within"} already combines lagged and residual constraints, it cannot be combined with \code{"lagged"} or \code{"residuals"} in the same constraint vector.
-
-}
-
-\subsection{Extension: Bounded Estimation}{Bounded estimation is useful to avoid nonconvergence in small samples. Here, automatic wide bounds are used as advised by De Jonckere and Rosseel (2022), see \code{optim.bounds} in \code{\link[lavaan]{lavOptions}}. This option can only be used when no equality or time-invariance constraints are imposed on the estimation model, except for \code{constraints = "RI_loadings_free"} since it frees random-intercept loadings rather than constraining parameters.}
+\subsection{Extension: Bounded Estimation}{Bounded estimation is useful to avoid nonconvergence in small samples. Here, automatic wide bounds are used as advised by De Jonckere and Rosseel (2022), see \code{optim.bounds} in \code{\link[lavaan]{lavOptions}}. This option can only be used when no constraints are imposed on the estimation model.}
 }
 \examples{
 # Define population parameters for lagged effects
-lagged_effects <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
+Phi <- matrix(c(.4, .1, .2, .3), ncol = 2, byrow = TRUE)
 
 # (optional) Set up parallel computing (i.e., multicore, speeding up the analysis)
 library(future)
@@ -153,10 +147,10 @@ with_progress({
     search_upper = 700,
     search_step = 100,
     time_points = c(3, 4),
-    intraclass_correlation = c(0.4, 0.6),
+    ICC = c(0.4, 0.6),
     reliability = c(1, 0.8),
     RI_cor = 0.3,
-    lagged_effects = lagged_effects,
+    Phi = Phi,
     within_cor = 0.3,
     reps = 100,
     seed = 1234

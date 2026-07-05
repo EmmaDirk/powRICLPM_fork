@@ -141,6 +141,7 @@ create_Mplus <- function(condition, reps, seed) {
     time_points = condition[["time_points"]],
     ICC = condition[["ICC"]],
     reliability = condition[["reliability"]],
+    reliability_matrix = condition[["reliability_matrix"]],
     RI_var = condition[["RI_var"]],
     RI_cov = condition[["RI_cov"]],
     Mplus_synt = Mplus_syntax,
@@ -150,6 +151,12 @@ create_Mplus <- function(condition, reps, seed) {
     significance_criterion = condition[["significance_criterion"]],
     estimates = NA,
     MCSEs = NA,
+    estimation_information = list(
+      n_error = NA_integer_,
+      n_nonconvergence = NA_integer_,
+      n_inadmissible = NA_integer_,
+      n_completed = NA_integer_
+    ),
     reps = NA,
     condition_id = condition[["condition_id"]]
   )
@@ -329,7 +336,7 @@ Mplus_within_cov2 <- function(condition, estimation = FALSE, name_within) {
   # Estimation
   if (estimation) {
     if (has_constraint(condition$constraints, "stationarity")) {
-      con <- paste0("(rcov", 2:condition$time_points, ")")
+      con <- paste0("*", resCov, " (rcov", 2:condition$time_points, ")")
     } else if (has_constraint(condition$constraints, "residuals")) { # Constrain over time
       con <- "(rcov)"
     } else { # Freely estimate
@@ -348,7 +355,7 @@ Mplus_within_cov2 <- function(condition, estimation = FALSE, name_within) {
 Mplus_pop_ME <- function(condition, name_obs) {
   lhs <- c(unlist(name_obs))
   op <- rhs <- ""
-  con <- paste0("@", condition[["ME_var"]])
+  con <- paste0("@", c(t(condition[["ME_var"]])))
   return(cbind.data.frame(lhs, op, rhs, con,
                           stringsAsFactors = FALSE
   ))
@@ -359,14 +366,12 @@ Mplus_estimate_ME <- function(condition, name_obs) {
   op <- rhs <- ""
   if (!condition[["estimate_ME"]]) {
     con <- "@0"
-  } else if (
-    has_constraint(condition[["constraints"]], "stationarity") ||
-    has_constraint(condition[["constraints"]], "ME")
-  ) {
+  } else if (has_constraint(condition[["constraints"]], "ME")) {
     label <- rep(c("MEvarA", "MEvarB"), each = condition[["time_points"]])
-    con <- paste0("*", condition[["ME_var"]], " (", label, ")")
+    starts <- rep(rowMeans(condition[["ME_var"]]), each = condition[["time_points"]])
+    con <- paste0("*", starts, " (", label, ")")
   } else { # Freely estimate
-    con <- paste0("*", condition[["ME_var"]])
+    con <- paste0("*", c(t(condition[["ME_var"]])))
   }
   return(cbind.data.frame(lhs, op, rhs, con,
                           stringsAsFactors = FALSE

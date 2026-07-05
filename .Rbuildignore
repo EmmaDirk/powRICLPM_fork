@@ -13,3 +13,6 @@ tikzDictionary$
 ^R/draft\.R$
 ^Mplus Run Models\.log$
 ^references\.bib$
+^\.r-lib$
+^Rplots\.pdf$
+^\.DS_Store$

@@ -38,13 +38,13 @@ icheck_sample_size_summary <- function(sample_size, object, arg = rlang::caller_
 }
 
 
-icheck_parameter_summary <- function(x, object, parameter, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+icheck_parameter_summary <- function(x, object, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
 
   if (length(x) > 1) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character string of length 1:",
-        "x" = "Your {.arg {arg}} is of length {length(sample_size)}."
+        "x" = "Your {.arg {arg}} is of length {length(x)}."
       ),
       call = call
     )
@@ -54,20 +54,20 @@ icheck_parameter_summary <- function(x, object, parameter, arg = rlang::caller_a
     cli::cli_abort(
       c(
         "{.arg {arg}} must be a character string:",
-        "x" = "Your {.arg {arg}} is of type {typeof(arg)}"
+        "x" = "Your {.arg {arg}} is of type {typeof(x)}."
       ),
       call = call
     )
   }
 
-  number_of_parameters <- lapply(object$conditions, function(x) {length(x$estimates$parameter)})
-  names_parameters <- object$conditions[[which.min(number_of_parameters)]]$estimates$parameter
+  names_parameters <- give_powRICLPM_parameter_names(object)
 
   if (!any(x == names_parameters)) {
     cli::cli_abort(
       c(
-        "Your {.arg {arg}} is not available across all experimental conditions.",
-        "i" = "Perhaps use `give(object, what = 'names')` to get an overview of parameter names in the `powRICLPM` object."
+        "The requested {.arg {arg}} was not found across all experimental conditions:",
+        "x" = "No summary is available for parameter `{x}`.",
+        "i" = "Use `give(object, what = 'names')` to see available parameter names."
       ),
       call = call
     )
@@ -115,7 +115,7 @@ icheck_ICC_summary <- function(ICC, object, arg = rlang::caller_arg(ICC), call =
     )
   }
 
-  ICCs <- lapply(object$conditions, function(x) {x$ICC})
+  ICCs <- lapply(object$conditions, icondition_proportion)
 
   if (!any(ICC == ICCs)) {
     cli::cli_abort(
@@ -133,40 +133,147 @@ icheck_ICC_summary <- function(ICC, object, arg = rlang::caller_arg(ICC), call =
 
 icheck_reliability_summary <- function(reliability, object, arg = rlang::caller_arg(reliability), call = rlang::caller_env()) {
 
-  if (length(reliability) > 1) {
+  if (is.character(reliability)) {
     cli::cli_abort(
       c(
-        "{.arg {arg}} must be a single number:",
-        "x" = "Your {.arg {arg}} is of length {length(reliability)}."
+        "{.arg {arg}} must be either a single numeric value or a named numeric vector:",
+        i = "For variable-specific reliability, use `reliability = c(A = 0.8, B = 0.7)`.",
+        i = "Character strings such as \"A = 0.8, B = 0.7\" are not supported."
+      ),
+      call = call
+    )
+  }
+  if (!is.numeric(reliability) || !is.null(dim(reliability))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be either a single numeric value or a named numeric vector:",
+        i = "For variable-specific reliability, use `reliability = c(A = 0.8, B = 0.7)`.",
+        x = paste0("Your {.arg {arg}} is ", format_object_type(reliability), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(reliability) == 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain one reliability selector:",
+        i = "Use a single numeric value or `reliability = c(A = 0.8, B = 0.7)`."
+      ),
+      call = call
+    )
+  }
+  if (!all(is.finite(reliability))) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must contain only finite, non-missing reliability values:",
+        x = paste0("Your {.arg {arg}} contains: ", format_reliability(reliability), ".")
+      ),
+      call = call
+    )
+  }
+  if (length(reliability) > 1L && !is_combined_reliability_selector(reliability)) {
+    cli::cli_abort(
+      c(
+        "For variable-specific reliability, {.arg {arg}} must specify exactly variables {.val A} and {.val B}:",
+        i = "Use `reliability = c(A = 0.8, B = 0.7)`.",
+        x = paste0("Your {.arg {arg}} has names: ", format_reliability_names(names(reliability)), ".")
       ),
       call = call
     )
   }
 
-  reliabilities <- lapply(object$conditions, function(x) {x$reliability})
+  reliabilities <- vapply(object$conditions, function(x) {as.character(x$reliability)}, character(1))
 
-  if (!any(reliability == reliabilities)) {
+  if (!any(ireliability_matches(reliability, reliabilities))) {
     cli::cli_abort(
       c(
         "{.arg {arg}} must refer to an experimental condition in the {.cls {class(object)}} object with that reliability:",
         "i" = "The reliability you've indicated is not included in any experimental condition.",
-        "x" = "Perhaps you meant any of the following reliabilities?",
-        paste(unique(reliabilities), collapse = ", ")
+        "x" = "Perhaps you meant one of the following reliability conditions?",
+        paste(ireliability_available_display_labels(object), collapse = "; ")
       ),
       call = call
     )
   }
 }
 
+is_combined_reliability_selector <- function(reliability) {
+  is.numeric(reliability) &&
+    is.null(dim(reliability)) &&
+    length(reliability) == 2L &&
+    !is.null(names(reliability)) &&
+    all(nzchar(names(reliability))) &&
+    !anyDuplicated(names(reliability)) &&
+    setequal(names(reliability), c("A", "B"))
+}
+
+format_reliability_names <- function(x) {
+  if (is.null(x)) {
+    return("<none>")
+  }
+  x[!nzchar(x)] <- "<empty>"
+  paste(x, collapse = ", ")
+}
+
+isummary_condition_selector_supplied <- function(sample_size = NULL, time_points = NULL,
+                                                 ICC = NULL, reliability = NULL) {
+  !is.null(sample_size) ||
+    !is.null(time_points) ||
+    !is.null(ICC) ||
+    !is.null(reliability)
+}
+
+imatch_condition_indices_summary <- function(object, sample_size = NULL, time_points = NULL,
+                                             ICC = NULL, reliability = NULL,
+                                             call = rlang::caller_env()) {
+  matches <- vapply(object$conditions, function(x) {
+    (is.null(sample_size) || x$sample_size == sample_size) &&
+      (is.null(time_points) || x$time_points == time_points) &&
+      (is.null(ICC) || icondition_proportion(x) == ICC) &&
+      (is.null(reliability) || ireliability_matches(reliability, x$reliability))
+  }, logical(1))
+
+  if (!any(matches)) {
+    cli::cli_abort(
+      c(
+        "No experimental condition matches the supplied condition arguments:",
+        i = "Check the combination of {.arg sample_size}, {.arg time_points}, {.arg intraclass_correlation}, and {.arg reliability}.",
+        x = paste0(
+          "Supplied values: sample_size = ", isummary_selector_value(sample_size),
+          ", time_points = ", isummary_selector_value(time_points),
+          ", intraclass_correlation = ", isummary_selector_value(ICC),
+          ", reliability = ", isummary_selector_value(reliability), "."
+        )
+      ),
+      call = call
+    )
+  }
+
+  which(matches)
+}
+
+isummary_selector_value <- function(x) {
+  if (is.null(x)) {
+    return("not supplied")
+  }
+  if (length(x) > 1L) {
+    return(paste(x, collapse = ", "))
+  }
+  as.character(x)
+}
+
 
 imatch_condition_summary <- function(object, sample_size, time_points, ICC, reliability = NULL,
                                      call = rlang::caller_env()) {
-  matches <- Filter(function(x) {
-    x$sample_size == sample_size &&
-      x$time_points == time_points &&
-      x$ICC == ICC &&
-      (is.null(reliability) || x$reliability == reliability)
-  }, object$conditions)
+  match_indices <- imatch_condition_indices_summary(
+    object = object,
+    sample_size = sample_size,
+    time_points = time_points,
+    ICC = ICC,
+    reliability = reliability,
+    call = call
+  )
+  matches <- object$conditions[match_indices]
 
   if (length(matches) == 0) {
     supplied_reliability <- if (is.null(reliability)) {
@@ -189,15 +296,16 @@ imatch_condition_summary <- function(object, sample_size, time_points, ICC, reli
     )
   }
 
-  matching_reliabilities <- unique(vapply(matches, function(x) x$reliability, numeric(1)))
+  matching_reliabilities <- unique(vapply(matches, function(x) as.character(x$reliability), character(1)))
   if (is.null(reliability) && length(matching_reliabilities) > 1) {
     cli::cli_abort(
       c(
         "Multiple experimental conditions match the supplied condition arguments:",
         i = "{.arg reliability} is needed to select one condition.",
+        i = "For variable-specific matrix reliability, use `reliability = c(A = ..., B = ...)`.",
         x = paste0(
-          "Matching reliabilities are: ",
-          paste(matching_reliabilities, collapse = ", "),
+          "Matching reliability conditions are: ",
+          paste(vapply(matching_reliabilities, ireliability_display_label, character(1)), collapse = "; "),
           "."
         )
       ),
