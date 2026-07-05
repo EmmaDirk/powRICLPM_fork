@@ -1,3 +1,9 @@
+# powRICLPM 0.2.2
+
+## To be added
+* to be added
+
+
 # powRICLPM 0.2.1
 
 ## Minor improvements and fixes
