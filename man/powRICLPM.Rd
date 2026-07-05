@@ -11,11 +11,12 @@ powRICLPM(
   search_step = 20,
   sample_size = NULL,
   time_points,
-  ICC,
+  intraclass_correlation = NULL,
   RI_cor,
-  Phi,
+  lagged_effects = NULL,
   within_cor,
   reliability = 1,
+  loadings = NULL,
   skewness = 0,
   kurtosis = 0,
   estimate_ME = FALSE,
@@ -26,9 +27,11 @@ powRICLPM(
   seed = NA,
   constraints = "none",
   bounds = FALSE,
-  estimator = "ML",
+  estimator = NA,
   save_path = NULL,
-  software = "lavaan"
+  software = "lavaan",
+  ICC = NULL,
+  Phi = NULL
 )
 }
 \arguments{
@@ -44,15 +47,17 @@ powRICLPM(
 
 \item{time_points}{An \code{integer} (vector) with elements at least larger than 3, indicating number of time points.}
 
-\item{ICC}{A \code{double} (vector) with elements between 0 and 1, denoting the proportion of (true score) variance at the between-unit level. When measurement error is included in the data generating model, ICC is computed as the variance of the random intercept factor divided by the true score variance (i.e., controlled for measurement error).}
+\item{intraclass_correlation}{to be added}
 
 \item{RI_cor}{A \code{double} between 0 and 1, denoting the correlation between random intercepts.}
 
-\item{Phi}{A matrix, with standardized autoregressive effects (on the diagonal) and cross-lagged effects (off-diagonal) in the population. Columns represent predictors and rows represent outcomes.}
+\item{lagged_effects}{to be added}
 
 \item{within_cor}{A \code{double} between 0 and 1, denoting the correlation between the within-unit components.}
 
 \item{reliability}{(optional) A \code{numeric} vector with elements between 0 and 1, denoting the reliability of the variables (see "Details").}
+
+\item{loadings}{to be added}
 
 \item{skewness}{(optional) A \code{numeric}, denoting the skewness values for the observed variables (see \code{\link[lavaan]{simulateData}}).}
 
@@ -74,11 +79,15 @@ powRICLPM(
 
 \item{bounds}{(optional) A \code{logical}, denoting if bounded estimation should be used for the latent variable variances in the model (see "Details").}
 
-\item{estimator}{(optional) A \code{character} string of length 1, denoting the estimator to be used (default: \code{ML}, see "Details").}
+\item{estimator}{to be added}
 
 \item{save_path}{A \code{character} string of length 1, naming the directory to save (data) files to (used for validation purposes of this package). Variables are saved in alphabetical and numerical order.}
 
 \item{software}{A \code{character} string of length, naming which software to use for simulations; either "lavaan" or "Mplus" (see "Details").}
+
+\item{ICC}{to be added}
+
+\item{Phi}{to be added}
 }
 \value{
 An object of class \code{powRICLPM}, upon which \code{summary()}, \code{print()}, and \code{plot()} can be used. The returned object is a \code{list} with a \code{conditions} and \code{session} element. \code{condition} itself is a \code{list} of experimental conditions, where each element is again a \code{list} containing the input and output of the power analysis for that particular experimental condition. \code{session} is a \code{list} containing information common to all experimental conditions.

@@ -11,7 +11,7 @@
   parameter = NULL,
   color_by = "time_points",
   shape_by = "reliability",
-  facet_by = "ICC"
+  facet_by = "intraclass_correlation"
 )
 }
 \arguments{

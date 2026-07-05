@@ -6,7 +6,7 @@
 #' \code{\link{powRICLPM}}, but exposes the DPM-native arguments directly:
 #' \code{AF_proportion}, \code{AF_cor}, and \code{dynamics_cor}.
 #'
-#' @param target_power A \code{double}, denoting the desired power. 
+#' @param target_power A \code{double}, denoting the desired power.
 #' @param search_lower,search_upper,search_step Optional sample-size search range.
 #' @param sample_size An \code{integer} (vector), indicating sample size.
 #' @param time_points An \code{integer} (vector), indicating number of time

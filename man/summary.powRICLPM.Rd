@@ -10,8 +10,10 @@
   parameter = NULL,
   sample_size = NULL,
   time_points = NULL,
-  ICC = NULL,
-  reliability = NULL
+  intraclass_correlation = NULL,
+  AF_proportion = NULL,
+  reliability = NULL,
+  ICC = NULL
 )
 }
 \arguments{
@@ -25,9 +27,13 @@
 
 \item{time_points}{(optional) An \code{integer}, denoting the number of time points of the experimental condition of interest.}
 
-\item{ICC}{(optional) A \code{double}, denoting the proportion of variance at the between-unit level of the experimental condition of interest.}
+\item{intraclass_correlation}{to be added}
+
+\item{AF_proportion}{to be added}
 
 \item{reliability}{(optional) An \code{integer}, denoting the reliability of the indicators of the experimental condition of interest.}
+
+\item{ICC}{to be added}
 }
 \value{
 No return value, called for side effects.
