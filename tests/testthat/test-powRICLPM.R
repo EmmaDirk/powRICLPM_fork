@@ -552,10 +552,10 @@ test_that("power analysis with constraints works", {
 
   test_summary_condition_stationarity <- summary(out_stationarity, sample_size = 1000, time_points = 3, ICC = 0.5, reliability = 1)
 
-  # No starting values, and hence zero population values for residual covariances (to aid convergence)
+  # Starting values preserve the implied residual covariances under stationarity.
   expect_equal(
     test_summary_condition_stationarity$Population,
-    c(1.000, 1.000, 0.300, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.400, 0.150, 0.200, 0.300, 0.400, 0.150, 0.200, 0.300, 0.300, 0.781, 0.781, 0.834, 0.834, 0, 0)
+    c(1.000, 1.000, 0.300, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.400, 0.150, 0.200, 0.300, 0.400, 0.150, 0.200, 0.300, 0.300, 0.781, 0.781, 0.834, 0.834, 0.130, 0.130)
   )
 })
 

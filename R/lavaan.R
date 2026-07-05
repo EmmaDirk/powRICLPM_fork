@@ -389,7 +389,13 @@ est_within_cov2 <- function(condition, name_within) {
   } else if (has_constraint(condition[["constraints"]], "stationarity")) { # Label
     lhs <- c(name_within[-1, 1])
     rhs <- c(name_within[-1, 2])
-    pv <- paste0("rcov", 2:condition[["time_points"]])
+    pv <- paste0(
+      "rcov",
+      2:condition[["time_points"]],
+      "*start(",
+      c(condition[["Psi"]][[1]][lower.tri(condition[["Psi"]][[1]])]),
+      ")"
+    )
   } else { # Freely estimate
     lhs <- name_within[-1, 1]
     rhs <- name_within[-1, 2]
@@ -416,8 +422,7 @@ create_estimate_ME <- function(condition, name_obs) {
   op <- "~~"
   con <- "*"
   ME_var <- condition[["ME_var"]]
-  if (has_constraint(condition[["constraints"]], "stationarity") ||
-      has_constraint(condition[["constraints"]], "ME")) {
+  if (has_constraint(condition[["constraints"]], "ME")) {
     lhs <- rhs <- c(name_obs)
     constrained_starts <- rep(rowMeans(ME_var), each = condition[["time_points"]])
     pv <- paste0(

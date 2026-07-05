@@ -336,7 +336,7 @@ Mplus_within_cov2 <- function(condition, estimation = FALSE, name_within) {
   # Estimation
   if (estimation) {
     if (has_constraint(condition$constraints, "stationarity")) {
-      con <- paste0("(rcov", 2:condition$time_points, ")")
+      con <- paste0("*", resCov, " (rcov", 2:condition$time_points, ")")
     } else if (has_constraint(condition$constraints, "residuals")) { # Constrain over time
       con <- "(rcov)"
     } else { # Freely estimate
@@ -366,10 +366,7 @@ Mplus_estimate_ME <- function(condition, name_obs) {
   op <- rhs <- ""
   if (!condition[["estimate_ME"]]) {
     con <- "@0"
-  } else if (
-    has_constraint(condition[["constraints"]], "stationarity") ||
-    has_constraint(condition[["constraints"]], "ME")
-  ) {
+  } else if (has_constraint(condition[["constraints"]], "ME")) {
     label <- rep(c("MEvarA", "MEvarB"), each = condition[["time_points"]])
     starts <- rep(rowMeans(condition[["ME_var"]]), each = condition[["time_points"]])
     con <- paste0("*", starts, " (", label, ")")

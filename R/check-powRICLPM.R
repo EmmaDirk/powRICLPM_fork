@@ -111,7 +111,7 @@ RICLPM_identification_table <- data.frame(
   min_waves = c(
     3, 3, 3, 3, 3,
     4, 3, 3, 3, 3,
-    4, 4, 4, 3, 4, 3, 3, 3, 3, 3,
+    4, 4, 4, 3, 4, 3, 3, 3, 4, 3,
     5, 4, 4, 4, 4, 4, 4, 3, 4, 3
   ),
   stringsAsFactors = FALSE

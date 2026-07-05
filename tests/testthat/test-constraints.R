@@ -54,6 +54,7 @@ test_that("constrained lavaan syntax combines labels and starting values", {
   expect_true(grepl("wA1=~NA*start(1)*A1", condition_stationarity$est_synt, fixed = TRUE))
   expect_true(grepl("wA1~~cor1*start(0.3)*wB1", condition_stationarity$est_synt, fixed = TRUE))
   expect_true(grepl("wA2~~rvarA2*start(0.7815)*wA2", condition_stationarity$est_synt, fixed = TRUE))
+  expect_true(grepl("wA2~~rcov2*start(0.13)*wB2", condition_stationarity$est_synt, fixed = TRUE))
   expect_no_duplicate_lavaan_elements(condition_stationarity)
 
   condition_ME <- make_lavaan_condition("ME", estimate_ME = TRUE)

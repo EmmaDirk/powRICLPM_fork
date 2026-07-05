@@ -206,7 +206,11 @@ test_that("DPM parameter-counting checks catch underidentified sample-size paths
     1000, 4, constraints = c("stationarity", "AF_loadings_free"),
     ME = TRUE, model = "DPM"
   ))
-  expect_equal(
+  expect_null(icheck_N(
+    1000, 4, constraints = c("stationarity", "ME", "AF_loadings_free"),
+    ME = TRUE, model = "DPM"
+  ))
+  expect_gt(
     count_parameters(2, 4, "stationarity", TRUE, model = "DPM"),
     count_parameters(2, 4, c("stationarity", "ME"), TRUE, model = "DPM")
   )
@@ -280,6 +284,51 @@ test_that("DPM measurement error syntax uses latent true-score process", {
   expect_true(grepl("A1~~0.25*A1", condition$pop_synt, fixed = TRUE))
   expect_true(grepl("A1~~MEvarA*start(0.25)*A1", condition$est_synt, fixed = TRUE))
   expect_true(grepl("tB2~start(0.2)*tA1", condition$est_synt, fixed = TRUE))
+
+  stationarity_only <- create_conditions_DPM(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    AF_proportion = 0.2,
+    AF_cor = 0.3,
+    lagged_effects = lagged_effects,
+    dynamics_cor = 0.2,
+    reliability = 0.8,
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML"
+  )[[1]]
+
+  stationarity_ME <- create_conditions_DPM(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    AF_proportion = 0.2,
+    AF_cor = 0.3,
+    lagged_effects = lagged_effects,
+    dynamics_cor = 0.2,
+    reliability = 0.8,
+    loadings = NULL,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    seed = 123456,
+    constraints = c("stationarity", "ME"),
+    bounds = FALSE,
+    estimator = "ML"
+  )[[1]]
+
+  expect_false(grepl("MEvarA", stationarity_only$est_synt, fixed = TRUE))
+  expect_true(grepl("MEvarA", stationarity_ME$est_synt, fixed = TRUE))
 })
 
 test_that("DPM stationarity syntax follows fixed and free loading equations", {

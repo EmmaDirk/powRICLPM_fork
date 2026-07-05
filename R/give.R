@@ -469,7 +469,13 @@ inote_condition_loading_anchor <- function(object, output = NULL) {
     icc_name <- iicc_value_name(object)
     icc_label <- if (identical(icc_name, "ICC")) "ICC" else "intraclass correlation"
     cli::cli_alert_info(
-      "With freely generated random-intercept loadings, the specified {icc_label} can only be interpreted as the {icc_label} at wave 1."
+      paste0(
+        "With freely generated random-intercept loadings, the specified ",
+        icc_label,
+        " can only be interpreted as the ",
+        icc_label,
+        " at wave 1."
+      )
     )
   }
   invisible(NULL)

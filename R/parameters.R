@@ -33,8 +33,7 @@ count_parameters <- function(k, time_points, constraints, est_ME, model = "RICLP
     if (est_ME) {
       n_parameters <- n_parameters + k * time_points_max
     }
-    if (est_ME && (has_constraint(constraints, "ME") ||
-                   has_constraint(constraints, "stationarity"))) {
+    if (est_ME && has_constraint(constraints, "ME")) {
       n_parameters <- n_parameters - (k * (time_points_max - 1))
     }
     return(n_parameters)
@@ -57,8 +56,7 @@ count_parameters <- function(k, time_points, constraints, est_ME, model = "RICLP
   if (has_constraint(constraints, "stationarity")) {
     n_parameters <- n_parameters - ((time_points_max - 1) * k)
   }
-  if (est_ME && (has_constraint(constraints, "ME") ||
-                 has_constraint(constraints, "stationarity"))) {
+  if (est_ME && has_constraint(constraints, "ME")) {
     n_parameters <- n_parameters - ((time_points_max - 1) * k)
   }
   if (has_constraint(constraints, "loadings_free")) {

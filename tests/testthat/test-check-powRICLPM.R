@@ -759,6 +759,35 @@ test_that("vector constraints are one condition and match within shorthand", {
 
   expect_true(grepl("MODEL CONSTRAINT", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
   expect_true(grepl("(MEvarA)", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("*0.13 (rcov2)", conditions_mplus_ME_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+
+  conditions_mplus_stationarity <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = tempdir(),
+    software = "Mplus"
+  )
+
+  expect_true(grepl("MODEL CONSTRAINT", conditions_mplus_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_false(grepl("(MEvarA)", conditions_mplus_stationarity[[1]]$Mplus_synt, fixed = TRUE))
+  expect_true(grepl("*0.13 (rcov2)", conditions_mplus_stationarity[[1]]$Mplus_synt, fixed = TRUE))
 })
 
 test_that("RI_loadings_free changes lavaan estimation syntax only", {
@@ -1099,10 +1128,15 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
     count_parameters(2, 3, "RI_loadings_free", FALSE),
     count_parameters(2, 3, "none", FALSE) + 4
   )
-  expect_equal(
+  expect_gt(
     count_parameters(2, 4, "stationarity", TRUE),
     count_parameters(2, 4, c("stationarity", "ME"), TRUE)
   )
+  expect_error(
+    icheck_RICLPM_identification(3, TRUE, "stationarity"),
+    "requires at least 4 waves"
+  )
+  expect_null(icheck_RICLPM_identification(3, TRUE, c("stationarity", "ME")))
 
   out <- suppressWarnings(
     powRICLPM(
@@ -1125,4 +1159,61 @@ test_that("RI_loadings_free updates parameter counting and powRICLPM output", {
     c("RI_A=~A2", "RI_A=~A3", "RI_A=~A4", "RI_B=~B2", "RI_B=~B3", "RI_B=~B4") %in%
       out$conditions[[1]]$estimates$parameter
   ))
+})
+
+test_that("stationarity does not constrain measurement error unless ME is supplied", {
+  lagged_effects <- matrix(c(0.4, 0.15, 0.2, 0.3), ncol = 2, byrow = TRUE)
+  Psi <- compute_Psi(lagged_effects, within_cor = 0.3)
+
+  stationarity_only <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = "stationarity",
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  stationarity_ME <- create_conditions(
+    target_power = 0.8,
+    sample_size = 1000,
+    time_points = 4,
+    intraclass_correlation = 0.5,
+    RI_cor = 0.3,
+    lagged_effects = lagged_effects,
+    within_cor = 0.3,
+    Psi = Psi,
+    reliability = 0.8,
+    skewness = 0,
+    kurtosis = 0,
+    estimate_ME = TRUE,
+    significance_criterion = 0.05,
+    reps = 1,
+    bootstrap_reps = NULL,
+    seed = 123456,
+    constraints = c("stationarity", "ME"),
+    bounds = FALSE,
+    estimator = "ML",
+    save_path = NULL,
+    software = "lavaan"
+  )[[1]]
+
+  expect_false(grepl("MEvarA", stationarity_only$est_synt, fixed = TRUE))
+  expect_true(grepl("A1~~start(", stationarity_only$est_synt, fixed = TRUE))
+  expect_true(grepl("MEvarA", stationarity_ME$est_synt, fixed = TRUE))
 })
